@@ -1,0 +1,426 @@
+import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import * as bcrypt from 'bcryptjs';
+import { PrismaService } from '../../database/prisma/prisma.service.js';
+import { CrearUsuarioDto } from './dto/crear-usuario.dto.js';
+import { ActualizarUsuarioDto } from './dto/actualizar-usuario.dto.js';
+import type { UsuarioAutenticado } from '../../common/types/usuario-autenticado.js';
+import { ForbiddenException } from '@nestjs/common';
+
+@Injectable()
+export class UsuariosService {
+    constructor(private readonly prisma: PrismaService) { }
+
+    async crear(dto: CrearUsuarioDto) {
+        const usuarioExistente = await this.prisma.usuario.findUnique({
+            where: {
+                correo: dto.correo,
+            },
+        });
+
+        if (usuarioExistente) {
+            throw new ConflictException('El correo ya está registrado');
+        }
+
+        await this.validarDocumento(
+            dto.perfil.idTipoDocumento,
+            dto.perfil.numeroDocumento,
+        );
+
+        const estadoActivo = await this.prisma.estado.findUnique({
+            where: {
+                nombre: 'ACTIVO',
+            },
+        });
+
+        if (!estadoActivo) {
+            throw new NotFoundException('No se encontró el estado ACTIVO');
+        }
+
+        const contrasenaHash = await bcrypt.hash(dto.contrasena, 10);
+
+        const usuario = await this.prisma.usuario.create({
+            data: {
+                correo: dto.correo,
+                contrasena: contrasenaHash,
+                idEstado: estadoActivo.idEstado,
+
+                perfil: {
+                    create: {
+                        nombres: dto.perfil.nombres,
+                        apellidos: dto.perfil.apellidos,
+                        idTipoDocumento: dto.perfil.idTipoDocumento,
+                        numeroDocumento: dto.perfil.numeroDocumento,
+                        telefono: dto.perfil.telefono,
+                        direccion: dto.perfil.direccion,
+                    },
+                },
+            },
+
+            select: {
+                idUsuario: true,
+                correo: true,
+                idEstado: true,
+                createdAt: true,
+                updatedAt: true,
+
+                estado: {
+                    select: {
+                        idEstado: true,
+                        nombre: true,
+                    },
+                },
+
+                perfil: {
+                    select: {
+                        nombres: true,
+                        apellidos: true,
+                        idTipoDocumento: true,
+                        numeroDocumento: true,
+                        telefono: true,
+                        direccion: true,
+
+                        tipoDocumento: {
+                            select: {
+                                idTipoDocumento: true,
+                                nombre: true,
+                            },
+                        },
+                    },
+                },
+            },
+        });
+
+        return {
+            message: 'Usuario creado correctamente',
+            usuario,
+        };
+    }
+
+    async listar() {
+        return this.prisma.usuario.findMany({
+            select: {
+                idUsuario: true,
+                correo: true,
+                idEstado: true,
+                createdAt: true,
+                updatedAt: true,
+
+                estado: {
+                    select: {
+                        idEstado: true,
+                        nombre: true,
+                    },
+                },
+
+                perfil: {
+                    select: {
+                        nombres: true,
+                        apellidos: true,
+                        idTipoDocumento: true,
+                        numeroDocumento: true,
+                        telefono: true,
+                        direccion: true,
+
+                        tipoDocumento: {
+                            select: {
+                                idTipoDocumento: true,
+                                nombre: true,
+                            },
+                        },
+                    },
+                },
+
+                roles: {
+                    select: {
+                        rol: {
+                            select: {
+                                idRol: true,
+                                nombre: true,
+                                activo: true,
+                            },
+                        },
+                    },
+                },
+
+                sucursales: {
+                    select: {
+                        sucursal: {
+                            select: {
+                                idSucursal: true,
+                                nombre: true,
+                                activo: true,
+                            },
+                        },
+                    },
+                },
+            },
+
+            orderBy: {
+                idUsuario: 'desc',
+            },
+        });
+    }
+
+    async obtenerPorId(id: number) {
+        const usuario = await this.prisma.usuario.findUnique({
+            where: {
+                idUsuario: id,
+            },
+
+            select: {
+                idUsuario: true,
+                correo: true,
+                idEstado: true,
+                createdAt: true,
+                updatedAt: true,
+
+                estado: {
+                    select: {
+                        idEstado: true,
+                        nombre: true,
+                    },
+                },
+
+                perfil: {
+                    select: {
+                        nombres: true,
+                        apellidos: true,
+                        idTipoDocumento: true,
+                        numeroDocumento: true,
+                        telefono: true,
+                        direccion: true,
+
+                        tipoDocumento: {
+                            select: {
+                                idTipoDocumento: true,
+                                nombre: true,
+                            },
+                        },
+                    },
+                },
+
+                roles: {
+                    select: {
+                        rol: {
+                            select: {
+                                idRol: true,
+                                nombre: true,
+                                activo: true,
+                            },
+                        },
+                    },
+                },
+
+                sucursales: {
+                    select: {
+                        sucursal: {
+                            select: {
+                                idSucursal: true,
+                                nombre: true,
+                                activo: true,
+                            },
+                        },
+                    },
+                },
+            },
+        });
+
+        if (!usuario) {
+            throw new NotFoundException('Usuario no encontrado');
+        }
+
+        return usuario;
+    }
+
+    async actualizar(id: number, dto: ActualizarUsuarioDto, actor: UsuarioAutenticado) {
+        const usuario = await this.prisma.usuario.findUnique({
+            where: {
+                idUsuario: id,
+            },
+
+            include: {
+                perfil: true,
+            },
+        });
+
+        if (!usuario) {
+            throw new NotFoundException('Usuario no encontrado');
+        }
+
+        await this.validarObjetivo(actor, id);
+
+        if (dto.correo !== undefined && dto.correo !== usuario.correo) {
+            const correoExistente = await this.prisma.usuario.findUnique({
+                where: {
+                    correo: dto.correo,
+                },
+            });
+
+            if (correoExistente) {
+                throw new ConflictException('El correo ya está registrado');
+            }
+        }
+
+        if (dto.perfil) {
+            await this.validarDocumento(
+                dto.perfil.idTipoDocumento,
+                dto.perfil.numeroDocumento,
+                id,
+            );
+        }
+
+        await this.prisma.$transaction(async (tx) => {
+            const datosUsuario: {
+                correo?: string;
+            } = {};
+
+            if (dto.correo !== undefined) {
+                datosUsuario.correo = dto.correo;
+            }
+
+            if (Object.keys(datosUsuario).length > 0) {
+                await tx.usuario.update({
+                    where: {
+                        idUsuario: id,
+                    },
+                    data: datosUsuario,
+                });
+            }
+
+            if (dto.perfil) {
+                if (usuario.perfil) {
+                    await tx.usuarioPerfil.update({
+                        where: {
+                            idUsuario: id,
+                        },
+                        data: {
+                            nombres: dto.perfil.nombres,
+                            apellidos: dto.perfil.apellidos,
+                            idTipoDocumento: dto.perfil.idTipoDocumento,
+                            numeroDocumento: dto.perfil.numeroDocumento,
+                            telefono: dto.perfil.telefono,
+                            direccion: dto.perfil.direccion,
+                        },
+                    });
+                } else {
+                    if (!dto.perfil.nombres || !dto.perfil.apellidos) {
+                        throw new ConflictException(
+                            'Los nombres y apellidos son obligatorios para crear el perfil',
+                        );
+                    }
+
+                    await tx.usuarioPerfil.create({
+                        data: {
+                            idUsuario: id,
+                            nombres: dto.perfil.nombres,
+                            apellidos: dto.perfil.apellidos,
+                            idTipoDocumento: dto.perfil.idTipoDocumento,
+                            numeroDocumento: dto.perfil.numeroDocumento,
+                            telefono: dto.perfil.telefono,
+                            direccion: dto.perfil.direccion,
+                        },
+                    });
+                }
+            }
+        });
+
+        return {
+            message: 'Usuario actualizado correctamente',
+            usuario: await this.obtenerPorId(id),
+        };
+    }
+
+    async eliminar(id: number, actor: UsuarioAutenticado) {
+        const usuario = await this.prisma.usuario.findUnique({
+            where: {
+                idUsuario: id,
+            },
+        });
+
+        if (!usuario) {
+            throw new NotFoundException('Usuario no encontrado');
+        }
+
+        await this.validarObjetivo(actor, id);
+
+        const inactivo = await this.prisma.estado.findUnique({ where: { nombre: 'INACTIVO' } });
+        if (!inactivo) throw new NotFoundException('No se encontró el estado INACTIVO');
+
+        await this.prisma.usuario.update({
+            where: {
+                idUsuario: id,
+            },
+            data: { idEstado: inactivo.idEstado },
+        });
+
+        return {
+            message: 'Usuario desactivado correctamente',
+        };
+    }
+
+    private async validarObjetivo(actor: UsuarioAutenticado, id: number) {
+        if (actor.idUsuario === id) {
+            throw new ForbiddenException('No puedes modificar tu cuenta desde esta ruta');
+        }
+        const superadmin = await this.prisma.usuarioRol.findFirst({
+            where: { idUsuario: id, rol: { nombre: 'SUPERADMIN', activo: true } },
+        });
+        if (superadmin) {
+            throw new ForbiddenException('La cuenta SUPERADMIN está protegida');
+        }
+    }
+
+    private async validarDocumento(
+        idTipoDocumento?: number | null,
+        numeroDocumento?: string | null,
+        idUsuarioExcluir?: number,
+    ) {
+        if (idTipoDocumento !== undefined && idTipoDocumento !== null) {
+            const tipoDocumento = await this.prisma.tipoDocumento.findUnique({
+                where: {
+                    idTipoDocumento,
+                },
+            });
+
+            if (!tipoDocumento) {
+                throw new NotFoundException('El tipo de documento no existe');
+            }
+
+            if (!tipoDocumento.activo) {
+                throw new ConflictException(
+                    'El tipo de documento se encuentra inactivo',
+                );
+            }
+        }
+
+        if (
+            idTipoDocumento === undefined ||
+            idTipoDocumento === null ||
+            numeroDocumento === undefined ||
+            numeroDocumento === null
+        ) {
+            return;
+        }
+
+        const documentoExistente = await this.prisma.usuarioPerfil.findFirst({
+            where: {
+                idTipoDocumento,
+                numeroDocumento,
+
+                ...(idUsuarioExcluir
+                    ? {
+                        idUsuario: {
+                            not: idUsuarioExcluir,
+                        },
+                    }
+                    : {}),
+            },
+        });
+
+        if (documentoExistente) {
+            throw new ConflictException(
+                'El número de documento ya está registrado',
+            );
+        }
+    }
+}
