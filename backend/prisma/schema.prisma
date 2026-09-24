@@ -9,8 +9,8 @@ datasource db {
 
 // ESTADOS
 model Estado {
-  idEstado Int    @id @default(autoincrement()) @map("id_estado")
-  nombre   String @unique @db.VarChar(255)
+  idEstado  Int      @id @default(autoincrement()) @map("id_estado")
+  nombre    String   @unique @db.VarChar(255)
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
@@ -21,13 +21,13 @@ model Estado {
 
 // TIPOS DE DOCUMENTO
 model TipoDocumento {
-  idTipoDocumento Int     @id @default(autoincrement()) @map("id_tipo_documento")
-  nombre          String  @unique @db.VarChar(255)
-  activo          Boolean @default(true)
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  idTipoDocumento Int      @id @default(autoincrement()) @map("id_tipo_documento")
+  nombre          String   @unique @db.VarChar(255)
+  activo          Boolean  @default(true)
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
 
-  usuariosPerfiles  UsuarioPerfil[]
+  usuariosPerfiles   UsuarioPerfil[]
   sucursalesPerfiles SucursalPerfil[]
 
   @@map("tipos_documento")
@@ -42,11 +42,13 @@ model Usuario {
   idEstado Int    @map("id_estado")
   estado   Estado @relation(fields: [idEstado], references: [idEstado], onDelete: Restrict)
 
+  idRol Int @map("id_rol")
+  rol   Rol @relation(fields: [idRol], references: [idRol], onDelete: Restrict)
+
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
   perfil     UsuarioPerfil?
-  roles      UsuarioRol[]
   sucursales UsuarioSucursal[]
 
   @@map("usuarios")
@@ -56,15 +58,15 @@ model Usuario {
 model UsuarioPerfil {
   idUsuario Int @id @map("id_usuario")
 
-  nombres   String @db.VarChar(255)
-  apellidos String @db.VarChar(255)
+  nombres         String         @db.VarChar(255)
+  apellidos       String         @db.VarChar(255)
   idTipoDocumento Int?           @map("id_tipo_documento")
   tipoDocumento   TipoDocumento? @relation(fields: [idTipoDocumento], references: [idTipoDocumento], onDelete: Restrict)
-  numeroDocumento String? @map("numero_documento") @db.VarChar(20)
-  telefono        String? @db.VarChar(20)
-  direccion       String? @db.VarChar(255)
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  numeroDocumento String?        @map("numero_documento") @db.VarChar(20)
+  telefono        String?        @db.VarChar(20)
+  direccion       String?        @db.VarChar(255)
+  createdAt       DateTime       @default(now()) @map("created_at")
+  updatedAt       DateTime       @updatedAt @map("updated_at")
 
   usuario Usuario @relation(fields: [idUsuario], references: [idUsuario], onDelete: Cascade)
 
@@ -74,13 +76,13 @@ model UsuarioPerfil {
 
 // ROLES
 model Rol {
-  idRol  Int     @id @default(autoincrement()) @map("id_rol")
-  nombre String  @unique @db.VarChar(255)
-  activo Boolean @default(true)
+  idRol     Int      @id @default(autoincrement()) @map("id_rol")
+  nombre    String   @unique @db.VarChar(255)
+  activo    Boolean  @default(true)
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  usuarios UsuarioRol[]
+  usuarios Usuario[]
   permisos RolPermiso[]
 
   @@map("roles")
@@ -90,24 +92,10 @@ model Rol {
 model Permiso {
   idPermiso Int    @id @default(autoincrement()) @map("id_permiso")
   nombre    String @unique @db.VarChar(100)
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
 
   roles RolPermiso[]
 
   @@map("permisos")
-}
-
-// USUARIOS - ROLES
-model UsuarioRol {
-  idUsuario Int @map("id_usuario")
-  idRol     Int @map("id_rol")
-
-  usuario Usuario @relation(fields: [idUsuario], references: [idUsuario], onDelete: Cascade)
-  rol     Rol     @relation(fields: [idRol], references: [idRol], onDelete: Cascade)
-
-  @@id([idUsuario, idRol])
-  @@map("usuarios_roles")
 }
 
 // ROLES - PERMISOS
@@ -124,11 +112,11 @@ model RolPermiso {
 
 // SUCURSALES
 model Sucursal {
-  idSucursal Int     @id @default(autoincrement()) @map("id_sucursal")
-  nombre     String  @db.VarChar(255)
-  activo     Boolean @default(true)
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  idSucursal Int      @id @default(autoincrement()) @map("id_sucursal")
+  nombre     String   @db.VarChar(255)
+  activo     Boolean  @default(true)
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
 
   perfil   SucursalPerfil?
   usuarios UsuarioSucursal[]
@@ -138,12 +126,12 @@ model Sucursal {
 
 // PERFIL DE SUCURSAL
 model SucursalPerfil {
-  idSucursal Int @id @map("id_sucursal")
+  idSucursal      Int            @id @map("id_sucursal")
   idTipoDocumento Int?           @map("id_tipo_documento")
   tipoDocumento   TipoDocumento? @relation(fields: [idTipoDocumento], references: [idTipoDocumento], onDelete: Restrict)
-  numeroDocumento String? @map("numero_documento") @db.VarChar(20)
-  razonSocial     String? @map("razon_social") @db.VarChar(255)
-  nombreComercial String? @map("nombre_comercial") @db.VarChar(255)
+  numeroDocumento String?        @map("numero_documento") @db.VarChar(20)
+  razonSocial     String?        @map("razon_social") @db.VarChar(255)
+  nombreComercial String?        @map("nombre_comercial") @db.VarChar(255)
 
   direccion String? @db.VarChar(255)
   ubigeo    String? @db.VarChar(6)

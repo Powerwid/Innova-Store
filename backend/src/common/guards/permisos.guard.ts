@@ -6,6 +6,7 @@ import { PUBLIC_KEY } from '../decorators/public.decorator.js';
 import { ROLES_KEY } from '../decorators/requiere-rol.decorator.js';
 import { SOLO_SUPERADMIN_KEY } from '../decorators/solo-superadmin.decorator.js';
 import type { UsuarioAutenticado } from '../types/usuario-autenticado.js';
+import { RolSistema } from '../enums/rol-sistema.enum.js';
 
 @Injectable()
 export class PermisosGuard implements CanActivate {
@@ -17,7 +18,10 @@ export class PermisosGuard implements CanActivate {
 
     const permisos = this.reflector.getAllAndOverride<string[]>(PERMISOS_KEY, targets);
     const roles = this.reflector.getAllAndOverride<string[]>(ROLES_KEY, targets);
-    const soloSuperadmin = this.reflector.getAllAndOverride<boolean>(SOLO_SUPERADMIN_KEY, targets);
+    const soloSuperadmin = this.reflector.getAllAndOverride<RolSistema>(
+      SOLO_SUPERADMIN_KEY,
+      targets,
+    );
     const autenticado = this.reflector.getAllAndOverride<boolean>(AUTENTICADO_KEY, targets);
     if (!permisos?.length) {
       if (roles?.length || soloSuperadmin || autenticado) return true;
@@ -25,7 +29,7 @@ export class PermisosGuard implements CanActivate {
     }
 
     const { user } = context.switchToHttp().getRequest<{ user: UsuarioAutenticado }>();
-    if (!user?.roles.includes('SUPERADMIN') && !permisos.every((permiso) => user?.permisos.includes(permiso))) {
+    if (!permisos.every((permiso) => user?.permisos.includes(permiso))) {
       throw new ForbiddenException('Permiso requerido');
     }
     return true;

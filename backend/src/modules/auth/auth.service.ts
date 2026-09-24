@@ -2,22 +2,17 @@ import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
 import { PrismaService } from '../../database/prisma/prisma.service.js';
-import { z } from 'zod';
 import type { LoginDto } from './dto/login.dto.js';
 import type { CambiarContrasenaDto } from './dto/cambiar-contrasena.dto.js';
 import { ACCESS_TOKEN_MAX_AGE_MS, REFRESH_TOKEN_MAX_AGE_MS } from './auth.constants.js';
-
-const refreshPayloadSchema = z.object({
-  sub: z.number().int().positive(),
-  tipo: z.literal('refresh'),
-});
+import { RefreshTokenPayloadSchema } from './schema/refresh-token-payload.schema.js';
 
 @Injectable()
 export class AuthService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly jwt: JwtService,
-  ) {}
+  ) { }
 
   async login(dto: LoginDto) {
     const usuario = await this.prisma.usuario.findUnique({
@@ -53,7 +48,7 @@ export class AuthService {
   async refresh(token: string) {
     let idUsuario: number;
     try {
-      const payload = refreshPayloadSchema.parse(
+      const payload = RefreshTokenPayloadSchema.parse(
         await this.jwt.verifyAsync(token),
       );
       idUsuario = payload.sub;

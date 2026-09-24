@@ -1,37 +1,23 @@
 import { prisma } from '../cliente-prisma.js';
+import { PERMISOS_SISTEMA } from '../../../src/common/constants/permisos-sistema.js';
 
 export async function seedPermisos() {
-  const permisos = [
-    'USUARIOS_VER',
-    'USUARIOS_CREAR',
-    'USUARIOS_EDITAR',
-    'USUARIOS_ELIMINAR',
-    'USUARIOS_ACTIVAR',
-    'DOCUMENTOS_CONSULTAR',
+  const nombresVigentes = PERMISOS_SISTEMA.map(({ nombre }) => nombre);
 
-    'ROLES_VER',
-    'ROLES_CREAR',
-    'ROLES_EDITAR',
+  await prisma.$transaction(async (tx) => {
+    for (const nombre of nombresVigentes) {
+      await tx.permiso.upsert({
+        where: { nombre },
+        update: {},
+        create: { nombre },
+      });
+    }
 
-    'PERMISOS_VER',
-    'PERMISOS_ASIGNAR',
-
-    'SUCURSALES_VER',
-    'SUCURSALES_CREAR',
-    'SUCURSALES_EDITAR',
-  ];
-
-  for (const nombre of permisos) {
-    await prisma.permiso.upsert({
-      where: {
-        nombre,
-      },
-      update: {},
-      create: {
-        nombre,
-      },
+    // El catalogo del codigo es la unica fuente de permisos del sistema.
+    await tx.permiso.deleteMany({
+      where: { nombre: { notIn: nombresVigentes } },
     });
-  }
+  });
 
-  console.log('Permisos creados');
+  console.log('Permisos internos sincronizados');
 }

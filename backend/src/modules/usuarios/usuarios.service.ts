@@ -5,6 +5,8 @@ import { CrearUsuarioDto } from './dto/crear-usuario.dto.js';
 import { ActualizarUsuarioDto } from './dto/actualizar-usuario.dto.js';
 import type { UsuarioAutenticado } from '../../common/types/usuario-autenticado.js';
 import { ForbiddenException } from '@nestjs/common';
+import { RolSistema } from '../../common/enums/rol-sistema.enum.js';
+import { PermisoSistema } from '../../common/enums/permiso-sistema.enum.js';
 
 @Injectable()
 export class UsuariosService {
@@ -26,6 +28,20 @@ export class UsuariosService {
             dto.perfil.numeroDocumento,
         );
 
+        const rol = await this.prisma.rol.findUnique({
+            where: { idRol: dto.idRol },
+        });
+
+        if (!rol || !rol.activo) {
+            throw new NotFoundException('Rol activo no encontrado');
+        }
+
+        if (rol.nombre === RolSistema.SUPERADMIN) {
+            throw new ForbiddenException(
+                'La creación de cuentas SUPERADMIN está reservada',
+            );
+        }
+
         const estadoActivo = await this.prisma.estado.findUnique({
             where: {
                 nombre: 'ACTIVO',
@@ -43,6 +59,7 @@ export class UsuariosService {
                 correo: dto.correo,
                 contrasena: contrasenaHash,
                 idEstado: estadoActivo.idEstado,
+                idRol: rol.idRol,
 
                 perfil: {
                     create: {
@@ -67,6 +84,14 @@ export class UsuariosService {
                     select: {
                         idEstado: true,
                         nombre: true,
+                    },
+                },
+
+                rol: {
+                    select: {
+                        idRol: true,
+                        nombre: true,
+                        activo: true,
                     },
                 },
 
@@ -130,15 +155,11 @@ export class UsuariosService {
                     },
                 },
 
-                roles: {
+                rol: {
                     select: {
-                        rol: {
-                            select: {
-                                idRol: true,
-                                nombre: true,
-                                activo: true,
-                            },
-                        },
+                        idRol: true,
+                        nombre: true,
+                        activo: true,
                     },
                 },
 
@@ -199,15 +220,11 @@ export class UsuariosService {
                     },
                 },
 
-                roles: {
+                rol: {
                     select: {
-                        rol: {
-                            select: {
-                                idRol: true,
-                                nombre: true,
-                                activo: true,
-                            },
-                        },
+                        idRol: true,
+                        nombre: true,
+                        activo: true,
                     },
                 },
 
@@ -348,14 +365,12 @@ export class UsuariosService {
     }
 
     private exigirPermisosDeActualizacion(actor: UsuarioAutenticado, dto: ActualizarUsuarioDto) {
-        if (actor.roles.includes('SUPERADMIN')) return;
-
-        const requeridos: string[] = [];
+        const requeridos: PermisoSistema[] = [];
         if (dto.correo !== undefined || dto.perfil !== undefined) {
-            requeridos.push('USUARIOS_EDITAR');
+            requeridos.push(PermisoSistema.USUARIOS_EDITAR);
         }
-        if (dto.estado === 'ACTIVO') requeridos.push('USUARIOS_ACTIVAR');
-        if (dto.estado === 'INACTIVO') requeridos.push('USUARIOS_ELIMINAR');
+        if (dto.estado === 'ACTIVO') requeridos.push(PermisoSistema.USUARIOS_ACTIVAR);
+        if (dto.estado === 'INACTIVO') requeridos.push(PermisoSistema.USUARIOS_DESACTIVAR);
 
         if (requeridos.some((permiso) => !actor.permisos.includes(permiso))) {
             throw new ForbiddenException('Permiso requerido para actualizar el usuario');
@@ -366,8 +381,12 @@ export class UsuariosService {
         if (actor.idUsuario === id) {
             throw new ForbiddenException('No puedes modificar tu cuenta desde esta ruta');
         }
-        const superadmin = await this.prisma.usuarioRol.findFirst({
-            where: { idUsuario: id, rol: { nombre: 'SUPERADMIN', activo: true } },
+        const superadmin = await this.prisma.usuario.findFirst({
+            where: {
+                idUsuario: id,
+                rol: { nombre: RolSistema.SUPERADMIN, activo: true },
+            },
+            select: { idUsuario: true },
         });
         if (superadmin) {
             throw new ForbiddenException('La cuenta SUPERADMIN está protegida');

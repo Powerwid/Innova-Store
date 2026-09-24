@@ -1,5 +1,6 @@
 import { hash } from 'bcryptjs';
 import { prisma } from '../cliente-prisma.js';
+import { RolSistema } from '../../../src/common/enums/rol-sistema.enum.js';
 
 export async function seedSuperadmin() {
   const correo = process.env.SUPERADMIN_CORREO;
@@ -23,7 +24,7 @@ export async function seedSuperadmin() {
 
   const rolSuperadmin = await prisma.rol.findUnique({
     where: {
-      nombre: 'SUPERADMIN',
+      nombre: RolSistema.SUPERADMIN,
     },
   });
 
@@ -37,18 +38,8 @@ export async function seedSuperadmin() {
     },
   });
 
-  if (usuario) {
-    const yaEsSuperadmin = await prisma.usuarioRol.findUnique({
-      where: {
-        idUsuario_idRol: {
-          idUsuario: usuario.idUsuario,
-          idRol: rolSuperadmin.idRol,
-        },
-      },
-    });
-    if (!yaEsSuperadmin) {
-      throw new Error('El correo configurado ya pertenece a otra cuenta');
-    }
+  if (usuario && usuario.idRol !== rolSuperadmin.idRol) {
+    throw new Error('El correo configurado ya pertenece a otra cuenta');
   }
 
   if (!usuario) {
@@ -59,23 +50,10 @@ export async function seedSuperadmin() {
         correo,
         contrasena: contrasenaHash,
         idEstado: estadoActivo.idEstado,
+        idRol: rolSuperadmin.idRol,
       },
     });
   }
-
-  await prisma.usuarioRol.upsert({
-    where: {
-      idUsuario_idRol: {
-        idUsuario: usuario.idUsuario,
-        idRol: rolSuperadmin.idRol,
-      },
-    },
-    update: {},
-    create: {
-      idUsuario: usuario.idUsuario,
-      idRol: rolSuperadmin.idRol,
-    },
-  });
 
   console.log('Superadministrador creado');
 }

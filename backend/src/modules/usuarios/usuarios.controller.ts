@@ -9,6 +9,7 @@ import { RequierePermiso } from '../../common/decorators/requiere-permiso.decora
 import { Autenticado } from '../../common/decorators/autenticado.decorator.js';
 import { UsuarioActual } from '../../common/decorators/usuario-actual.decorator.js';
 import type { UsuarioAutenticado } from '../../common/types/usuario-autenticado.js';
+import { PermisoSistema } from '../../common/enums/permiso-sistema.enum.js';
 
 @Controller('usuarios')
 export class UsuariosController {
@@ -17,7 +18,7 @@ export class UsuariosController {
     ) { }
 
     @Post()
-    @RequierePermiso('USUARIOS_CREAR')
+    @RequierePermiso(PermisoSistema.USUARIOS_CREAR)
     crear(
         @Body(new ZodValidationPipe(CrearUsuarioSchema))
         dto: CrearUsuarioDto,
@@ -26,13 +27,13 @@ export class UsuariosController {
     }
 
     @Get()
-    @RequierePermiso('USUARIOS_VER')
+    @RequierePermiso(PermisoSistema.USUARIOS_VER)
     listar() {
         return this.usuariosService.listar();
     }
 
     @Get(':id')
-    @RequierePermiso('USUARIOS_VER')
+    @RequierePermiso(PermisoSistema.USUARIOS_VER)
     obtenerPorId(
         @Param('id', ParseIntPipe) id: number,
     ) {

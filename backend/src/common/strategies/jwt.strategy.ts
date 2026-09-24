@@ -42,29 +42,30 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
         idUsuario: true,
         correo: true,
         estado: { select: { nombre: true } },
-        roles: {
-          where: { rol: { activo: true } },
+        rol: {
           select: {
-            rol: {
-              select: {
-                nombre: true,
-                permisos: { select: { permiso: { select: { nombre: true } } } },
-              },
-            },
+            idRol: true,
+            nombre: true,
+            activo: true,
+            permisos: { select: { permiso: { select: { nombre: true } } } },
           },
         },
+        sucursales: { select: { idSucursal: true } },
       },
     });
     if (!usuario) throw new UnauthorizedException('Usuario no encontrado');
+    if (!usuario.rol.activo) throw new UnauthorizedException('El rol del usuario está inactivo');
 
     return {
       idUsuario: usuario.idUsuario,
       correo: usuario.correo,
       estado: usuario.estado.nombre,
-      roles: usuario.roles.map(({ rol }) => rol.nombre),
-      permisos: [...new Set(usuario.roles.flatMap(({ rol }) =>
-        rol.permisos.map(({ permiso }) => permiso.nombre),
-      ))],
+      rol: {
+        idRol: usuario.rol.idRol,
+        nombre: usuario.rol.nombre,
+      },
+      permisos: usuario.rol.permisos.map(({ permiso }) => permiso.nombre),
+      sucursales: usuario.sucursales.map(({ idSucursal }) => idSucursal),
     };
   }
 }

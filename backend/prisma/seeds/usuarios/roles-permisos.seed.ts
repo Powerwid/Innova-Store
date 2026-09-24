@@ -1,15 +1,10 @@
 import { prisma } from '../cliente-prisma.js';
+import { RolSistema } from '../../../src/common/enums/rol-sistema.enum.js';
 
 export async function seedRolesPermisos() {
   const superadmin = await prisma.rol.findUnique({
     where: {
-      nombre: 'SUPERADMIN',
-    },
-  });
-
-  const admin = await prisma.rol.findUnique({
-    where: {
-      nombre: 'ADMIN',
+      nombre: RolSistema.SUPERADMIN,
     },
   });
 
@@ -17,63 +12,21 @@ export async function seedRolesPermisos() {
     throw new Error('No existe el rol SUPERADMIN');
   }
 
-  if (!admin) {
-    throw new Error('No existe el rol ADMIN');
-  }
-
-  // SUPERADMIN recibe todos los permisos
+  // SUPERADMIN recibe automaticamente cada permiso definido internamente.
+  // Los demas roles son configurados exclusivamente desde la administracion.
   const permisos = await prisma.permiso.findMany();
 
-  for (const permiso of permisos) {
-    await prisma.rolPermiso.upsert({
-      where: {
-        idRol_idPermiso: {
+  await prisma.$transaction(async (tx) => {
+    await tx.rolPermiso.deleteMany({ where: { idRol: superadmin.idRol } });
+    if (permisos.length > 0) {
+      await tx.rolPermiso.createMany({
+        data: permisos.map(({ idPermiso }) => ({
           idRol: superadmin.idRol,
-          idPermiso: permiso.idPermiso,
-        },
-      },
-      update: {},
-      create: {
-        idRol: superadmin.idRol,
-        idPermiso: permiso.idPermiso,
-      },
-    });
-  }
-
-  // ADMIN solo recibe los permisos administrativos permitidos
-  const permisosAdmin = [
-    'USUARIOS_VER',
-    'USUARIOS_CREAR',
-    'USUARIOS_EDITAR',
-
-    'SUCURSALES_VER',
-    'SUCURSALES_CREAR',
-    'SUCURSALES_EDITAR',
-  ];
-
-  const permisosEncontrados = await prisma.permiso.findMany({
-    where: {
-      nombre: {
-        in: permisosAdmin,
-      },
-    },
+          idPermiso,
+        })),
+      });
+    }
   });
 
-  for (const permiso of permisosEncontrados) {
-    await prisma.rolPermiso.upsert({
-      where: {
-        idRol_idPermiso: {
-          idRol: admin.idRol,
-          idPermiso: permiso.idPermiso,
-        },
-      },
-      update: {},
-      create: {
-        idRol: admin.idRol,
-        idPermiso: permiso.idPermiso,
-      },
-    });
-  }
-
-  console.log('Permisos asignados a los roles');
+  console.log('Permisos internos sincronizados con SUPERADMIN');
 }

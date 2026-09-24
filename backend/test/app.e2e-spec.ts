@@ -8,13 +8,15 @@ import cookieParser from 'cookie-parser';
 import { AppModule } from '../src/app.module.js';
 import { PrismaService } from '../src/database/prisma/prisma.service.js';
 import { DecolectaClient } from '../src/modules/documentos/decolecta.client.js';
+import { PERMISOS_SISTEMA } from '../src/common/constants/permisos-sistema.js';
 
 describe('Autenticación y autorización (HTTP)', () => {
   let app: INestApplication;
   let adminAgent: ReturnType<typeof request.agent>;
   let superadminAgent: ReturnType<typeof request.agent>;
   let refreshCookie: string;
-  let adminPermisos = ['USUARIOS_VER', 'PERMISOS_ASIGNAR'];
+  let adminPermisos = ['USUARIOS_VER'];
+  const superadminPermisos = PERMISOS_SISTEMA.map(({ nombre }) => nombre);
   let estadoUsuarioTres = 'INACTIVO';
   const previousSecret = process.env.JWT_SECRET;
 
@@ -35,17 +37,20 @@ describe('Autenticación y autorización (HTTP)', () => {
             correo: esSuperadmin ? 'superadmin@ejemplo.com' : 'admin@ejemplo.com',
             contrasena: hash,
             estado: { nombre: id === 3 ? estadoUsuarioTres : 'ACTIVO' },
-            roles: [{ rol: {
+            idRol: esSuperadmin ? 1 : 2,
+            rol: {
+              idRol: esSuperadmin ? 1 : 2,
               nombre: esSuperadmin ? 'SUPERADMIN' : 'ADMIN',
-              permisos: (esSuperadmin ? [] : adminPermisos).map((nombre) => ({ permiso: { nombre } })),
-            } }],
+              activo: true,
+              permisos: (esSuperadmin ? superadminPermisos : adminPermisos)
+                .map((nombre) => ({ permiso: { nombre } })),
+            },
+            sucursales: [],
           };
         },
-        findMany: async () => [],
-      },
-      usuarioRol: {
         findFirst: async ({ where }: { where: { idUsuario: number } }) =>
           where.idUsuario === 2 ? { idUsuario: 2 } : null,
+        findMany: async () => [],
       },
       estado: {
         findUnique: async ({ where }: { where: { nombre: string } }) => ({
@@ -61,11 +66,19 @@ describe('Autenticación y autorización (HTTP)', () => {
       },
       $transaction: async (callback: (tx: {
         usuario: { update: (args: { data: { idEstado?: number } }) => Promise<void> };
+        rol: {
+          findUnique: () => Promise<null>;
+          delete: () => Promise<void>;
+        };
       }) => Promise<unknown>) => callback({
         usuario: {
           update: async ({ data }) => {
             estadoUsuarioTres = data.idEstado === 1 ? 'ACTIVO' : 'INACTIVO';
           },
+        },
+        rol: {
+          findUnique: async () => null,
+          delete: async () => undefined,
         },
       }),
       rol: { findMany: async () => [] },
@@ -120,7 +133,7 @@ describe('Autenticación y autorización (HTTP)', () => {
     await adminAgent
       .get('/api/usuarios')
       .expect(200);
-    adminPermisos = ['PERMISOS_ASIGNAR'];
+    adminPermisos = ['DASHBOARD_VER'];
     await adminAgent
       .get('/api/usuarios')
       .expect(403);

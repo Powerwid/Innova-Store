@@ -1,29 +1,10 @@
-import {
-  BadGatewayException,
-  BadRequestException,
-  ConflictException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
-import { z } from 'zod';
+import { BadGatewayException, BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma/prisma.service.js';
-import { DecolectaClient, type TipoConsultaDocumento } from './decolecta.client.js';
+import { DecolectaClient } from './decolecta.client.js';
+import type { TipoConsultaDocumento } from './decolecta.client.js';
+import { DniSchema } from './Schema/dni.schema.js';
+import { RucSchema } from './Schema/ruc.schema.js';
 
-const dniSchema = z.object({
-  first_name: z.string().trim().min(1),
-  first_last_name: z.string().trim().min(1),
-  second_last_name: z.string().trim().optional().default(''),
-  document_number: z.string().regex(/^\d{8}$/),
-});
-
-const rucSchema = z.object({
-  razon_social: z.string().trim().min(1),
-  numero_documento: z.string().regex(/^\d{11}$/),
-  direccion: z.string().nullish(),
-  ubigeo: z.string().nullish(),
-  estado: z.string().nullish(),
-  condicion: z.string().nullish(),
-});
 
 function capitalizar(value: string): string {
   return value
@@ -40,7 +21,7 @@ export class DocumentosService {
   constructor(
     private readonly decolecta: DecolectaClient,
     private readonly prisma: PrismaService,
-  ) {}
+  ) { }
 
   async consultar(tipoEntrada: string, numeroEntrada: string) {
     const tipo = tipoEntrada.trim().toUpperCase();
@@ -64,7 +45,7 @@ export class DocumentosService {
 
     const respuesta = await this.decolecta.consultar(tipo as TipoConsultaDocumento, numero);
     if (tipo === 'DNI') {
-      const documento = dniSchema.safeParse(respuesta);
+      const documento = DniSchema.safeParse(respuesta);
       if (!documento.success || documento.data.document_number !== numero) {
         throw new BadGatewayException('El proveedor devolvió datos de DNI inválidos');
       }
@@ -83,7 +64,7 @@ export class DocumentosService {
       };
     }
 
-    const documento = rucSchema.safeParse(respuesta);
+    const documento = RucSchema.safeParse(respuesta);
     if (!documento.success || documento.data.numero_documento !== numero) {
       throw new BadGatewayException('El proveedor devolvió datos de RUC inválidos');
     }

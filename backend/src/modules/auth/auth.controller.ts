@@ -1,7 +1,4 @@
-import {
-  Body, Controller, Get, HttpCode, Patch, Post, Req, Res,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, Patch, Post, Req, Res, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { CookieOptions, Request, Response } from 'express';
 import { Autenticado } from '../../common/decorators/autenticado.decorator.js';
@@ -14,19 +11,14 @@ import { LoginSchema } from './dto/login.dto.js';
 import type { LoginDto } from './dto/login.dto.js';
 import { CambiarContrasenaSchema } from './dto/cambiar-contrasena.dto.js';
 import type { CambiarContrasenaDto } from './dto/cambiar-contrasena.dto.js';
-import {
-  ACCESS_COOKIE_NAME,
-  ACCESS_TOKEN_MAX_AGE_MS,
-  REFRESH_COOKIE_NAME,
-  REFRESH_TOKEN_MAX_AGE_MS,
-} from './auth.constants.js';
+import { ACCESS_COOKIE_NAME, ACCESS_TOKEN_MAX_AGE_MS, REFRESH_COOKIE_NAME, REFRESH_TOKEN_MAX_AGE_MS } from './auth.constants.js';
 
 @Controller('auth')
 export class AuthController {
   constructor(
     private readonly auth: AuthService,
     private readonly config: ConfigService,
-  ) {}
+  ) { }
 
   private cookieOptions(path: string): CookieOptions {
     return {

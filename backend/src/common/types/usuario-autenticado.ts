@@ -2,6 +2,10 @@ export interface UsuarioAutenticado {
   idUsuario: number;
   correo: string;
   estado: string;
-  roles: string[];
+  rol: {
+    idRol: number;
+    nombre: string;
+  };
   permisos: string[];
+  sucursales: number[];
 }

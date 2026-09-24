@@ -11,13 +11,15 @@ import { ROLES_KEY } from '../decorators/requiere-rol.decorator.js';
 import { SOLO_SUPERADMIN_KEY } from '../decorators/solo-superadmin.decorator.js';
 import { AUTENTICADO_KEY } from '../decorators/autenticado.decorator.js';
 import type { UsuarioAutenticado } from '../types/usuario-autenticado.js';
+import { RolSistema } from '../enums/rol-sistema.enum.js';
 
 const usuario = (overrides: Partial<UsuarioAutenticado> = {}): UsuarioAutenticado => ({
   idUsuario: 1,
   correo: 'usuario@ejemplo.com',
   estado: 'ACTIVO',
-  roles: ['CAJERO'],
+  rol: { idRol: 3, nombre: 'CAJERO' },
   permisos: ['VENTAS_VER'],
+  sucursales: [],
   ...overrides,
 });
 
@@ -45,24 +47,36 @@ describe('guards de acceso', () => {
     const guard = new PermisosGuard(reflector({ [PERMISOS_KEY]: ['VENTAS_VER'] }));
     expect(guard.canActivate(contexto(usuario()))).toBe(true);
     expect(() => guard.canActivate(contexto(usuario({ permisos: [] })))).toThrow();
-    expect(guard.canActivate(contexto(usuario({ roles: ['SUPERADMIN'], permisos: [] })))).toBe(true);
+    expect(() => guard.canActivate(contexto(usuario({
+      rol: { idRol: 1, nombre: RolSistema.SUPERADMIN },
+      permisos: [],
+    })))).toThrow();
   });
 
   it('no permite administrar roles solo por tener un permiso', () => {
-    const guard = new SuperadminGuard(reflector({ [SOLO_SUPERADMIN_KEY]: true }));
-    expect(() => guard.canActivate(contexto(usuario({ permisos: ['PERMISOS_ASIGNAR'] })))).toThrow();
-    expect(guard.canActivate(contexto(usuario({ roles: ['SUPERADMIN'] })))).toBe(true);
+    const guard = new SuperadminGuard(reflector({
+      [SOLO_SUPERADMIN_KEY]: RolSistema.SUPERADMIN,
+    }));
+    expect(() => guard.canActivate(contexto(usuario({ permisos: ['USUARIOS_EDITAR'] })))).toThrow();
+    expect(guard.canActivate(contexto(usuario({
+      rol: { idRol: 1, nombre: RolSistema.SUPERADMIN },
+    })))).toBe(true);
   });
 
   it('consulta nombres de rol sin un enum fijo', () => {
     const guard = new RolesGuard(reflector({ [ROLES_KEY]: ['JEFE_TIENDA'] }));
-    expect(guard.canActivate(contexto(usuario({ roles: ['JEFE_TIENDA'] })))).toBe(true);
+    expect(guard.canActivate(contexto(usuario({
+      rol: { idRol: 4, nombre: 'JEFE_TIENDA' },
+    })))).toBe(true);
     expect(() => guard.canActivate(contexto(usuario()))).toThrow();
   });
 
   it('bloquea incluso al superadmin si su estado no está permitido', () => {
     const guard = new EstadoGuard(reflector({}));
-    expect(() => guard.canActivate(contexto(usuario({ estado: 'BLOQUEADO', roles: ['SUPERADMIN'] })))).toThrow();
+    expect(() => guard.canActivate(contexto(usuario({
+      estado: 'BLOQUEADO',
+      rol: { idRol: 1, nombre: RolSistema.SUPERADMIN },
+    })))).toThrow();
     expect(guard.canActivate(contexto(usuario()))).toBe(true);
   });
 
