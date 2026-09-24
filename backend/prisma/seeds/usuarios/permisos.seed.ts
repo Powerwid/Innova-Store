@@ -6,6 +6,8 @@ export async function seedPermisos() {
     'USUARIOS_CREAR',
     'USUARIOS_EDITAR',
     'USUARIOS_ELIMINAR',
+    'USUARIOS_ACTIVAR',
+    'DOCUMENTOS_CONSULTAR',
 
     'ROLES_VER',
     'ROLES_CREAR',

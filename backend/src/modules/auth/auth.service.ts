@@ -2,8 +2,15 @@ import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
 import { PrismaService } from '../../database/prisma/prisma.service.js';
+import { z } from 'zod';
 import type { LoginDto } from './dto/login.dto.js';
 import type { CambiarContrasenaDto } from './dto/cambiar-contrasena.dto.js';
+import { ACCESS_TOKEN_MAX_AGE_MS, REFRESH_TOKEN_MAX_AGE_MS } from './auth.constants.js';
+
+const refreshPayloadSchema = z.object({
+  sub: z.number().int().positive(),
+  tipo: z.literal('refresh'),
+});
 
 @Injectable()
 export class AuthService {
@@ -31,10 +38,41 @@ export class AuthService {
     }
 
     return {
-      accessToken: await this.jwt.signAsync({ sub: usuario.idUsuario }),
-      tokenType: 'Bearer',
+      accessToken: await this.jwt.signAsync(
+        { sub: usuario.idUsuario, tipo: 'access' },
+        { expiresIn: ACCESS_TOKEN_MAX_AGE_MS / 1000 },
+      ),
+      refreshToken: await this.jwt.signAsync(
+        { sub: usuario.idUsuario, tipo: 'refresh' },
+        { expiresIn: REFRESH_TOKEN_MAX_AGE_MS / 1000 },
+      ),
       usuario: { idUsuario: usuario.idUsuario, correo: usuario.correo },
     };
+  }
+
+  async refresh(token: string) {
+    let idUsuario: number;
+    try {
+      const payload = refreshPayloadSchema.parse(
+        await this.jwt.verifyAsync(token),
+      );
+      idUsuario = payload.sub;
+    } catch {
+      throw new UnauthorizedException('Token de renovación inválido o expirado');
+    }
+
+    const usuario = await this.prisma.usuario.findUnique({
+      where: { idUsuario },
+      select: { estado: { select: { nombre: true } } },
+    });
+    if (!usuario || usuario.estado.nombre !== 'ACTIVO') {
+      throw new UnauthorizedException('Usuario no disponible');
+    }
+
+    return this.jwt.signAsync(
+      { sub: idUsuario, tipo: 'access' },
+      { expiresIn: ACCESS_TOKEN_MAX_AGE_MS / 1000 },
+    );
   }
 
   async cambiarContrasena(idUsuario: number, dto: CambiarContrasenaDto) {

@@ -14,11 +14,12 @@ import { AuthService } from './auth.service.js';
       useFactory: (config: ConfigService) => {
         const secret = config.get<string>('JWT_SECRET');
         if (!secret) throw new Error('JWT_SECRET no está configurado');
-        return { secret, signOptions: { expiresIn: '1h' } };
+        return { secret };
       },
     }),
   ],
   controllers: [AuthController],
   providers: [AuthService, JwtStrategy],
+  exports: [AuthService, JwtModule],
 })
 export class AuthModule {}

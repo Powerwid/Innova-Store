@@ -7,6 +7,8 @@ export const ActualizarUsuarioSchema = z
             .max(255, 'El correo no puede superar los 255 caracteres')
             .optional(),
 
+        estado: z.enum(['ACTIVO', 'INACTIVO']).optional(),
+
 
         perfil: z
             .object({
@@ -61,6 +63,7 @@ export const ActualizarUsuarioSchema = z
     .refine(
         (data) =>
             data.correo !== undefined ||
+            data.estado !== undefined ||
             data.perfil !== undefined,
         {
             message: 'Debe enviar al menos un campo para actualizar',

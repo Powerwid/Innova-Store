@@ -4,6 +4,7 @@ import { PrismaModule } from './database/prisma/prisma.module.js';
 import { ConfigModule } from '@nestjs/config';
 import { UsuariosModule } from './modules/usuarios/usuarios.module.js';
 import { AuthModule } from './modules/auth/auth.module.js';
+import { DocumentosModule } from './modules/documentos/documentos.module.js';
 import { APP_GUARD } from '@nestjs/core';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard.js';
 import { EstadoGuard } from './common/guards/estado.guard.js';
@@ -22,6 +23,7 @@ export const { ObserveModule, ObserveInstrument } = createObserveModule();
     PrismaModule,
     AuthModule,
     UsuariosModule,
+    DocumentosModule,
 
     ObserveModule.forRoot({
       appKey: 'YOUR_APP_KEY',

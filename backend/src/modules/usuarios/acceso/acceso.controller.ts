@@ -4,23 +4,13 @@ import { UsuarioActual } from '../../../common/decorators/usuario-actual.decorat
 import { ZodValidationPipe } from '../../../common/pipes/zod-validation.pipe.js';
 import type { UsuarioAutenticado } from '../../../common/types/usuario-autenticado.js';
 import { AccesoService } from './acceso.service.js';
-import {
-  ActualizarRolSchema,
-  AsignarPermisoSchema,
-  AsignarRolSchema,
-  CrearRolSchema,
-} from './dto/acceso.dto.js';
-import type {
-  ActualizarRolDto,
-  AsignarPermisoDto,
-  AsignarRolDto,
-  CrearRolDto,
-} from './dto/acceso.dto.js';
+import { ActualizarRolSchema, AsignarPermisoSchema, AsignarRolSchema, CrearRolSchema } from './dto/acceso.dto.js';
+import type { ActualizarRolDto, AsignarPermisoDto, AsignarRolDto, CrearRolDto } from './dto/acceso.dto.js';
 
 @Controller()
 @SoloSuperadmin()
 export class AccesoController {
-  constructor(private readonly acceso: AccesoService) {}
+  constructor(private readonly acceso: AccesoService) { }
 
   @Get('roles')
   listarRoles(@UsuarioActual() actor: UsuarioAutenticado) {
@@ -42,14 +32,6 @@ export class AccesoController {
     @Body(new ZodValidationPipe(ActualizarRolSchema)) dto: ActualizarRolDto,
   ) {
     return this.acceso.actualizarRol(actor, idRol, dto);
-  }
-
-  @Delete('roles/:idRol')
-  desactivarRol(
-    @UsuarioActual() actor: UsuarioAutenticado,
-    @Param('idRol', ParseIntPipe) idRol: number,
-  ) {
-    return this.acceso.desactivarRol(actor, idRol);
   }
 
   @Post('usuarios/:idUsuario/roles')

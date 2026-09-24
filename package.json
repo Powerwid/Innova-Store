@@ -7,6 +7,10 @@
   "type": "commonjs",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "node scripts/dev.mjs",
+    "dev:back": "npm --prefix backend run start:dev",
+    "dev:front": "npm --prefix frontend run dev",
+    "build": "npm --prefix frontend run build && npm --prefix backend run build",
+    "start": "node scripts/start.mjs"
   }
 }

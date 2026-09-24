@@ -1,16 +1,11 @@
-import {
-  ConflictException,
-  ForbiddenException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../../database/prisma/prisma.service.js';
 import type { UsuarioAutenticado } from '../../../common/types/usuario-autenticado.js';
 import type { ActualizarRolDto, CrearRolDto } from './dto/acceso.dto.js';
 
 @Injectable()
 export class AccesoService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) { }
 
   private exigirSuperadmin(actor: UsuarioAutenticado) {
     if (actor.estado !== 'ACTIVO' || !actor.roles.includes('SUPERADMIN')) {
@@ -53,16 +48,6 @@ export class AccesoService {
       if (existente) throw new ConflictException('El rol ya existe');
     }
     return this.prisma.rol.update({ where: { idRol }, data: dto });
-  }
-
-  async desactivarRol(actor: UsuarioAutenticado, idRol: number) {
-    this.exigirSuperadmin(actor);
-    const rol = await this.prisma.rol.findUnique({ where: { idRol } });
-    if (!rol) throw new NotFoundException('Rol no encontrado');
-    if (rol.nombre === 'SUPERADMIN') {
-      throw new ForbiddenException('SUPERADMIN es un rol reservado');
-    }
-    return this.prisma.rol.update({ where: { idRol }, data: { activo: false } });
   }
 
   async asignarRol(actor: UsuarioAutenticado, idUsuario: number, idRol: number) {

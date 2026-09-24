@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post } from '@nestjs/common';
+import { Body, Controller, Get, Param, ParseIntPipe, Patch, Post } from '@nestjs/common';
 import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe.js';
 import { UsuariosService } from './usuarios.service.js';
 import { CrearUsuarioSchema } from './dto/crear-usuario.dto.js';
@@ -6,6 +6,7 @@ import type { CrearUsuarioDto } from './dto/crear-usuario.dto.js';
 import { ActualizarUsuarioSchema } from './dto/actualizar-usuario.dto.js';
 import type { ActualizarUsuarioDto } from './dto/actualizar-usuario.dto.js';
 import { RequierePermiso } from '../../common/decorators/requiere-permiso.decorator.js';
+import { Autenticado } from '../../common/decorators/autenticado.decorator.js';
 import { UsuarioActual } from '../../common/decorators/usuario-actual.decorator.js';
 import type { UsuarioAutenticado } from '../../common/types/usuario-autenticado.js';
 
@@ -39,7 +40,7 @@ export class UsuariosController {
     }
 
     @Patch(':id')
-    @RequierePermiso('USUARIOS_EDITAR')
+    @Autenticado()
     actualizar(
         @Param('id', ParseIntPipe) id: number,
         @UsuarioActual() actor: UsuarioAutenticado,
@@ -48,14 +49,5 @@ export class UsuariosController {
         dto: ActualizarUsuarioDto,
     ) {
         return this.usuariosService.actualizar(id, dto, actor);
-    }
-
-    @Delete(':id')
-    @RequierePermiso('USUARIOS_ELIMINAR')
-    eliminar(
-        @Param('id', ParseIntPipe) id: number,
-        @UsuarioActual() actor: UsuarioAutenticado,
-    ) {
-        return this.usuariosService.eliminar(id, actor);
     }
 }

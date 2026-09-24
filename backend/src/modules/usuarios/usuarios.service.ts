@@ -233,6 +233,7 @@ export class UsuariosService {
     }
 
     async actualizar(id: number, dto: ActualizarUsuarioDto, actor: UsuarioAutenticado) {
+        this.exigirPermisosDeActualizacion(actor, dto);
         const usuario = await this.prisma.usuario.findUnique({
             where: {
                 idUsuario: id,
@@ -240,6 +241,7 @@ export class UsuariosService {
 
             include: {
                 perfil: true,
+                estado: { select: { nombre: true } },
             },
         });
 
@@ -248,6 +250,16 @@ export class UsuariosService {
         }
 
         await this.validarObjetivo(actor, id);
+
+        if (dto.estado !== undefined && usuario.estado.nombre === 'BLOQUEADO') {
+            throw new ConflictException('Un usuario BLOQUEADO no se habilita ni deshabilita desde esta ruta');
+        }
+        const estado = dto.estado === undefined
+            ? undefined
+            : await this.prisma.estado.findUnique({ where: { nombre: dto.estado } });
+        if (dto.estado !== undefined && !estado) {
+            throw new NotFoundException(`No se encontró el estado ${dto.estado}`);
+        }
 
         if (dto.correo !== undefined && dto.correo !== usuario.correo) {
             const correoExistente = await this.prisma.usuario.findUnique({
@@ -272,10 +284,15 @@ export class UsuariosService {
         await this.prisma.$transaction(async (tx) => {
             const datosUsuario: {
                 correo?: string;
+                idEstado?: number;
             } = {};
 
             if (dto.correo !== undefined) {
                 datosUsuario.correo = dto.correo;
+            }
+
+            if (estado) {
+                datosUsuario.idEstado = estado.idEstado;
             }
 
             if (Object.keys(datosUsuario).length > 0) {
@@ -330,32 +347,19 @@ export class UsuariosService {
         };
     }
 
-    async eliminar(id: number, actor: UsuarioAutenticado) {
-        const usuario = await this.prisma.usuario.findUnique({
-            where: {
-                idUsuario: id,
-            },
-        });
+    private exigirPermisosDeActualizacion(actor: UsuarioAutenticado, dto: ActualizarUsuarioDto) {
+        if (actor.roles.includes('SUPERADMIN')) return;
 
-        if (!usuario) {
-            throw new NotFoundException('Usuario no encontrado');
+        const requeridos: string[] = [];
+        if (dto.correo !== undefined || dto.perfil !== undefined) {
+            requeridos.push('USUARIOS_EDITAR');
         }
+        if (dto.estado === 'ACTIVO') requeridos.push('USUARIOS_ACTIVAR');
+        if (dto.estado === 'INACTIVO') requeridos.push('USUARIOS_ELIMINAR');
 
-        await this.validarObjetivo(actor, id);
-
-        const inactivo = await this.prisma.estado.findUnique({ where: { nombre: 'INACTIVO' } });
-        if (!inactivo) throw new NotFoundException('No se encontró el estado INACTIVO');
-
-        await this.prisma.usuario.update({
-            where: {
-                idUsuario: id,
-            },
-            data: { idEstado: inactivo.idEstado },
-        });
-
-        return {
-            message: 'Usuario desactivado correctamente',
-        };
+        if (requeridos.some((permiso) => !actor.permisos.includes(permiso))) {
+            throw new ForbiddenException('Permiso requerido para actualizar el usuario');
+        }
     }
 
     private async validarObjetivo(actor: UsuarioAutenticado, id: number) {
