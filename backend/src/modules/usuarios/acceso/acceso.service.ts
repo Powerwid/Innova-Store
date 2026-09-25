@@ -2,7 +2,6 @@ import { ConflictException, ForbiddenException, Injectable, NotFoundException } 
 import { PERMISOS_SISTEMA_POR_NOMBRE } from '../../../common/constants/permisos-sistema.js';
 import { PermisoSistema } from '../../../common/enums/permiso-sistema.enum.js';
 import { RolSistema } from '../../../common/enums/rol-sistema.enum.js';
-import type { UsuarioAutenticado } from '../../../common/types/usuario-autenticado.js';
 import { PrismaService } from '../../../database/prisma/prisma.service.js';
 import type { ActualizarRolDto, CrearRolDto } from './dto/acceso.dto.js';
 
@@ -113,60 +112,6 @@ export class AccesoService {
         rol: { idRol: rol.idRol, nombre: rol.nombre },
       };
     }, { isolationLevel: 'Serializable' });
-  }
-
-  async cambiarRolUsuario(actor: UsuarioAutenticado, idUsuario: number, idRol: number) {
-    if (actor.idUsuario === idUsuario) {
-      throw new ForbiddenException('No puedes cambiar tu propio rol');
-    }
-
-    const [usuario, rol] = await Promise.all([
-      this.prisma.usuario.findUnique({
-        where: { idUsuario },
-        select: {
-          idUsuario: true,
-          idRol: true,
-          estado: { select: { nombre: true } },
-          rol: { select: { nombre: true } },
-        },
-      }),
-      this.prisma.rol.findUnique({ where: { idRol } }),
-    ]);
-
-    if (!usuario) throw new NotFoundException('Usuario no encontrado');
-    if (!rol || !rol.activo) throw new NotFoundException('Rol activo no encontrado');
-
-    if (usuario.idRol === idRol) {
-      return { message: 'El usuario ya tiene el rol solicitado' };
-    }
-
-    await this.prisma.$transaction(async (tx) => {
-      if (
-        usuario.rol.nombre === RolSistema.SUPERADMIN &&
-        usuario.estado.nombre === 'ACTIVO'
-      ) {
-        const superadministradoresActivos = await tx.usuario.count({
-          where: {
-            idRol: usuario.idRol,
-            estado: { nombre: 'ACTIVO' },
-          },
-        });
-
-        if (superadministradoresActivos <= 1) {
-          throw new ForbiddenException('No se puede quitar el último SUPERADMIN activo');
-        }
-      }
-
-      await tx.usuario.update({
-        where: { idUsuario },
-        data: { idRol },
-      });
-    }, { isolationLevel: 'Serializable' });
-
-    return {
-      message: 'Rol del usuario actualizado correctamente',
-      rol: { idRol: rol.idRol, nombre: rol.nombre },
-    };
   }
 
   async listarPermisos() {

@@ -18,6 +18,7 @@ describe('Autenticación y autorización (HTTP)', () => {
   let adminPermisos = ['USUARIOS_VER'];
   const superadminPermisos = PERMISOS_SISTEMA.map(({ nombre }) => nombre);
   let estadoUsuarioTres = 'INACTIVO';
+  let rolUsuarioTres = 2;
   const previousSecret = process.env.JWT_SECRET;
 
   beforeAll(async () => {
@@ -31,16 +32,18 @@ describe('Autenticación y autorización (HTTP)', () => {
             return null;
           }
           const esSuperadmin = id === 2;
+          const idRol = id === 3 ? rolUsuarioTres : esSuperadmin ? 1 : 2;
+          const nombreRol = idRol === 1 ? 'SUPERADMIN' : idRol === 3 ? 'CAJERO' : 'ADMIN';
           return {
             idUsuario: id,
             idEstado: id === 3 && estadoUsuarioTres === 'INACTIVO' ? 2 : 1,
             correo: esSuperadmin ? 'superadmin@ejemplo.com' : 'admin@ejemplo.com',
             contrasena: hash,
             estado: { nombre: id === 3 ? estadoUsuarioTres : 'ACTIVO' },
-            idRol: esSuperadmin ? 1 : 2,
+            idRol,
             rol: {
-              idRol: esSuperadmin ? 1 : 2,
-              nombre: esSuperadmin ? 'SUPERADMIN' : 'ADMIN',
+              idRol,
+              nombre: nombreRol,
               activo: true,
               permisos: (esSuperadmin ? superadminPermisos : adminPermisos)
                 .map((nombre) => ({ permiso: { nombre } })),
@@ -65,15 +68,22 @@ describe('Autenticación y autorización (HTTP)', () => {
         }),
       },
       $transaction: async (callback: (tx: {
-        usuario: { update: (args: { data: { idEstado?: number } }) => Promise<void> };
+        usuario: {
+          count: () => Promise<number>;
+          update: (args: { data: { idEstado?: number; idRol?: number } }) => Promise<void>;
+        };
         rol: {
           findUnique: () => Promise<null>;
           delete: () => Promise<void>;
         };
       }) => Promise<unknown>) => callback({
         usuario: {
+          count: async () => 1,
           update: async ({ data }) => {
-            estadoUsuarioTres = data.idEstado === 1 ? 'ACTIVO' : 'INACTIVO';
+            if (data.idEstado !== undefined) {
+              estadoUsuarioTres = data.idEstado === 1 ? 'ACTIVO' : 'INACTIVO';
+            }
+            if (data.idRol !== undefined) rolUsuarioTres = data.idRol;
           },
         },
         rol: {
@@ -81,7 +91,18 @@ describe('Autenticación y autorización (HTTP)', () => {
           delete: async () => undefined,
         },
       }),
-      rol: { findMany: async () => [] },
+      rol: {
+        findMany: async () => [],
+        findUnique: async ({ where }: { where: { idRol: number } }) => {
+          const nombres: Record<number, string> = {
+            1: 'SUPERADMIN',
+            2: 'ADMIN',
+            3: 'CAJERO',
+          };
+          const nombre = nombres[where.idRol];
+          return nombre ? { idRol: where.idRol, nombre, activo: true } : null;
+        },
+      },
     };
 
     const module = await Test.createTestingModule({ imports: [AppModule] })
@@ -217,6 +238,20 @@ describe('Autenticación y autorización (HTTP)', () => {
     expect(activado.body.usuario.estado.nombre).toBe('ACTIVO');
 
     adminPermisos = ['USUARIOS_EDITAR'];
+    await adminAgent
+      .patch('/api/usuarios/3')
+      .send({ idRol: 3 })
+      .expect(403);
+
+    const rolActualizado = await superadminAgent
+      .patch('/api/usuarios/3')
+      .send({ idRol: 3 })
+      .expect(200);
+    expect(rolActualizado.body.usuario.rol).toMatchObject({
+      idRol: 3,
+      nombre: 'CAJERO',
+    });
+
     await adminAgent
       .patch('/api/usuarios/3')
       .send({ estado: 'INACTIVO' })

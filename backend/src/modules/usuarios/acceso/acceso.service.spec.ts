@@ -1,19 +1,8 @@
 import { describe, expect, it, vi } from 'vitest';
 import { PermisoSistema } from '../../../common/enums/permiso-sistema.enum.js';
-import { RolSistema } from '../../../common/enums/rol-sistema.enum.js';
-import type { UsuarioAutenticado } from '../../../common/types/usuario-autenticado.js';
 import type { PrismaService } from '../../../database/prisma/prisma.service.js';
 import { AccesoService } from './acceso.service.js';
 import { SincronizarPermisosSchema } from './dto/acceso.dto.js';
-
-const actorSuperadmin = (): UsuarioAutenticado => ({
-  idUsuario: 1,
-  correo: 'actor@ejemplo.com',
-  estado: 'ACTIVO',
-  rol: { idRol: 1, nombre: RolSistema.SUPERADMIN },
-  permisos: [],
-  sucursales: [],
-});
 
 describe('AccesoService', () => {
   it('valida la lista de permisos con mensajes específicos', () => {
@@ -170,36 +159,4 @@ describe('AccesoService', () => {
     expect(eliminar).toHaveBeenCalledWith({ where: { idRol: 2 } });
   });
 
-  it('impide retirar el último SUPERADMIN activo', async () => {
-    const updateUser = vi.fn();
-    const prisma = {
-      rol: {
-        findUnique: vi.fn().mockResolvedValue({
-          idRol: 2,
-          nombre: 'ADMIN',
-          activo: true,
-        }),
-      },
-      usuario: {
-        findUnique: vi.fn().mockResolvedValue({
-          idUsuario: 2,
-          idRol: 1,
-          estado: { nombre: 'ACTIVO' },
-          rol: { nombre: RolSistema.SUPERADMIN },
-        }),
-      },
-      $transaction: vi.fn(async (callback: (tx: unknown) => Promise<void>) => callback({
-        usuario: {
-          count: vi.fn().mockResolvedValue(1),
-          update: updateUser,
-        },
-      })),
-    };
-    const service = new AccesoService(prisma as unknown as PrismaService);
-
-    await expect(
-      service.cambiarRolUsuario(actorSuperadmin(), 2, 2),
-    ).rejects.toThrow('No se puede quitar el último SUPERADMIN activo');
-    expect(updateUser).not.toHaveBeenCalled();
-  });
 });

@@ -259,6 +259,7 @@ export class UsuariosService {
             include: {
                 perfil: true,
                 estado: { select: { nombre: true } },
+                rol: { select: { nombre: true } },
             },
         });
 
@@ -266,7 +267,14 @@ export class UsuariosService {
             throw new NotFoundException('Usuario no encontrado');
         }
 
-        await this.validarObjetivo(actor, id);
+        this.validarObjetivo(actor, id, usuario.rol.nombre, dto);
+
+        const rol = dto.idRol === undefined
+            ? undefined
+            : await this.prisma.rol.findUnique({ where: { idRol: dto.idRol } });
+        if (dto.idRol !== undefined && (!rol || !rol.activo)) {
+            throw new NotFoundException('Rol activo no encontrado');
+        }
 
         if (dto.estado !== undefined && usuario.estado.nombre === 'BLOQUEADO') {
             throw new ConflictException('Un usuario BLOQUEADO no se habilita ni deshabilita desde esta ruta');
@@ -302,7 +310,28 @@ export class UsuariosService {
             const datosUsuario: {
                 correo?: string;
                 idEstado?: number;
+                idRol?: number;
             } = {};
+
+            if (
+                rol &&
+                usuario.idRol !== rol.idRol &&
+                usuario.rol.nombre === RolSistema.SUPERADMIN &&
+                usuario.estado.nombre === 'ACTIVO'
+            ) {
+                const superadministradoresActivos = await tx.usuario.count({
+                    where: {
+                        idRol: usuario.idRol,
+                        estado: { nombre: 'ACTIVO' },
+                    },
+                });
+
+                if (superadministradoresActivos <= 1) {
+                    throw new ForbiddenException(
+                        'No se puede quitar el último SUPERADMIN activo',
+                    );
+                }
+            }
 
             if (dto.correo !== undefined) {
                 datosUsuario.correo = dto.correo;
@@ -310,6 +339,10 @@ export class UsuariosService {
 
             if (estado) {
                 datosUsuario.idEstado = estado.idEstado;
+            }
+
+            if (rol && rol.idRol !== usuario.idRol) {
+                datosUsuario.idRol = rol.idRol;
             }
 
             if (Object.keys(datosUsuario).length > 0) {
@@ -356,7 +389,7 @@ export class UsuariosService {
                     });
                 }
             }
-        });
+        }, { isolationLevel: 'Serializable' });
 
         return {
             message: 'Usuario actualizado correctamente',
@@ -372,23 +405,31 @@ export class UsuariosService {
         if (dto.estado === 'ACTIVO') requeridos.push(PermisoSistema.USUARIOS_ACTIVAR);
         if (dto.estado === 'INACTIVO') requeridos.push(PermisoSistema.USUARIOS_DESACTIVAR);
 
+        if (dto.idRol !== undefined && actor.rol.nombre !== RolSistema.SUPERADMIN) {
+            throw new ForbiddenException('Solo SUPERADMIN puede cambiar el rol de un usuario');
+        }
+
         if (requeridos.some((permiso) => !actor.permisos.includes(permiso))) {
             throw new ForbiddenException('Permiso requerido para actualizar el usuario');
         }
     }
 
-    private async validarObjetivo(actor: UsuarioAutenticado, id: number) {
+    private validarObjetivo(
+        actor: UsuarioAutenticado,
+        id: number,
+        rolObjetivo: string,
+        dto: ActualizarUsuarioDto,
+    ) {
         if (actor.idUsuario === id) {
             throw new ForbiddenException('No puedes modificar tu cuenta desde esta ruta');
         }
-        const superadmin = await this.prisma.usuario.findFirst({
-            where: {
-                idUsuario: id,
-                rol: { nombre: RolSistema.SUPERADMIN, activo: true },
-            },
-            select: { idUsuario: true },
-        });
-        if (superadmin) {
+
+        const modificaDatosProtegidos =
+            dto.correo !== undefined ||
+            dto.estado !== undefined ||
+            dto.perfil !== undefined;
+
+        if (rolObjetivo === RolSistema.SUPERADMIN && modificaDatosProtegidos) {
             throw new ForbiddenException('La cuenta SUPERADMIN está protegida');
         }
     }

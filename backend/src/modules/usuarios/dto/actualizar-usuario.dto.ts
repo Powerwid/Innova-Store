@@ -9,6 +9,11 @@ export const ActualizarUsuarioSchema = z
 
         estado: z.enum(['ACTIVO', 'INACTIVO']).optional(),
 
+        idRol: z
+            .number({ error: 'El identificador del rol debe ser un número' })
+            .int('El identificador del rol debe ser un número entero')
+            .positive('El identificador del rol no es válido')
+            .optional(),
 
         perfil: z
             .object({
@@ -64,6 +69,7 @@ export const ActualizarUsuarioSchema = z
         (data) =>
             data.correo !== undefined ||
             data.estado !== undefined ||
+            data.idRol !== undefined ||
             data.perfil !== undefined,
         {
             message: 'Debe enviar al menos un campo para actualizar',

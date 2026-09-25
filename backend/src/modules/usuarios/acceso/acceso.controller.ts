@@ -1,11 +1,9 @@
 import { Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post, Put } from '@nestjs/common';
 import { SoloSuperadmin } from '../../../common/decorators/solo-superadmin.decorator.js';
-import { UsuarioActual } from '../../../common/decorators/usuario-actual.decorator.js';
 import { ZodValidationPipe } from '../../../common/pipes/zod-validation.pipe.js';
-import type { UsuarioAutenticado } from '../../../common/types/usuario-autenticado.js';
 import { AccesoService } from './acceso.service.js';
-import { ActualizarRolSchema, AsignarPermisoSchema, CambiarRolUsuarioSchema, CrearRolSchema, SincronizarPermisosSchema } from './dto/acceso.dto.js';
-import type { ActualizarRolDto, AsignarPermisoDto, CambiarRolUsuarioDto, CrearRolDto, SincronizarPermisosDto } from './dto/acceso.dto.js';
+import { ActualizarRolSchema, AsignarPermisoSchema, CrearRolSchema, SincronizarPermisosSchema } from './dto/acceso.dto.js';
+import type { ActualizarRolDto, AsignarPermisoDto, CrearRolDto, SincronizarPermisosDto } from './dto/acceso.dto.js';
 
 @Controller()
 @SoloSuperadmin()
@@ -22,6 +20,14 @@ export class AccesoController {
     @Body(new ZodValidationPipe(CrearRolSchema)) dto: CrearRolDto,
   ) {
     return this.acceso.crearRol(dto);
+  }
+
+  @Patch('roles/:idRol')
+  actualizarRol(
+    @Param('idRol', ParseIntPipe) idRol: number,
+    @Body(new ZodValidationPipe(ActualizarRolSchema)) dto: ActualizarRolDto,
+  ) {
+    return this.acceso.actualizarRol(idRol, dto);
   }
 
   @Delete('roles/:idRol')

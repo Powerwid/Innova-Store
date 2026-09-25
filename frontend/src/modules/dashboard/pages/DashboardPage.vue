@@ -94,7 +94,8 @@
             <v-card-title class="font-weight-bold">Información del sistema</v-card-title>
           </v-card-item>
           <v-card-text class="pa-5 pa-md-6">
-            <div class="info-row mb-3"><span class="text-medium-emphasis">Usuario</span><strong>{{ firstName }}</strong></div>
+            <div class="info-row mb-3"><span class="text-medium-emphasis">Usuario</span><strong>{{ firstName }}</strong>
+            </div>
             <div class="info-row mb-3">
               <span class="text-medium-emphasis">Perfil</span>
               <v-chip color="primary" size="small" variant="tonal">{{ roleName }}</v-chip>
@@ -138,13 +139,51 @@ const quickAccess = computed(() => [
 </script>
 
 <style scoped>
-.dashboard-shell { max-width: 1600px; margin: 0 auto; }
-.dashboard-hero { background: linear-gradient(125deg, rgba(var(--v-theme-primary), 0.12), rgba(var(--v-theme-surface), 1) 62%); }
-.dashboard-description { max-width: 760px; }
-.branch-context { min-width: min(100%, 330px); background: rgba(var(--v-theme-on-surface), 0.045); border: 1px solid rgba(var(--v-border-color), var(--v-border-opacity)); }
-.metric-card { min-height: 148px; }
-.metric-value { overflow: hidden; text-overflow: ellipsis; }
-.quick-card { transition: transform 0.2s ease, border-color 0.2s ease; }
-.quick-card:hover { transform: translateY(-3px); border-color: rgba(var(--v-theme-primary), 0.55); }
-.info-row { min-height: 44px; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 10px 12px; border-radius: 10px; background: rgba(var(--v-theme-on-surface), 0.045); }
+.dashboard-shell {
+  max-width: 1600px;
+  margin: 0 auto;
+}
+
+.dashboard-hero {
+  background: linear-gradient(125deg, rgba(var(--v-theme-primary), 0.12), rgba(var(--v-theme-surface), 1) 62%);
+}
+
+.dashboard-description {
+  max-width: 760px;
+}
+
+.branch-context {
+  min-width: min(100%, 330px);
+  background: rgba(var(--v-theme-on-surface), 0.045);
+  border: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
+}
+
+.metric-card {
+  min-height: 148px;
+}
+
+.metric-value {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.quick-card {
+  transition: transform 0.2s ease, border-color 0.2s ease;
+}
+
+.quick-card:hover {
+  transform: translateY(-3px);
+  border-color: rgba(var(--v-theme-primary), 0.55);
+}
+
+.info-row {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(var(--v-theme-on-surface), 0.045);
+}
 </style>

@@ -34,15 +34,6 @@ export const ActualizarRolSchema = z.object({
 });
 export type ActualizarRolDto = z.infer<typeof ActualizarRolSchema>;
 
-export const CambiarRolUsuarioSchema = z
-  .object({
-    idRol: z
-      .number({ error: 'El identificador del rol debe ser un número' })
-      .int('El identificador del rol debe ser un número entero')
-      .positive('El identificador del rol no es válido'),
-  });
-export type CambiarRolUsuarioDto = z.infer<typeof CambiarRolUsuarioSchema>;
-
 export const AsignarPermisoSchema = z
   .object({
     idPermiso: z
