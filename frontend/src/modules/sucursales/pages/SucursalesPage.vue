@@ -1,10 +1,545 @@
 <template>
-  <ModuleFoundation title="Sucursales"
-    description="Centraliza la información comercial de cada tienda y administra qué usuarios pueden operar en ella."
-    icon="mdi-store-marker-outline" action-label="Nueva sucursal" action-icon="mdi-store-plus-outline"
-    pending-message="El modelo de datos ya está definido; falta exponer y conectar los endpoints del módulo de sucursales." />
+  <div class="branches-page">
+    <v-card class="mb-6 rounded-xl shadow-sm" elevation="0" border
+      ><v-card-text class="filter-bar pa-4">
+        <v-text-field
+          v-model="search"
+          placeholder="Buscar sucursal..."
+          prepend-inner-icon="mdi-magnify"
+          variant="outlined"
+          density="comfortable"
+          rounded="lg"
+          hide-details
+          clearable
+          class="filter-search"
+        />
+        <v-select
+          v-model="statusFilter"
+          :items="['Todas', 'Activas', 'Inactivas']"
+          label="Estado"
+          variant="outlined"
+          density="comfortable"
+          rounded="lg"
+          hide-details
+          class="filter-status"
+        />
+        <v-btn
+          v-if="auth.puede(Permiso.SUCURSALES_CREAR)"
+          color="primary"
+          prepend-icon="mdi-plus"
+          rounded="lg"
+          @click="openCreate"
+          >Nueva Sucursal</v-btn
+        >
+        <span class="text-body-2 text-medium-emphasis"
+          ><v-icon size="19" class="me-1">mdi-store</v-icon
+          >{{ filtered.length }} sucursales</span
+        >
+      </v-card-text></v-card
+    >
+    <v-alert
+      v-if="error"
+      type="error"
+      variant="tonal"
+      class="mb-4 rounded-xl"
+      closable
+      @click:close="error = ''"
+      >{{ error }}</v-alert
+    >
+    <div v-if="loading" class="text-center py-16">
+      <v-progress-circular indeterminate color="primary" size="58" />
+    </div>
+    <template v-else>
+      <div class="branch-mobile-list">
+        <v-card
+          v-for="branch in filtered"
+          :key="branch.idSucursal"
+          class="rounded-xl mb-3"
+          elevation="0"
+          border
+          ><v-card-text class="pa-4"
+            ><div class="d-flex align-center ga-3 mb-3">
+              <v-avatar color="primary" variant="tonal"
+                ><v-icon>mdi-store</v-icon></v-avatar
+              >
+              <div class="flex-grow-1">
+                <strong>{{ branch.nombre }}</strong>
+                <div class="text-caption text-medium-emphasis">
+                  #{{ branch.idSucursal }}
+                </div>
+              </div>
+              <v-chip
+                :color="branch.activo ? 'success' : 'error'"
+                size="small"
+                variant="tonal"
+                >{{ branch.activo ? "Activa" : "Inactiva" }}</v-chip
+              >
+            </div>
+            <div class="text-body-2 text-medium-emphasis">
+              {{
+                branch.perfil?.razonSocial ||
+                branch.perfil?.nombreComercial ||
+                "Sin datos comerciales"
+              }}
+            </div>
+            <div class="text-caption text-medium-emphasis mt-2">
+              {{ branch._count.usuarios }} usuarios ·
+              {{ branch.perfil?.numeroDocumento || "Sin documento" }}
+            </div></v-card-text
+          ><v-divider /><v-card-actions
+            v-if="auth.puede(Permiso.SUCURSALES_EDITAR)"
+            class="justify-end"
+            ><v-btn
+              color="primary"
+              variant="text"
+              prepend-icon="mdi-pencil-outline"
+              @click="openEdit(branch)"
+              >Editar</v-btn
+            ></v-card-actions
+          ></v-card
+        >
+      </div>
+      <v-card
+        v-if="filtered.length"
+        class="branch-desktop-list rounded-xl shadow-sm overflow-hidden"
+        elevation="0"
+        border
+        ><v-table hover
+          ><thead>
+            <tr>
+              <th>ID</th>
+              <th>Sucursal</th>
+              <th>Razón social</th>
+              <th>Documento</th>
+              <th>Dirección</th>
+              <th>Usuarios</th>
+              <th>Estado</th>
+              <th class="text-center">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="branch in filtered" :key="branch.idSucursal">
+              <td>#{{ branch.idSucursal }}</td>
+              <td>
+                <div class="d-flex align-center ga-2">
+                  <v-avatar color="primary" variant="tonal" size="32"
+                    ><v-icon size="18">mdi-store</v-icon></v-avatar
+                  ><strong>{{ branch.nombre }}</strong>
+                </div>
+              </td>
+              <td>{{ branch.perfil?.razonSocial || "—" }}</td>
+              <td>{{ branch.perfil?.numeroDocumento || "—" }}</td>
+              <td>{{ branch.perfil?.direccionComercial || "—" }}</td>
+              <td>{{ branch._count.usuarios }}</td>
+              <td>
+                <v-chip
+                  :color="branch.activo ? 'success' : 'error'"
+                  size="small"
+                  variant="tonal"
+                  >{{ branch.activo ? "Activa" : "Inactiva" }}</v-chip
+                >
+              </td>
+              <td class="text-center">
+                <v-btn
+                  v-if="
+                    auth.puede(Permiso.SUCURSALES_EDITAR) ||
+                    auth.puede(Permiso.SUCURSALES_ACTIVAR) ||
+                    auth.puede(Permiso.SUCURSALES_DESACTIVAR)
+                  "
+                  icon="mdi-pencil-outline"
+                  size="small"
+                  variant="text"
+                  color="primary"
+                  aria-label="Editar sucursal"
+                  @click="openEdit(branch)"
+                />
+              </td>
+            </tr></tbody></v-table
+      ></v-card>
+      <v-card
+        v-if="!filtered.length"
+        class="rounded-xl text-center pa-10"
+        elevation="0"
+        border
+        ><v-icon size="52" color="medium-emphasis"
+          >mdi-store-off-outline</v-icon
+        >
+        <div class="mt-2 text-medium-emphasis">
+          No se encontraron sucursales
+        </div></v-card
+      >
+    </template>
+    <v-dialog v-model="dialog" max-width="850" persistent scrollable
+      ><v-card rounded="xl"
+        ><v-card-title class="pa-5 bg-primary text-white"
+          ><v-icon class="me-2">mdi-store-edit-outline</v-icon
+          >{{ editing ? "Editar Sucursal" : "Nueva Sucursal" }}</v-card-title
+        ><v-card-text class="pa-5"
+          ><v-alert
+            v-if="formError"
+            type="error"
+            variant="tonal"
+            density="compact"
+            class="mb-4"
+            >{{ formError }}</v-alert
+          >
+            <div class="branch-section-title"><v-icon size="18">mdi-information-outline</v-icon>Datos generales</div>
+            <v-row>
+              <v-col cols="12" sm="4"><label class="branch-field-label" for="branch-ruc">RUC *</label><v-text-field
+                id="branch-ruc"
+                v-model="form.numeroDocumento"
+                placeholder="12345678901"
+                variant="outlined"
+                density="comfortable"
+                maxlength="11"
+                @blur="lookupRuc()"
+              ><template #append-inner><v-btn
+                icon="mdi-magnify" variant="text" size="small" color="primary"
+                :loading="lookupLoading" aria-label="Consultar RUC" @click="lookupRuc(true)"
+              /></template></v-text-field></v-col>
+              <v-col cols="12" sm="4"><label class="branch-field-label" for="branch-name">Nombre de la sucursal *</label><v-text-field
+                id="branch-name" v-model="form.nombre" placeholder="Sucursal Principal"
+                variant="outlined" density="comfortable"
+              /></v-col>
+              <v-col cols="12" sm="4"><label class="branch-field-label" for="branch-razon">Razón social *</label><v-text-field
+                id="branch-razon" v-model="form.razonSocial" placeholder="Empresa S.A.C."
+                variant="outlined" density="comfortable"
+              /></v-col>
+            </v-row>
+
+            <div class="branch-section-title"><v-icon size="18">mdi-map-marker-outline</v-icon>Ubicación</div>
+            <v-row>
+              <v-col cols="12" sm="4"><label class="branch-field-label" for="branch-departamento">Departamento *</label><v-text-field id="branch-departamento" v-model="form.departamento" variant="outlined" density="comfortable" /></v-col>
+              <v-col cols="12" sm="4"><label class="branch-field-label" for="branch-provincia">Provincia *</label><v-text-field id="branch-provincia" v-model="form.provincia" variant="outlined" density="comfortable" /></v-col>
+              <v-col cols="12" sm="4"><label class="branch-field-label" for="branch-distrito">Distrito *</label><v-text-field id="branch-distrito" v-model="form.distrito" variant="outlined" density="comfortable" /></v-col>
+              <v-col cols="12" sm="6"><label class="branch-field-label" for="branch-comercial">Dirección comercial *</label><v-text-field id="branch-comercial" v-model="form.direccionComercial" variant="outlined" density="comfortable" /></v-col>
+              <v-col cols="12" sm="6"><label class="branch-field-label" for="branch-fiscal">Dirección fiscal *</label><v-text-field id="branch-fiscal" v-model="form.direccionFiscal" variant="outlined" density="comfortable" /></v-col>
+              <v-col cols="12" sm="6"><label class="branch-field-label" for="branch-web">Dirección web</label><v-text-field id="branch-web" v-model="form.direccionWeb" placeholder="https://ejemplo.com" variant="outlined" density="comfortable" /></v-col>
+              <v-col cols="12" sm="6"><label class="branch-field-label" for="branch-igv">IGV (%)</label><v-text-field id="branch-igv" v-model="form.igv" type="number" min="0" max="100" step="0.01" variant="outlined" density="comfortable" /></v-col>
+            </v-row>
+
+            <div class="branch-section-title"><v-icon size="18">mdi-phone-outline</v-icon>Contacto</div>
+            <v-row>
+              <v-col cols="12" sm="6"><label class="branch-field-label" for="branch-telefono">Teléfono *</label><v-text-field id="branch-telefono" v-model="form.telefono" variant="outlined" density="comfortable" /></v-col>
+              <v-col cols="12" sm="6"><label class="branch-field-label" for="branch-correo">Correo electrónico *</label><v-text-field id="branch-correo" v-model="form.correo" type="email" variant="outlined" density="comfortable" /></v-col>
+            <v-col
+              v-if="
+                editing &&
+                (auth.puede(Permiso.SUCURSALES_ACTIVAR) ||
+                  auth.puede(Permiso.SUCURSALES_DESACTIVAR))
+              "
+              cols="12"
+              ><v-switch
+                v-model="form.activo"
+                :label="form.activo ? 'Sucursal activa' : 'Sucursal inactiva'"
+                color="primary"
+                hide-details
+            /></v-col> </v-row></v-card-text
+        ><v-card-actions class="pa-4 justify-end"
+          ><v-btn variant="text" @click="dialog = false">Cancelar</v-btn
+          ><v-btn color="primary" :loading="saving" @click="save"
+            >Guardar</v-btn
+          ></v-card-actions
+        ></v-card
+      ></v-dialog
+    >
+    <v-snackbar v-model="noticeVisible" color="success">{{
+      notice
+    }}</v-snackbar>
+  </div>
 </template>
 
 <script setup lang="ts">
-import ModuleFoundation from '@/shared/components/feedback/ModuleFoundation.vue'
+import { computed, onMounted, reactive, ref } from "vue";
+import { documentosApi, sucursalesApi } from "@/core/api/administracion.api";
+import { getApiErrorMessage } from "@/core/api/api-error";
+import { Permiso } from "@/core/constants/permisos";
+import type {
+  Sucursal,
+  TipoDocumento,
+} from "@/core/types/administracion.types";
+import { useAuthStore } from "@/modules/auth/auth.store";
+import { useSucursalStore } from "@/shared/stores/sucursal.store";
+
+const auth = useAuthStore(),
+  branchStore = useSucursalStore();
+const branches = ref<Sucursal[]>([]),
+  documentTypes = ref<TipoDocumento[]>([]);
+const loading = ref(true),
+  saving = ref(false),
+  lookupLoading = ref(false),
+  dialog = ref(false),
+  noticeVisible = ref(false);
+const editing = ref<Sucursal | null>(null),
+  search = ref(""),
+  statusFilter = ref("Todas"),
+  error = ref(""),
+  formError = ref(""),
+  notice = ref("");
+let lastRucLookup = "";
+const form = reactive({
+  nombre: "",
+  idTipoDocumento: null as number | null,
+  numeroDocumento: "",
+  razonSocial: "",
+  departamento: "",
+  provincia: "",
+  distrito: "",
+  direccionComercial: "",
+  direccionFiscal: "",
+  direccionWeb: "",
+  ubigeo: "",
+  igv: "18.00",
+  telefono: "",
+  correo: "",
+  activo: true,
+});
+const filtered = computed(() =>
+  branches.value.filter((branch) => {
+    const q = (search.value || "").trim().toLocaleLowerCase("es");
+    return (
+      (statusFilter.value === "Todas" ||
+        branch.activo === (statusFilter.value === "Activas")) &&
+      (!q ||
+        `${branch.nombre} ${branch.perfil?.razonSocial || ""} ${branch.perfil?.numeroDocumento || ""}`
+          .toLocaleLowerCase("es")
+          .includes(q))
+    );
+  }),
+);
+const rucTypeId = computed(() => documentTypes.value.find((type) => type.nombre === "RUC")?.idTipoDocumento ?? null);
+async function load() {
+  loading.value = true;
+  error.value = "";
+  try {
+    const [b, d] = await Promise.all([
+      sucursalesApi.listar(),
+      documentosApi.tipos(),
+    ]);
+    branches.value = b.data;
+    documentTypes.value = d.data;
+    branchStore.actualizarNombres(
+      b.data.map((item) => ({
+        idSucursal: item.idSucursal,
+        nombre: item.nombre,
+      })),
+    );
+  } catch (e) {
+    error.value = getApiErrorMessage(e, "No se pudieron cargar las sucursales");
+  } finally {
+    loading.value = false;
+  }
+}
+function resetForm() {
+  Object.assign(form, {
+    nombre: "",
+    idTipoDocumento: rucTypeId.value,
+    numeroDocumento: "",
+    razonSocial: "",
+    departamento: "",
+    provincia: "",
+    distrito: "",
+    direccionComercial: "",
+    direccionFiscal: "",
+    direccionWeb: "",
+    ubigeo: "",
+    igv: "18.00",
+    telefono: "",
+    correo: "",
+    activo: true,
+  });
+  formError.value = "";
+  lastRucLookup = "";
+}
+function openCreate() {
+  editing.value = null;
+  resetForm();
+  dialog.value = true;
+}
+async function openEdit(branch: Sucursal) {
+  formError.value = "";
+  try {
+    const { data } = await sucursalesApi.obtener(branch.idSucursal);
+    editing.value = data;
+    Object.assign(form, {
+      nombre: data.nombre,
+      idTipoDocumento: data.perfil?.idTipoDocumento ?? rucTypeId.value,
+      numeroDocumento: data.perfil?.numeroDocumento ?? "",
+      razonSocial: data.perfil?.razonSocial ?? "",
+      departamento: data.perfil?.departamento ?? "",
+      provincia: data.perfil?.provincia ?? "",
+      distrito: data.perfil?.distrito ?? "",
+      direccionComercial: data.perfil?.direccionComercial ?? "",
+      direccionFiscal: data.perfil?.direccionFiscal ?? "",
+      direccionWeb: data.perfil?.direccionWeb ?? "",
+      ubigeo: data.perfil?.ubigeo ?? "",
+      igv: String(data.perfil?.igv ?? "18.00"),
+      telefono: data.perfil?.telefono ?? "",
+      correo: data.perfil?.correo ?? "",
+      activo: data.activo,
+    });
+    lastRucLookup = data.perfil?.numeroDocumento ?? "";
+    dialog.value = true;
+  } catch (e) {
+    error.value = getApiErrorMessage(e);
+  }
+}
+function nullable(value: string) {
+  return value.trim() || null;
+}
+async function save() {
+  formError.value = "";
+  if (form.nombre.trim().length < 2) {
+    formError.value = "Escribe un nombre de al menos 2 caracteres";
+    return;
+  }
+  if (!/^\d{11}$/.test(form.numeroDocumento) || !rucTypeId.value) {
+    formError.value = "Ingresa un RUC de 11 dígitos";
+    return;
+  }
+  const required = [form.razonSocial, form.departamento, form.provincia, form.distrito,
+    form.direccionComercial, form.direccionFiscal, form.telefono, form.correo];
+  if (required.some((value) => !value.trim())) {
+    formError.value = "Completa los datos generales, de ubicación y contacto obligatorios";
+    return;
+  }
+  if (!/^\S+@\S+\.\S+$/.test(form.correo.trim())) {
+    formError.value = "Ingresa un correo electrónico válido";
+    return;
+  }
+  if (form.direccionWeb.trim() && !/^https?:\/\/\S+$/i.test(form.direccionWeb.trim())) {
+    formError.value = "La dirección web debe comenzar con http:// o https://";
+    return;
+  }
+  if (form.ubigeo && !/^\d{6}$/.test(form.ubigeo)) {
+    formError.value = "El ubigeo debe tener 6 dígitos";
+    return;
+  }
+  const igv = Number(form.igv);
+  if (!form.igv.trim() || !Number.isFinite(igv) || igv < 0 || igv > 100 || !/^\d+(?:\.\d{1,2})?$/.test(form.igv.trim())) {
+    formError.value = "El IGV debe estar entre 0 y 100 con hasta dos decimales";
+    return;
+  }
+  saving.value = true;
+  try {
+    const perfil = {
+      idTipoDocumento: rucTypeId.value,
+      numeroDocumento: form.numeroDocumento.trim(),
+      razonSocial: form.razonSocial.trim(),
+      departamento: form.departamento.trim(),
+      provincia: form.provincia.trim(),
+      distrito: form.distrito.trim(),
+      direccionComercial: form.direccionComercial.trim(),
+      direccionFiscal: form.direccionFiscal.trim(),
+      direccionWeb: nullable(form.direccionWeb),
+      ubigeo: nullable(form.ubigeo),
+      igv,
+      telefono: form.telefono.trim(),
+      correo: form.correo.trim(),
+    };
+    if (editing.value) {
+      const payload: Record<string, unknown> = {};
+      if (auth.puede(Permiso.SUCURSALES_EDITAR)) {
+        payload.nombre = form.nombre.trim();
+        payload.perfil = perfil;
+      }
+      if (form.activo !== editing.value.activo) payload.activo = form.activo;
+      if (!Object.keys(payload).length) {
+        formError.value = "No hay cambios para guardar";
+        return;
+      }
+      await sucursalesApi.actualizar(editing.value.idSucursal, payload);
+      notice.value = "Sucursal actualizada";
+    } else {
+      await sucursalesApi.crear({ nombre: form.nombre.trim(), perfil });
+      notice.value = "Sucursal creada";
+    }
+    dialog.value = false;
+    noticeVisible.value = true;
+    await load();
+  } catch (e) {
+    formError.value = getApiErrorMessage(e);
+  } finally {
+    saving.value = false;
+  }
+}
+async function lookupRuc(force = false) {
+  const numero = form.numeroDocumento.trim();
+  if (!/^\d{11}$/.test(numero)) {
+    if (!force) return;
+    formError.value = "Ingresa un RUC de 11 dígitos";
+    return;
+  }
+  if (lookupLoading.value || (!force && lastRucLookup === numero)) return;
+  lookupLoading.value = true;
+  formError.value = "";
+  try {
+    const { data } = await documentosApi.consultar("RUC", numero);
+    if (data.tipoDocumento === "RUC" && form.numeroDocumento.trim() === numero) {
+      form.idTipoDocumento = data.idTipoDocumento;
+      form.razonSocial = data.razonSocial;
+      form.direccionFiscal = data.direccion ?? "";
+      if (!form.direccionComercial.trim()) form.direccionComercial = data.direccion ?? "";
+      form.ubigeo = data.ubigeo ?? "";
+      form.departamento = data.departamento ?? "";
+      form.provincia = data.provincia ?? "";
+      form.distrito = data.distrito ?? "";
+      lastRucLookup = numero;
+    }
+  } catch (e) {
+    formError.value = getApiErrorMessage(e, "No se pudo consultar el RUC");
+  } finally {
+    lookupLoading.value = false;
+  }
+}
+onMounted(load);
 </script>
+
+<style scoped>
+.branches-page {
+  max-width: 1600px;
+  margin: 0 auto;
+}
+.filter-bar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.filter-search {
+  flex: 1 1 260px;
+  max-width: 500px;
+}
+.filter-status {
+  flex: 0 1 170px;
+}
+.branch-section-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: rgb(var(--v-theme-primary));
+  font-weight: 700;
+  margin: 8px 0 12px;
+}
+.branch-field-label {
+  display: block;
+  margin-bottom: 6px;
+  color: rgb(var(--v-theme-on-surface));
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+.branch-mobile-list {
+  display: none;
+}
+@media (max-width: 800px) {
+  .branch-mobile-list {
+    display: block;
+  }
+  .branch-desktop-list {
+    display: none;
+  }
+  .filter-status {
+    flex: 1 1 140px;
+  }
+}
+</style>

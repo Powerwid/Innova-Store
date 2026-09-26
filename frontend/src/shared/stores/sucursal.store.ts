@@ -19,7 +19,7 @@ export const useSucursalStore = defineStore(
     function sincronizar(ids: number[]) {
       sucursales.value = ids.map((idSucursal) => ({
         idSucursal,
-        nombre: `Sucursal #${idSucursal}`,
+        nombre: sucursales.value.find((item) => item.idSucursal === idSucursal)?.nombre ?? `Sucursal #${idSucursal}`,
       }))
 
       const seleccionValida = sucursales.value.some(
@@ -28,13 +28,17 @@ export const useSucursalStore = defineStore(
       if (!seleccionValida) idSucursalActual.value = sucursales.value[0]?.idSucursal ?? null
     }
 
+    function actualizarNombres(items: SucursalAsignada[]) {
+      sucursales.value = sucursales.value.map((item) => items.find((candidate) => candidate.idSucursal === item.idSucursal) ?? item)
+    }
+
     function seleccionar(idSucursal: number) {
       if (sucursales.value.some((item) => item.idSucursal === idSucursal)) {
         idSucursalActual.value = idSucursal
       }
     }
 
-    return { idSucursalActual, sucursales, sucursalActual, sincronizar, seleccionar }
+    return { idSucursalActual, sucursales, sucursalActual, sincronizar, actualizarNombres, seleccionar }
   },
   { persist: { pick: ['idSucursalActual'] } },
 )

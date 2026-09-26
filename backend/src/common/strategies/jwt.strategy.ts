@@ -5,6 +5,7 @@ import { Strategy } from 'passport-jwt';
 import type { Request } from 'express';
 import { z } from 'zod';
 import { PrismaService } from '../../database/prisma/prisma.service.js';
+import { RolSistema } from '../enums/rol-sistema.enum.js';
 import type { UsuarioAutenticado } from '../types/usuario-autenticado.js';
 
 const payloadSchema = z.object({
@@ -46,7 +47,6 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
           select: {
             idRol: true,
             nombre: true,
-            activo: true,
             permisos: { select: { permiso: { select: { nombre: true } } } },
           },
         },
@@ -54,7 +54,12 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       },
     });
     if (!usuario) throw new UnauthorizedException('Usuario no encontrado');
-    if (!usuario.rol.activo) throw new UnauthorizedException('El rol del usuario está inactivo');
+    const sucursales = usuario.rol.nombre === RolSistema.SUPERADMIN
+      ? (await this.prisma.sucursal.findMany({
+          where: { activo: true },
+          select: { idSucursal: true },
+        })).map(({ idSucursal }) => idSucursal)
+      : usuario.sucursales.map(({ idSucursal }) => idSucursal);
 
     return {
       idUsuario: usuario.idUsuario,
@@ -65,7 +70,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
         nombre: usuario.rol.nombre,
       },
       permisos: usuario.rol.permisos.map(({ permiso }) => permiso.nombre),
-      sucursales: usuario.sucursales.map(({ idSucursal }) => idSucursal),
+      sucursales,
     };
   }
 }

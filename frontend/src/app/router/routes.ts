@@ -45,6 +45,12 @@ export const routes: RouteRecordRaw[] = [
         meta: { title: 'Sucursales', requiresAuth: true, permission: Permiso.SUCURSALES_VER },
       },
       {
+        path: 'administracion/medios-pago',
+        name: 'medios-pago',
+        component: () => import('@/modules/medios-pago/pages/MediosPagoPage.vue'),
+        meta: { title: 'Medios de pago', requiresAuth: true, permission: Permiso.MEDIOS_PAGO_VER },
+      },
+      {
         path: 'sin-acceso',
         name: 'sin-acceso',
         component: () => import('@/shared/components/feedback/AccessDeniedPage.vue'),

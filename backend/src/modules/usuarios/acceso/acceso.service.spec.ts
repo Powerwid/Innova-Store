@@ -25,11 +25,10 @@ describe('AccesoService', () => {
     const tx = {
       rol: {
         findUnique: vi.fn()
-          .mockResolvedValueOnce({ idRol: 2, nombre: 'ADMIN', activo: true })
+          .mockResolvedValueOnce({ idRol: 2, nombre: 'ADMIN' })
           .mockResolvedValueOnce({
             idRol: 2,
             nombre: 'ADMIN',
-            activo: true,
             permisos: [{
               permiso: {
                 idPermiso: 10,
@@ -64,11 +63,10 @@ describe('AccesoService', () => {
     const tx = {
       rol: {
         findUnique: vi.fn()
-          .mockResolvedValueOnce({ idRol: 2, nombre: 'CAJERO', activo: true })
+          .mockResolvedValueOnce({ idRol: 2, nombre: 'CAJERO' })
           .mockResolvedValueOnce({
             idRol: 2,
             nombre: 'CAJERO',
-            activo: true,
             permisos: [],
             _count: { usuarios: 0, permisos: 0 },
           }),
@@ -95,7 +93,7 @@ describe('AccesoService', () => {
     const deleteMany = vi.fn();
     const tx = {
       rol: {
-        findUnique: vi.fn().mockResolvedValue({ idRol: 2, nombre: 'ADMIN', activo: true }),
+        findUnique: vi.fn().mockResolvedValue({ idRol: 2, nombre: 'ADMIN' }),
       },
       permiso: {
         findMany: vi.fn().mockResolvedValue([{ idPermiso: 10 }]),

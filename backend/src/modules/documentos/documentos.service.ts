@@ -75,6 +75,9 @@ export class DocumentosService {
       razonSocial: capitalizar(documento.data.razon_social),
       direccion: documento.data.direccion ? capitalizar(documento.data.direccion) : null,
       ubigeo: documento.data.ubigeo || null,
+      departamento: documento.data.departamento ? capitalizar(documento.data.departamento) : null,
+      provincia: documento.data.provincia ? capitalizar(documento.data.provincia) : null,
+      distrito: documento.data.distrito ? capitalizar(documento.data.distrito) : null,
       estadoSunat: documento.data.estado || null,
       condicionSunat: documento.data.condicion || null,
     };

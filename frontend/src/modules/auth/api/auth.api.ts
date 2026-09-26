@@ -11,4 +11,7 @@ export const authApi = {
   logout() {
     return http.post<{ message: string }>('/auth/logout')
   },
+  cambiarContrasena(payload: { contrasenaActual: string; contrasenaNueva: string }) {
+    return http.patch<{ message: string }>('/auth/contrasena', payload)
+  },
 }

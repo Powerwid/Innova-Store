@@ -81,10 +81,28 @@ export const PERMISOS_SISTEMA: readonly DefinicionPermiso[] = [
     orden: 240,
   },
   {
-    nombre: PermisoSistema.DOCUMENTOS_CONSULTAR,
-    etiqueta: 'Consultar documentos',
-    modulo: 'Documentos',
+    nombre: PermisoSistema.MEDIOS_PAGO_VER,
+    etiqueta: 'Ver medios de pago',
+    modulo: 'Medios de pago',
     orden: 300,
+  },
+  {
+    nombre: PermisoSistema.MEDIOS_PAGO_CREAR,
+    etiqueta: 'Crear medios de pago',
+    modulo: 'Medios de pago',
+    orden: 310,
+  },
+  {
+    nombre: PermisoSistema.MEDIOS_PAGO_EDITAR,
+    etiqueta: 'Editar medios de pago',
+    modulo: 'Medios de pago',
+    orden: 320,
+  },
+  {
+    nombre: PermisoSistema.MEDIOS_PAGO_ELIMINAR,
+    etiqueta: 'Eliminar medios de pago',
+    modulo: 'Medios de pago',
+    orden: 330,
   },
 ];
 

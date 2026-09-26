@@ -14,35 +14,6 @@ export const CrearRolSchema = z.object({
 });
 export type CrearRolDto = z.infer<typeof CrearRolSchema>;
 
-export const ActualizarRolSchema = z.object({
-  nombre: z
-    .string({ error: 'El nombre del rol debe ser texto' })
-    .trim()
-    .toUpperCase()
-    .min(3, 'El nombre del rol debe tener al menos 3 caracteres')
-    .max(50, 'El nombre del rol no puede superar los 50 caracteres')
-    .regex(
-      /^[A-Z][A-Z0-9_]*$/,
-      'El nombre del rol debe iniciar con una letra y solo puede contener letras, números y guiones bajos',
-    )
-    .optional(),
-  activo: z
-    .boolean({ error: 'El estado activo debe ser verdadero o falso' })
-    .optional(),
-}).refine((data) => data.nombre !== undefined || data.activo !== undefined, {
-  message: 'Debe enviar al menos un campo para actualizar el rol',
-});
-export type ActualizarRolDto = z.infer<typeof ActualizarRolSchema>;
-
-export const AsignarPermisoSchema = z
-  .object({
-    idPermiso: z
-      .number({ error: 'El identificador del permiso debe ser un número' })
-      .int('El identificador del permiso debe ser un número entero')
-      .positive('El identificador del permiso no es válido'),
-  });
-export type AsignarPermisoDto = z.infer<typeof AsignarPermisoSchema>;
-
 export const SincronizarPermisosSchema = z.object({
   idsPermisos: z
     .array(

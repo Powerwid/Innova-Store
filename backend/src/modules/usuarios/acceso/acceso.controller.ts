@@ -1,9 +1,9 @@
-import { Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post, Put } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, ParseIntPipe, Post, Put } from '@nestjs/common';
 import { SoloSuperadmin } from '../../../common/decorators/solo-superadmin.decorator.js';
 import { ZodValidationPipe } from '../../../common/pipes/zod-validation.pipe.js';
 import { AccesoService } from './acceso.service.js';
-import { ActualizarRolSchema, AsignarPermisoSchema, CrearRolSchema, SincronizarPermisosSchema } from './dto/acceso.dto.js';
-import type { ActualizarRolDto, AsignarPermisoDto, CrearRolDto, SincronizarPermisosDto } from './dto/acceso.dto.js';
+import { CrearRolSchema, SincronizarPermisosSchema } from './dto/acceso.dto.js';
+import type { CrearRolDto, SincronizarPermisosDto } from './dto/acceso.dto.js';
 
 @Controller()
 @SoloSuperadmin()
@@ -20,14 +20,6 @@ export class AccesoController {
     @Body(new ZodValidationPipe(CrearRolSchema)) dto: CrearRolDto,
   ) {
     return this.acceso.crearRol(dto);
-  }
-
-  @Patch('roles/:idRol')
-  actualizarRol(
-    @Param('idRol', ParseIntPipe) idRol: number,
-    @Body(new ZodValidationPipe(ActualizarRolSchema)) dto: ActualizarRolDto,
-  ) {
-    return this.acceso.actualizarRol(idRol, dto);
   }
 
   @Delete('roles/:idRol')
@@ -48,19 +40,4 @@ export class AccesoController {
     return this.acceso.sincronizarPermisos(idRol, dto.idsPermisos);
   }
 
-  @Post('roles/:idRol/permisos')
-  asignarPermiso(
-    @Param('idRol', ParseIntPipe) idRol: number,
-    @Body(new ZodValidationPipe(AsignarPermisoSchema)) dto: AsignarPermisoDto,
-  ) {
-    return this.acceso.asignarPermiso(idRol, dto.idPermiso);
-  }
-
-  @Delete('roles/:idRol/permisos/:idPermiso')
-  quitarPermiso(
-    @Param('idRol', ParseIntPipe) idRol: number,
-    @Param('idPermiso', ParseIntPipe) idPermiso: number,
-  ) {
-    return this.acceso.quitarPermiso(idRol, idPermiso);
-  }
 }

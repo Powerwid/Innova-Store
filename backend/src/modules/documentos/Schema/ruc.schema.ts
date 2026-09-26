@@ -5,6 +5,9 @@ export const RucSchema = z.object({
     numero_documento: z.string().regex(/^\d{11}$/),
     direccion: z.string().nullish(),
     ubigeo: z.string().nullish(),
+    departamento: z.string().nullish(),
+    provincia: z.string().nullish(),
+    distrito: z.string().nullish(),
     estado: z.string().nullish(),
     condicion: z.string().nullish(),
 });

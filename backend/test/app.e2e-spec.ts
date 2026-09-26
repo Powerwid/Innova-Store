@@ -19,6 +19,13 @@ describe('Autenticación y autorización (HTTP)', () => {
   const superadminPermisos = PERMISOS_SISTEMA.map(({ nombre }) => nombre);
   let estadoUsuarioTres = 'INACTIVO';
   let rolUsuarioTres = 2;
+  let mediosPago = [
+    { idMedioPago: 1, nombre: 'Efectivo' },
+    { idMedioPago: 2, nombre: 'Tarjeta de crédito/débito' },
+    { idMedioPago: 3, nombre: 'Yape' },
+    { idMedioPago: 4, nombre: 'Plin' },
+    { idMedioPago: 5, nombre: 'Fraccionado' },
+  ];
   const previousSecret = process.env.JWT_SECRET;
 
   beforeAll(async () => {
@@ -44,7 +51,6 @@ describe('Autenticación y autorización (HTTP)', () => {
             rol: {
               idRol,
               nombre: nombreRol,
-              activo: true,
               permisos: (esSuperadmin ? superadminPermisos : adminPermisos)
                 .map((nombre) => ({ permiso: { nombre } })),
             },
@@ -62,10 +68,33 @@ describe('Autenticación y autorización (HTTP)', () => {
         }),
       },
       tipoDocumento: {
+        findMany: async () => [{ idTipoDocumento: 1, nombre: 'DNI' }, { idTipoDocumento: 2, nombre: 'RUC' }],
         findUnique: async ({ where }: { where: { nombre: string } }) => ({
           idTipoDocumento: where.nombre === 'DNI' ? 1 : 2,
           activo: true,
         }),
+      },
+      sucursal: {
+        findMany: async ({ where }: { where?: { activo?: boolean } } = {}) =>
+          where?.activo ? [{ idSucursal: 1 }, { idSucursal: 2 }] : [],
+      },
+      medioPago: {
+        findMany: async () => [...mediosPago],
+        findUnique: async ({ where }: { where: { idMedioPago?: number; nombre?: string } }) =>
+          mediosPago.find((medio) => where.idMedioPago === medio.idMedioPago || where.nombre === medio.nombre) ?? null,
+        create: async ({ data }: { data: { nombre: string } }) => {
+          const medioPago = { idMedioPago: Math.max(...mediosPago.map((medio) => medio.idMedioPago)) + 1, nombre: data.nombre };
+          mediosPago.push(medioPago);
+          return medioPago;
+        },
+        update: async ({ where, data }: { where: { idMedioPago: number }; data: { nombre: string } }) => {
+          const medioPago = mediosPago.find((medio) => medio.idMedioPago === where.idMedioPago)!;
+          medioPago.nombre = data.nombre;
+          return medioPago;
+        },
+        delete: async ({ where }: { where: { idMedioPago: number } }) => {
+          mediosPago = mediosPago.filter((medio) => medio.idMedioPago !== where.idMedioPago);
+        },
       },
       $transaction: async (callback: (tx: {
         usuario: {
@@ -100,7 +129,7 @@ describe('Autenticación y autorización (HTTP)', () => {
             3: 'CAJERO',
           };
           const nombre = nombres[where.idRol];
-          return nombre ? { idRol: where.idRol, nombre, activo: true } : null;
+          return nombre ? { idRol: where.idRol, nombre } : null;
         },
       },
     };
@@ -171,9 +200,57 @@ describe('Autenticación y autorización (HTTP)', () => {
     expect(respuesta.headers['set-cookie']).toBeUndefined();
   });
 
-  it('protege la consulta de documentos y devuelve campos listos para el formulario', async () => {
-    await adminAgent.get('/api/documentos/dni/12345678').expect(403);
-    const respuesta = await superadminAgent
+  it('da a SUPERADMIN todas las sucursales activas y conserva las asignaciones de ADMIN', async () => {
+    const superadmin = await superadminAgent.get('/api/auth/me').expect(200);
+    expect(superadmin.body.sucursales).toEqual([1, 2]);
+    const admin = await adminAgent.get('/api/auth/me').expect(200);
+    expect(admin.body.sucursales).toEqual([]);
+  });
+
+  it('gestiona el catálogo de medios de pago con permisos dinámicos', async () => {
+    await adminAgent.get('/api/medios-pago').expect(403);
+    const listado = await superadminAgent.get('/api/medios-pago').expect(200);
+    expect(listado.body.map((medio: { nombre: string }) => medio.nombre)).toEqual([
+      'Efectivo', 'Tarjeta de crédito/débito', 'Yape', 'Plin', 'Fraccionado',
+    ]);
+    await superadminAgent.post('/api/medios-pago').send({ nombre: '' }).expect(400);
+    await superadminAgent.post('/api/medios-pago').send({ nombre: 'Yape' }).expect(409);
+    const creado = await superadminAgent.post('/api/medios-pago')
+      .send({ nombre: 'Transferencia' }).expect(201);
+    const id = creado.body.medioPago.idMedioPago as number;
+    await superadminAgent.patch(`/api/medios-pago/${id}`)
+      .send({ nombre: 'Transferencia bancaria' }).expect(200);
+    adminPermisos = ['MEDIOS_PAGO_VER'];
+    await adminAgent.get('/api/medios-pago').expect(200);
+    await adminAgent.post('/api/medios-pago').send({ nombre: 'Otro' }).expect(403);
+    await superadminAgent.delete(`/api/medios-pago/${id}`).expect(200);
+    await superadminAgent.delete(`/api/medios-pago/${id}`).expect(404);
+    adminPermisos = ['DASHBOARD_VER'];
+  });
+
+  it('expone solo creación, eliminación y sincronización completa de permisos', async () => {
+    await superadminAgent.patch('/api/roles/2').send({ nombre: 'OTRO' }).expect(404);
+    await superadminAgent.post('/api/roles/2/permisos').send({ idPermiso: 1 }).expect(404);
+    await superadminAgent.delete('/api/roles/2/permisos/1').expect(404);
+    await superadminAgent.put('/api/roles/2/permisos').send({ idsPermisos: [1, 1] }).expect(400);
+  });
+
+  it('expone tipos de documento y protege sucursales y asignaciones', async () => {
+    await adminAgent.get('/api/documentos/tipos').expect(200);
+    await adminAgent.get('/api/sucursales').expect(403);
+    await superadminAgent.get('/api/sucursales').expect(200, []);
+    await superadminAgent.post('/api/sucursales').send({ nombre: 'A' }).expect(400);
+    await adminAgent.patch('/api/usuarios/3/sucursales').send({ idsSucursales: [] }).expect(403);
+    await superadminAgent.patch('/api/usuarios/3/sucursales').send({ idsSucursales: [1, 1] }).expect(400);
+    await adminAgent.get('/api/usuarios/roles-disponibles').expect(403);
+    adminPermisos = ['USUARIOS_CREAR'];
+    await adminAgent.get('/api/usuarios/roles-disponibles').expect(200, []);
+    await adminAgent.post('/api/usuarios').send({}).expect(400);
+  });
+
+  it('permite la consulta de documentos a usuarios autenticados sin permiso propio', async () => {
+    await request(app.getHttpServer()).get('/api/documentos/dni/12345678').expect(401);
+    const respuesta = await adminAgent
       .get('/api/documentos/dni/12345678')
       .expect(200);
     expect(respuesta.body).toMatchObject({

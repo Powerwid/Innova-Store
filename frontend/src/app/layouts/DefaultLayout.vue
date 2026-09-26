@@ -118,11 +118,12 @@
         <v-list-item
           prepend-icon="mdi-account-circle-outline"
           title="Mi perfil"
-          subtitle="Información de la cuenta"
+          subtitle="Cambiar contraseña"
           rounded="lg"
           color="primary"
           class="mb-3 profile-btn"
           style="background: rgba(var(--v-theme-primary), 0.06)"
+          @click="passwordDialog = true"
         >
           <template #append><v-icon size="20" color="primary">mdi-chevron-right</v-icon></template>
         </v-list-item>
@@ -296,10 +297,20 @@
       </router-view>
     </v-container>
   </v-main>
+  <v-dialog v-model="passwordDialog" max-width="480" persistent>
+    <v-card rounded="xl"><v-card-title class="pa-5 bg-primary text-white"><v-icon class="me-2">mdi-lock-reset</v-icon>Cambiar contraseña</v-card-title>
+      <v-card-text class="pa-5"><v-alert v-if="passwordError" type="error" variant="tonal" class="mb-4">{{ passwordError }}</v-alert>
+        <v-text-field v-model="passwordForm.actual" label="Contraseña actual" type="password" autocomplete="current-password" variant="outlined" />
+        <v-text-field v-model="passwordForm.nueva" label="Nueva contraseña" type="password" autocomplete="new-password" hint="Mínimo 8 caracteres, una mayúscula y un número" persistent-hint variant="outlined" />
+        <v-text-field v-model="passwordForm.confirmacion" label="Confirmar contraseña" type="password" autocomplete="new-password" variant="outlined" />
+      </v-card-text><v-card-actions class="pa-4 justify-end"><v-btn variant="text" @click="passwordDialog = false">Cancelar</v-btn><v-btn color="primary" :loading="passwordSaving" @click="changePassword">Guardar</v-btn></v-card-actions>
+    </v-card>
+  </v-dialog>
+  <v-snackbar v-model="passwordNotice" color="success">Contraseña actualizada</v-snackbar>
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useDisplay } from 'vuetify'
 import { themeOptions } from '@/app/theme/themes'
@@ -307,6 +318,9 @@ import { useAuthStore } from '@/modules/auth/auth.store'
 import { useSucursalStore } from '@/shared/stores/sucursal.store'
 import { useUiStore } from '@/shared/stores/ui.store'
 import { Permiso } from '@/core/constants/permisos'
+import { sucursalesApi } from '@/core/api/administracion.api'
+import { authApi } from '@/modules/auth/api/auth.api'
+import { getApiErrorMessage } from '@/core/api/api-error'
 
 interface MenuItem {
   key: string
@@ -328,6 +342,11 @@ const drawer = ref(!mobile.value)
 const rail = ref(false)
 const settingsMode = ref(false)
 const openedGroups = ref<string[]>([])
+const passwordDialog = ref(false)
+const passwordSaving = ref(false)
+const passwordError = ref('')
+const passwordNotice = ref(false)
+const passwordForm = reactive({ actual: '', nueva: '', confirmacion: '' })
 
 const userName = computed(() => authStore.usuario?.correo.split('@')[0] || 'Usuario')
 const currentBranchName = computed(() => sucursalStore.sucursalActual?.nombre || 'Sin sucursal')
@@ -341,6 +360,7 @@ const menuConfig: MenuItem[] = [
       { key: 'usuarios', title: 'Usuarios', icon: 'mdi-account-group-outline', to: { name: 'usuarios' }, permission: Permiso.USUARIOS_VER },
       { key: 'roles', title: 'Roles y permisos', icon: 'mdi-account-key-outline', to: { name: 'roles' }, superadminOnly: true },
       { key: 'sucursales', title: 'Sucursales', icon: 'mdi-store-outline', to: { name: 'sucursales' }, permission: Permiso.SUCURSALES_VER },
+      { key: 'medios-pago', title: 'Medios de pago', icon: 'mdi-credit-card-outline', to: { name: 'medios-pago' }, permission: Permiso.MEDIOS_PAGO_VER },
     ],
   },
 ]
@@ -392,6 +412,24 @@ async function handleLogout() {
   await authStore.logout()
   await router.replace({ name: 'login', query: { reason: 'logout' } })
 }
+
+async function changePassword() {
+  passwordError.value = ''
+  if (passwordForm.nueva !== passwordForm.confirmacion) { passwordError.value = 'La confirmación no coincide'; return }
+  passwordSaving.value = true
+  try {
+    await authApi.cambiarContrasena({ contrasenaActual: passwordForm.actual, contrasenaNueva: passwordForm.nueva })
+    passwordDialog.value = false
+    Object.assign(passwordForm, { actual: '', nueva: '', confirmacion: '' })
+    passwordNotice.value = true
+  } catch (error) { passwordError.value = getApiErrorMessage(error) }
+  finally { passwordSaving.value = false }
+}
+
+onMounted(async () => {
+  if (!authStore.puede(Permiso.SUCURSALES_VER)) return
+  try { const { data } = await sucursalesApi.listar(); sucursalStore.actualizarNombres(data.map(({ idSucursal, nombre }) => ({ idSucursal, nombre }))) } catch { /* El menú conserva los identificadores si falla el catálogo. */ }
+})
 
 watch(mobile, (value) => { drawer.value = !value })
 watch(() => route.name, syncOpenedGroupWithRoute, { immediate: true })

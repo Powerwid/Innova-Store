@@ -5,6 +5,8 @@ import { CrearUsuarioSchema } from './dto/crear-usuario.dto.js';
 import type { CrearUsuarioDto } from './dto/crear-usuario.dto.js';
 import { ActualizarUsuarioSchema } from './dto/actualizar-usuario.dto.js';
 import type { ActualizarUsuarioDto } from './dto/actualizar-usuario.dto.js';
+import { AsignarSucursalesSchema } from './dto/asignar-sucursales.dto.js';
+import type { AsignarSucursalesDto } from './dto/asignar-sucursales.dto.js';
 import { RequierePermiso } from '../../common/decorators/requiere-permiso.decorator.js';
 import { Autenticado } from '../../common/decorators/autenticado.decorator.js';
 import { UsuarioActual } from '../../common/decorators/usuario-actual.decorator.js';
@@ -32,6 +34,12 @@ export class UsuariosController {
         return this.usuariosService.listar();
     }
 
+    @Get('roles-disponibles')
+    @RequierePermiso(PermisoSistema.USUARIOS_CREAR)
+    rolesDisponibles() {
+        return this.usuariosService.rolesDisponibles();
+    }
+
     @Get(':id')
     @RequierePermiso(PermisoSistema.USUARIOS_VER)
     obtenerPorId(
@@ -50,5 +58,14 @@ export class UsuariosController {
         dto: ActualizarUsuarioDto,
     ) {
         return this.usuariosService.actualizar(id, dto, actor);
+    }
+
+    @Patch(':id/sucursales')
+    @RequierePermiso(PermisoSistema.USUARIOS_ASIGNAR_SUCURSALES)
+    asignarSucursales(
+        @Param('id', ParseIntPipe) id: number,
+        @Body(new ZodValidationPipe(AsignarSucursalesSchema)) dto: AsignarSucursalesDto,
+    ) {
+        return this.usuariosService.asignarSucursales(id, dto.idsSucursales);
     }
 }

@@ -15,7 +15,6 @@ export async function seedRoles() {
       update: {},
       create: {
         nombre,
-        activo: true,
       },
     });
   }

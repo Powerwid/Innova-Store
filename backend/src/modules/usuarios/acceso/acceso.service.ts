@@ -3,12 +3,11 @@ import { PERMISOS_SISTEMA_POR_NOMBRE } from '../../../common/constants/permisos-
 import { PermisoSistema } from '../../../common/enums/permiso-sistema.enum.js';
 import { RolSistema } from '../../../common/enums/rol-sistema.enum.js';
 import { PrismaService } from '../../../database/prisma/prisma.service.js';
-import type { ActualizarRolDto, CrearRolDto } from './dto/acceso.dto.js';
+import type { CrearRolDto } from './dto/acceso.dto.js';
 
 const rolDetalleSelect = {
   idRol: true,
   nombre: true,
-  activo: true,
   permisos: {
     select: {
       permiso: { select: { idPermiso: true, nombre: true } },
@@ -25,7 +24,6 @@ interface PermisoRegistro {
 interface RolRegistro {
   idRol: number;
   nombre: string;
-  activo: boolean;
   permisos: Array<{ permiso: PermisoRegistro }>;
   _count: { usuarios: number; permisos: number };
 }
@@ -57,30 +55,6 @@ export class AccesoService {
 
     return {
       message: 'Rol creado correctamente',
-      rol: this.presentarRol(rol),
-    };
-  }
-
-  async actualizarRol(idRol: number, dto: ActualizarRolDto) {
-    const rolActual = await this.prisma.rol.findUnique({ where: { idRol } });
-    if (!rolActual) throw new NotFoundException('Rol no encontrado');
-
-    this.validarRolReservado(rolActual.nombre);
-    if (dto.nombre !== undefined) this.validarNombreReservado(dto.nombre);
-
-    if (dto.nombre && dto.nombre !== rolActual.nombre) {
-      const existente = await this.prisma.rol.findUnique({ where: { nombre: dto.nombre } });
-      if (existente) throw new ConflictException('El rol ya existe');
-    }
-
-    const rol = await this.prisma.rol.update({
-      where: { idRol },
-      data: dto,
-      select: rolDetalleSelect,
-    });
-
-    return {
-      message: 'Rol actualizado correctamente',
       rol: this.presentarRol(rol),
     };
   }
@@ -128,10 +102,10 @@ export class AccesoService {
     return this.prisma.$transaction(async (tx) => {
       const rol = await tx.rol.findUnique({
         where: { idRol },
-        select: { idRol: true, nombre: true, activo: true },
+        select: { idRol: true, nombre: true },
       });
 
-      if (!rol || !rol.activo) throw new NotFoundException('Rol activo no encontrado');
+      if (!rol) throw new NotFoundException('Rol no encontrado');
       this.validarRolReservado(rol.nombre);
 
       const permisos = idsPermisos.length === 0
@@ -171,42 +145,6 @@ export class AccesoService {
     }, { isolationLevel: 'Serializable' });
   }
 
-  async asignarPermiso(idRol: number, idPermiso: number) {
-    const [rol, permiso] = await Promise.all([
-      this.prisma.rol.findUnique({ where: { idRol } }),
-      this.prisma.permiso.findUnique({ where: { idPermiso } }),
-    ]);
-
-    if (!rol || !rol.activo) throw new NotFoundException('Rol activo no encontrado');
-    if (!permiso) throw new NotFoundException('Permiso no encontrado');
-    this.validarRolReservado(rol.nombre);
-
-    await this.prisma.rolPermiso.upsert({
-      where: { idRol_idPermiso: { idRol, idPermiso } },
-      update: {},
-      create: { idRol, idPermiso },
-    });
-
-    return { message: 'Permiso asignado correctamente' };
-  }
-
-  async quitarPermiso(idRol: number, idPermiso: number) {
-    const rol = await this.prisma.rol.findUnique({ where: { idRol } });
-    if (!rol) throw new NotFoundException('Rol no encontrado');
-    this.validarRolReservado(rol.nombre);
-
-    const asignacion = await this.prisma.rolPermiso.findUnique({
-      where: { idRol_idPermiso: { idRol, idPermiso } },
-    });
-    if (!asignacion) throw new NotFoundException('Asignación no encontrada');
-
-    await this.prisma.rolPermiso.delete({
-      where: { idRol_idPermiso: { idRol, idPermiso } },
-    });
-
-    return { message: 'Permiso retirado correctamente' };
-  }
-
   private presentarRol(rol: RolRegistro) {
     const permisos = rol.permisos
       .map(({ permiso }) => this.presentarPermiso(permiso))
@@ -215,7 +153,6 @@ export class AccesoService {
     return {
       idRol: rol.idRol,
       nombre: rol.nombre,
-      activo: rol.activo,
       cantidadUsuarios: rol._count.usuarios,
       cantidadPermisos: rol._count.permisos,
       permisos,

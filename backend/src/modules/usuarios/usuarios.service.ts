@@ -32,8 +32,8 @@ export class UsuariosService {
             where: { idRol: dto.idRol },
         });
 
-        if (!rol || !rol.activo) {
-            throw new NotFoundException('Rol activo no encontrado');
+        if (!rol) {
+            throw new NotFoundException('Rol no encontrado');
         }
 
         if (rol.nombre === RolSistema.SUPERADMIN) {
@@ -91,7 +91,6 @@ export class UsuariosService {
                     select: {
                         idRol: true,
                         nombre: true,
-                        activo: true,
                     },
                 },
 
@@ -159,7 +158,6 @@ export class UsuariosService {
                     select: {
                         idRol: true,
                         nombre: true,
-                        activo: true,
                     },
                 },
 
@@ -224,7 +222,6 @@ export class UsuariosService {
                     select: {
                         idRol: true,
                         nombre: true,
-                        activo: true,
                     },
                 },
 
@@ -272,8 +269,8 @@ export class UsuariosService {
         const rol = dto.idRol === undefined
             ? undefined
             : await this.prisma.rol.findUnique({ where: { idRol: dto.idRol } });
-        if (dto.idRol !== undefined && (!rol || !rol.activo)) {
-            throw new NotFoundException('Rol activo no encontrado');
+        if (dto.idRol !== undefined && !rol) {
+            throw new NotFoundException('Rol no encontrado');
         }
 
         if (dto.estado !== undefined && usuario.estado.nombre === 'BLOQUEADO') {
@@ -412,6 +409,36 @@ export class UsuariosService {
         if (requeridos.some((permiso) => !actor.permisos.includes(permiso))) {
             throw new ForbiddenException('Permiso requerido para actualizar el usuario');
         }
+    }
+
+    rolesDisponibles() {
+        return this.prisma.rol.findMany({
+            where: { nombre: { not: RolSistema.SUPERADMIN } },
+            select: { idRol: true, nombre: true },
+            orderBy: { nombre: 'asc' },
+        });
+    }
+
+    async asignarSucursales(idUsuario: number, idsSucursales: number[]) {
+        await this.obtenerPorId(idUsuario);
+        const sucursales = idsSucursales.length
+            ? await this.prisma.sucursal.findMany({
+                where: { idSucursal: { in: idsSucursales }, activo: true },
+                select: { idSucursal: true },
+            })
+            : [];
+        if (sucursales.length !== idsSucursales.length) {
+            throw new NotFoundException('Una o más sucursales no existen o están inactivas');
+        }
+        await this.prisma.$transaction(async (tx) => {
+            await tx.usuarioSucursal.deleteMany({ where: { idUsuario } });
+            if (idsSucursales.length) {
+                await tx.usuarioSucursal.createMany({
+                    data: idsSucursales.map((idSucursal) => ({ idUsuario, idSucursal })),
+                });
+            }
+        }, { isolationLevel: 'Serializable' });
+        return { message: 'Sucursales del usuario actualizadas', usuario: await this.obtenerPorId(idUsuario) };
     }
 
     private validarObjetivo(

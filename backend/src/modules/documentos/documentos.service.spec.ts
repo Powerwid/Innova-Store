@@ -44,6 +44,9 @@ describe('consulta de documentos para formularios', () => {
       numero_documento: '20123456789',
       direccion: 'AV. JOSE GALVEZ 123',
       ubigeo: '150131',
+      departamento: 'LIMA',
+      provincia: 'LIMA',
+      distrito: 'SAN ISIDRO',
       estado: 'ACTIVO',
       condicion: 'HABIDO',
     });
@@ -55,6 +58,9 @@ describe('consulta de documentos para formularios', () => {
       razonSocial: 'Innova Store S.A.C.',
       direccion: 'Av. Jose Galvez 123',
       ubigeo: '150131',
+      departamento: 'Lima',
+      provincia: 'Lima',
+      distrito: 'San Isidro',
       estadoSunat: 'ACTIVO',
       condicionSunat: 'HABIDO',
     });

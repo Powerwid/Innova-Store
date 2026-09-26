@@ -78,7 +78,6 @@ model UsuarioPerfil {
 model Rol {
   idRol     Int      @id @default(autoincrement()) @map("id_rol")
   nombre    String   @unique @db.VarChar(255)
-  activo    Boolean  @default(true)
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
@@ -96,6 +95,14 @@ model Permiso {
   roles RolPermiso[]
 
   @@map("permisos")
+}
+
+// CATÁLOGO DE MEDIOS DE PAGO
+model MedioPago {
+  idMedioPago Int    @id @default(autoincrement()) @map("id_medio_pago")
+  nombre      String @unique @db.VarChar(45)
+
+  @@map("medios_pago")
 }
 
 // ROLES - PERMISOS
@@ -133,9 +140,16 @@ model SucursalPerfil {
   razonSocial     String?        @map("razon_social") @db.VarChar(255)
   nombreComercial String?        @map("nombre_comercial") @db.VarChar(255)
 
-  direccion String? @db.VarChar(255)
-  ubigeo    String? @db.VarChar(6)
-  telefono  String? @db.VarChar(20)
+  departamento       String?  @db.VarChar(100)
+  provincia          String?  @db.VarChar(100)
+  distrito           String?  @db.VarChar(100)
+  direccionComercial String?  @map("direccion_comercial") @db.VarChar(255)
+  direccionFiscal    String?  @map("direccion_fiscal") @db.VarChar(255)
+  direccionWeb       String?  @map("direccion_web") @db.VarChar(255)
+  ubigeo             String?  @db.VarChar(6)
+  igv                Decimal  @default(18.00) @db.Decimal(5, 2)
+  telefono           String?  @db.VarChar(20)
+  correo             String?  @db.VarChar(255)
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")

@@ -5,18 +5,22 @@ import { seedRoles } from './seeds/usuarios/roles.seed.js';
 import { seedPermisos } from './seeds/usuarios/permisos.seed.js';
 import { seedSuperadmin } from './seeds/usuarios/superadmin.seed.js';
 import { seedRolesPermisos } from './seeds/usuarios/roles-permisos.seed.js';
+import { seedAdminSucursal } from './seeds/usuarios/admin-sucursal.seed.js';
+import { seedMediosPago } from './seeds/base/medios-pago.seed.js';
 
 async function main() {
     console.log('\nIniciando seed de Innova-Store...\n');
 
     await seedEstados();
     await seedTiposDocumento();
+    await seedMediosPago();
 
     await seedRoles();
     await seedPermisos();
     await seedRolesPermisos();
 
     await seedSuperadmin();
+    await seedAdminSucursal();
 
     console.log('\nSeed finalizado correctamente.\n');
 }
