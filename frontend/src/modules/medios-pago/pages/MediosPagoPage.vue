@@ -48,7 +48,7 @@
             <td>{{ medio.idMedioPago }}</td>
             <td class="font-weight-medium">{{ medio.nombre }}</td>
             <td class="text-end">
-              <v-btn v-if="canEdit" icon="mdi-pencil" size="small" variant="text" color="warning"
+              <v-btn v-if="canEdit" icon="mdi-pencil" size="small" variant="text" color="primary"
                 :aria-label="`Editar ${medio.nombre}`" @click="openEdit(medio)" />
               <v-btn v-if="canDelete" icon="mdi-delete" size="small" variant="text" color="error"
                 :aria-label="`Eliminar ${medio.nombre}`" @click="confirmDelete(medio)" />
@@ -99,9 +99,10 @@ import type { MedioPago } from '@/core/types/administracion.types';
 import { useAuthStore } from '@/modules/auth/auth.store';
 
 const auth = useAuthStore();
-const canCreate = computed(() => auth.puede(Permiso.MEDIOS_PAGO_CREAR));
-const canEdit = computed(() => auth.puede(Permiso.MEDIOS_PAGO_EDITAR));
-const canDelete = computed(() => auth.puede(Permiso.MEDIOS_PAGO_ELIMINAR));
+const canManage = computed(() => auth.puede(Permiso.MEDIOS_PAGO_GESTIONAR));
+const canCreate = canManage;
+const canEdit = canManage;
+const canDelete = canManage;
 const mediosPago = ref<MedioPago[]>([]);
 const loading = ref(true);
 const saving = ref(false);

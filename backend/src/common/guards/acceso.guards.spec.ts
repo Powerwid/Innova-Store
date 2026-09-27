@@ -57,7 +57,7 @@ describe('guards de acceso', () => {
     const guard = new SuperadminGuard(reflector({
       [SOLO_SUPERADMIN_KEY]: RolSistema.SUPERADMIN,
     }));
-    expect(() => guard.canActivate(contexto(usuario({ permisos: ['USUARIOS_EDITAR'] })))).toThrow();
+    expect(() => guard.canActivate(contexto(usuario({ permisos: ['USUARIOS_GESTIONAR'] })))).toThrow();
     expect(guard.canActivate(contexto(usuario({
       rol: { idRol: 1, nombre: RolSistema.SUPERADMIN },
     })))).toBe(true);

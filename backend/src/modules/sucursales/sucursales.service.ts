@@ -1,17 +1,10 @@
-import {
-  ConflictException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma/prisma.service.js';
-import type {
-  ActualizarSucursalDto,
-  CrearSucursalDto,
-} from './dto/sucursal.dto.js';
+import type { ActualizarSucursalDto, CrearSucursalDto } from './dto/sucursal.dto.js';
 
 @Injectable()
 export class SucursalesService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) { }
 
   listar() {
     return this.prisma.sucursal.findMany({

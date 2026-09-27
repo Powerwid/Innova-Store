@@ -1,13 +1,7 @@
 <template>
-  <v-navigation-drawer
-    v-model="drawer"
-    :rail="rail && !settingsMode && !mobile"
-    :expand-on-hover="rail && !settingsMode && !mobile"
-    :permanent="!mobile"
-    :temporary="mobile"
-    elevation="2"
-    class="app-sidebar border-none"
-  >
+  <v-navigation-drawer v-model="drawer" :rail="rail && !settingsMode && !mobile"
+    :expand-on-hover="rail && !settingsMode && !mobile" :permanent="!mobile" :temporary="mobile" elevation="2"
+    class="app-sidebar border-none">
     <template v-if="!settingsMode">
       <v-list>
         <v-list-item :title="userName" :subtitle="authStore.usuario?.correo || 'Sesión activa'" class="pa-4 mb-1">
@@ -19,14 +13,8 @@
           <template #append>
             <v-tooltip v-if="!mobile" :text="rail ? 'Fijar menú abierto' : 'Modo compacto'" location="end">
               <template #activator="{ props }">
-                <v-btn
-                  v-bind="props"
-                  variant="text"
-                  :icon="rail ? 'mdi-pin-off-outline' : 'mdi-pin-outline'"
-                  size="small"
-                  color="medium-emphasis"
-                  @click.stop="rail = !rail"
-                />
+                <v-btn v-bind="props" variant="text" :icon="rail ? 'mdi-pin-off-outline' : 'mdi-pin-outline'"
+                  size="small" color="medium-emphasis" @click.stop="rail = !rail" />
               </template>
             </v-tooltip>
           </template>
@@ -36,58 +24,24 @@
       <v-divider class="mb-2" />
 
       <v-list v-model:opened="openedGroups" density="compact" nav slim class="menu-erp">
-        <v-list-item
-          prepend-icon="mdi-view-dashboard-outline"
-          title="Dashboard"
-          :to="{ name: 'dashboard' }"
-          exact
-          rounded="lg"
-          color="primary"
-          class="mb-1"
-          @click="onNavigate"
-        />
+        <v-list-item prepend-icon="mdi-view-dashboard-outline" title="Dashboard" :to="{ name: 'dashboard' }" exact
+          rounded="lg" color="primary" class="mb-1" @click="onNavigate" />
 
         <template v-for="item in visibleMenu" :key="item.key">
-          <v-list-item
-            v-if="!item.children"
-            :prepend-icon="item.icon"
-            :title="item.title"
-            :to="item.to"
-            rounded="lg"
-            color="primary"
-            class="mb-1"
-            @click="onNavigate"
-          />
+          <v-list-item v-if="!item.children" :prepend-icon="item.icon" :title="item.title" :to="item.to" rounded="lg"
+            color="primary" class="mb-1" @click="onNavigate" />
 
-          <v-list-group
-            v-else
-            :value="item.key"
-            class="menu-group"
-            :class="{ 'menu-group--open': openedGroups.includes(item.key) }"
-          >
+          <v-list-group v-else :value="item.key" class="menu-group"
+            :class="{ 'menu-group--open': openedGroups.includes(item.key) }">
             <template #activator="{ props, isOpen }">
-              <v-list-item
-                v-bind="props"
-                :prepend-icon="item.icon"
-                :title="item.title"
-                :active="isGroupActive(item) && !isOpen"
-                rounded="lg"
-                color="primary"
-                class="mb-1 menu-group__activator"
-              />
+              <v-list-item v-bind="props" :prepend-icon="item.icon" :title="item.title"
+                :active="isGroupActive(item) && !isOpen" rounded="lg" color="primary"
+                class="mb-1 menu-group__activator" />
             </template>
             <div class="menu-group__children">
-              <v-list-item
-                v-for="child in item.children"
-                :key="child.title"
-                :prepend-icon="child.icon"
-                :title="child.title"
-                :to="child.to"
-                rounded="lg"
-                color="primary"
-                density="compact"
-                @click="onNavigate"
-              />
+              <v-list-item v-for="child in item.children" :key="child.title" :prepend-icon="child.icon"
+                :title="child.title" :to="child.to" rounded="lg" color="primary" density="compact"
+                @click="onNavigate" />
             </div>
           </v-list-group>
         </template>
@@ -115,16 +69,9 @@
       <v-divider class="mb-3" />
 
       <v-list density="compact" nav slim class="pa-3">
-        <v-list-item
-          prepend-icon="mdi-account-circle-outline"
-          title="Mi perfil"
-          subtitle="Cambiar contraseña"
-          rounded="lg"
-          color="primary"
-          class="mb-3 profile-btn"
-          style="background: rgba(var(--v-theme-primary), 0.06)"
-          @click="passwordDialog = true"
-        >
+        <v-list-item prepend-icon="mdi-account-circle-outline" title="Mi perfil" subtitle="Cambiar contraseña"
+          rounded="lg" color="primary" class="mb-3 profile-btn" style="background: rgba(var(--v-theme-primary), 0.06)"
+          @click="passwordDialog = true">
           <template #append><v-icon size="20" color="primary">mdi-chevron-right</v-icon></template>
         </v-list-item>
 
@@ -137,24 +84,14 @@
           </div>
           <v-row dense class="ma-0">
             <v-col v-for="option in themeOptions" :key="option.value" cols="6" class="pa-1">
-              <v-card
-                variant="flat"
-                rounded="lg"
-                class="theme-card pa-2 cursor-pointer"
-                :class="{ 'theme-active': uiStore.themeName === option.value }"
-                role="button"
-                :aria-pressed="uiStore.themeName === option.value"
-                tabindex="0"
-                @click="uiStore.setTheme(option.value)"
-                @keydown.enter="uiStore.setTheme(option.value)"
-                @keydown.space.prevent="uiStore.setTheme(option.value)"
-              >
+              <v-card variant="flat" rounded="lg" class="theme-card pa-2 cursor-pointer"
+                :class="{ 'theme-active': uiStore.themeName === option.value }" role="button"
+                :aria-pressed="uiStore.themeName === option.value" tabindex="0" @click="uiStore.setTheme(option.value)"
+                @keydown.enter="uiStore.setTheme(option.value)" @keydown.space.prevent="uiStore.setTheme(option.value)">
                 <div class="d-flex align-center">
                   <v-avatar :color="option.primary" size="14" rounded="sm" class="me-2" />
-                  <span
-                    class="text-caption font-weight-medium theme-card__label"
-                    :class="{ 'text-primary': uiStore.themeName === option.value }"
-                  >
+                  <span class="text-caption font-weight-medium theme-card__label"
+                    :class="{ 'text-primary': uiStore.themeName === option.value }">
                     {{ option.label }}
                   </span>
                   <v-spacer />
@@ -174,24 +111,29 @@
           </div>
           <div class="user-info-card pa-3 rounded-lg" style="background: rgba(var(--v-theme-primary), 0.04)">
             <div class="d-flex align-center mb-2">
-              <v-avatar size="32" color="primary" variant="tonal" class="me-2"><v-icon size="16">mdi-store-outline</v-icon></v-avatar>
+              <v-avatar size="32" color="primary" variant="tonal" class="me-2"><v-icon
+                  size="16">mdi-store-outline</v-icon></v-avatar>
               <div class="min-w-0">
                 <div class="text-caption text-medium-emphasis">Sucursal</div>
                 <div class="text-body-2 font-weight-medium text-truncate">{{ currentBranchName }}</div>
               </div>
             </div>
             <div class="d-flex align-center mb-2">
-              <v-avatar size="32" color="primary" variant="tonal" class="me-2"><v-icon size="16">mdi-account</v-icon></v-avatar>
+              <v-avatar size="32" color="primary" variant="tonal" class="me-2"><v-icon
+                  size="16">mdi-account</v-icon></v-avatar>
               <div>
                 <div class="text-caption text-medium-emphasis">Usuario</div>
                 <div class="text-body-2 font-weight-medium">{{ userName }}</div>
               </div>
             </div>
             <div class="d-flex align-center">
-              <v-avatar size="32" color="primary" variant="tonal" class="me-2"><v-icon size="16">mdi-email</v-icon></v-avatar>
+              <v-avatar size="32" color="primary" variant="tonal" class="me-2"><v-icon
+                  size="16">mdi-email</v-icon></v-avatar>
               <div class="min-w-0">
                 <div class="text-caption text-medium-emphasis">Correo</div>
-                <div class="text-body-2 font-weight-medium text-truncate" style="max-width: 180px">{{ authStore.usuario?.correo }}</div>
+                <div class="text-body-2 font-weight-medium text-truncate" style="max-width: 180px">{{
+                  authStore.usuario?.correo
+                }}</div>
               </div>
             </div>
           </div>
@@ -228,29 +170,19 @@
     <div class="d-flex align-center ga-1 md:ga-2">
       <v-menu v-if="sucursalStore.sucursales.length" :close-on-content-click="true" location="bottom end" :offset="8">
         <template #activator="{ props }">
-          <v-btn
-            v-bind="props"
-            color="primary"
-            variant="tonal"
-            class="rounded-lg px-2 md:px-4"
-            :size="mobile ? 'small' : 'default'"
-            :disabled="sucursalStore.sucursales.length <= 1"
-          >
+          <v-btn v-bind="props" color="primary" variant="tonal" class="rounded-lg px-2 md:px-4"
+            :size="mobile ? 'small' : 'default'" :disabled="sucursalStore.sucursales.length <= 1">
             <v-icon size="20">mdi-store-outline</v-icon>
-            <span class="d-none d-md-inline font-weight-medium text-caption text-truncate ms-1" style="max-width: 120px">
+            <span class="d-none d-md-inline font-weight-medium text-caption text-truncate ms-1"
+              style="max-width: 120px">
               {{ currentBranchName }}
             </span>
           </v-btn>
         </template>
         <v-list class="py-2 rounded-lg" min-width="220">
-          <v-list-item
-            v-for="branch in sucursalStore.sucursales"
-            :key="branch.idSucursal"
-            :active="branch.idSucursal === sucursalStore.idSucursalActual"
-            rounded="lg"
-            class="mx-1"
-            @click="sucursalStore.seleccionar(branch.idSucursal)"
-          >
+          <v-list-item v-for="branch in sucursalStore.sucursales" :key="branch.idSucursal"
+            :active="branch.idSucursal === sucursalStore.idSucursalActual" rounded="lg" class="mx-1"
+            @click="sucursalStore.seleccionar(branch.idSucursal)">
             <template #prepend><v-icon size="18">mdi-store-outline</v-icon></template>
             <v-list-item-title class="text-body-2">{{ branch.nombre }}</v-list-item-title>
             <template v-if="branch.idSucursal === sucursalStore.idSucursalActual" #append>
@@ -262,29 +194,16 @@
 
       <v-tooltip text="Configuración" location="bottom">
         <template #activator="{ props }">
-          <v-btn
-            v-bind="props"
-            :color="settingsMode ? 'primary' : 'medium-emphasis'"
-            :variant="settingsMode ? 'tonal' : 'text'"
-            icon="mdi-account-cog-outline"
-            :size="mobile ? 'small' : 'default'"
-            class="rounded-lg"
-            @click="toggleSettings"
-          />
+          <v-btn v-bind="props" :color="settingsMode ? 'primary' : 'medium-emphasis'"
+            :variant="settingsMode ? 'tonal' : 'text'" icon="mdi-account-cog-outline"
+            :size="mobile ? 'small' : 'default'" class="rounded-lg" @click="toggleSettings" />
         </template>
       </v-tooltip>
 
       <v-tooltip text="Cerrar sesión" location="bottom">
         <template #activator="{ props }">
-          <v-btn
-            v-bind="props"
-            color="error"
-            variant="tonal"
-            icon="mdi-logout"
-            :size="mobile ? 'small' : 'default'"
-            class="rounded-lg"
-            @click="handleLogout"
-          />
+          <v-btn v-bind="props" color="error" variant="tonal" icon="mdi-logout" :size="mobile ? 'small' : 'default'"
+            class="rounded-lg" @click="handleLogout" />
         </template>
       </v-tooltip>
     </div>
@@ -293,17 +212,26 @@
   <v-main>
     <v-container fluid class="pa-4 pa-md-6">
       <router-view v-slot="{ Component }">
-        <v-fade-transition mode="out-in"><component :is="Component" /></v-fade-transition>
+        <v-fade-transition mode="out-in">
+          <component :is="Component" />
+        </v-fade-transition>
       </router-view>
     </v-container>
   </v-main>
   <v-dialog v-model="passwordDialog" max-width="480" persistent>
-    <v-card rounded="xl"><v-card-title class="pa-5 bg-primary text-white"><v-icon class="me-2">mdi-lock-reset</v-icon>Cambiar contraseña</v-card-title>
-      <v-card-text class="pa-5"><v-alert v-if="passwordError" type="error" variant="tonal" class="mb-4">{{ passwordError }}</v-alert>
-        <v-text-field v-model="passwordForm.actual" label="Contraseña actual" type="password" autocomplete="current-password" variant="outlined" />
-        <v-text-field v-model="passwordForm.nueva" label="Nueva contraseña" type="password" autocomplete="new-password" hint="Mínimo 8 caracteres, una mayúscula y un número" persistent-hint variant="outlined" />
-        <v-text-field v-model="passwordForm.confirmacion" label="Confirmar contraseña" type="password" autocomplete="new-password" variant="outlined" />
-      </v-card-text><v-card-actions class="pa-4 justify-end"><v-btn variant="text" @click="passwordDialog = false">Cancelar</v-btn><v-btn color="primary" :loading="passwordSaving" @click="changePassword">Guardar</v-btn></v-card-actions>
+    <v-card rounded="xl"><v-card-title class="pa-5 bg-primary text-white"><v-icon
+          class="me-2">mdi-lock-reset</v-icon>Cambiar contraseña</v-card-title>
+      <v-card-text class="pa-5"><v-alert v-if="passwordError" type="error" variant="tonal" class="mb-4">{{ passwordError
+      }}</v-alert>
+        <v-text-field v-model="passwordForm.actual" label="Contraseña actual" type="password"
+          autocomplete="current-password" variant="outlined" />
+        <v-text-field v-model="passwordForm.nueva" label="Nueva contraseña" type="password" autocomplete="new-password"
+          hint="Mínimo 8 caracteres, una mayúscula y un número" persistent-hint variant="outlined" />
+        <v-text-field v-model="passwordForm.confirmacion" label="Confirmar contraseña" type="password"
+          autocomplete="new-password" variant="outlined" />
+      </v-card-text><v-card-actions class="pa-4 justify-end"><v-btn variant="text"
+          @click="passwordDialog = false">Cancelar</v-btn><v-btn color="primary" :loading="passwordSaving"
+          @click="changePassword">Guardar</v-btn></v-card-actions>
     </v-card>
   </v-dialog>
   <v-snackbar v-model="passwordNotice" color="success">Contraseña actualizada</v-snackbar>
@@ -353,14 +281,57 @@ const currentBranchName = computed(() => sucursalStore.sucursalActual?.nombre ||
 
 const menuConfig: MenuItem[] = [
   {
+    key: 'logistica', title: 'Logística', icon: 'mdi-package-variant-closed',
+    children: [
+      { key: 'logistica-productos', title: 'Productos', icon: 'mdi-package-variant', to: { name: 'logistica-productos' }, permission: Permiso.LOGISTICA_VER },
+      { key: 'logistica-catalogos', title: 'Tipos y categorías', icon: 'mdi-shape-outline', to: { name: 'logistica-catalogos' }, permission: Permiso.LOGISTICA_VER },
+      { key: 'logistica-unidades-medida', title: 'Unidades de medida', icon: 'mdi-ruler-square', to: { name: 'logistica-unidades-medida' }, permission: Permiso.LOGISTICA_VER },
+      { key: 'logistica-almacenes', title: 'Almacenes', icon: 'mdi-warehouse', to: { name: 'logistica-almacenes' }, permission: Permiso.LOGISTICA_VER },
+      { key: 'logistica-inventario', title: 'Inventario', icon: 'mdi-clipboard-list-outline', to: { name: 'logistica-inventario' }, permission: Permiso.LOGISTICA_VER },
+      { key: 'logistica-kardex', title: 'Kardex', icon: 'mdi-history', to: { name: 'logistica-kardex' }, permission: Permiso.LOGISTICA_VER },
+      { key: 'logistica-configuracion', title: 'Configuración', icon: 'mdi-cog-outline', to: { name: 'logistica-configuracion' }, superadminOnly: true },
+    ],
+  },
+  {
     key: 'administracion',
     title: 'Administración',
     icon: 'mdi-shield-account-outline',
     children: [
-      { key: 'usuarios', title: 'Usuarios', icon: 'mdi-account-group-outline', to: { name: 'usuarios' }, permission: Permiso.USUARIOS_VER },
-      { key: 'roles', title: 'Roles y permisos', icon: 'mdi-account-key-outline', to: { name: 'roles' }, superadminOnly: true },
-      { key: 'sucursales', title: 'Sucursales', icon: 'mdi-store-outline', to: { name: 'sucursales' }, permission: Permiso.SUCURSALES_VER },
-      { key: 'medios-pago', title: 'Medios de pago', icon: 'mdi-credit-card-outline', to: { name: 'medios-pago' }, permission: Permiso.MEDIOS_PAGO_VER },
+      {
+        key: 'usuarios',
+        title: 'Usuarios',
+        icon: 'mdi-account-group-outline',
+        to: { name: 'usuarios' },
+        permission: Permiso.USUARIOS_VER
+      },
+      {
+        key: 'personas',
+        title: 'Clientes y proveedores',
+        icon: 'mdi-account-multiple-outline',
+        to: { name: 'personas' },
+        permission: Permiso.PERSONAS_VER,
+      },
+      {
+        key: 'sucursales',
+        title: 'Sucursales',
+        icon: 'mdi-store-outline',
+        to: { name: 'sucursales' },
+        permission: Permiso.SUCURSALES_VER
+      },
+      {
+        key: 'roles',
+        title: 'Roles y permisos',
+        icon: 'mdi-account-key-outline',
+        to: { name: 'roles' }, superadminOnly: true
+      },
+
+      {
+        key: 'medios-pago',
+        title: 'Medios de pago',
+        icon: 'mdi-credit-card-outline',
+        to: { name: 'medios-pago' },
+        permission: Permiso.MEDIOS_PAGO_VER
+      },
     ],
   },
 ]
@@ -441,37 +412,77 @@ watch(
 </script>
 
 <style scoped>
-.cursor-pointer { cursor: pointer; }
+.cursor-pointer {
+  cursor: pointer;
+}
+
 .theme-card {
   color: rgb(var(--v-theme-on-surface)) !important;
   background: rgba(var(--v-theme-on-surface), 0.055) !important;
   transition: all 0.3s ease;
   border: 2px solid transparent;
 }
+
 .theme-card:hover {
   transform: translateY(-2px);
   background: rgba(var(--v-theme-primary), 0.09) !important;
 }
-.theme-card:focus-visible { outline: 2px solid rgb(var(--v-theme-primary)); outline-offset: 2px; }
+
+.theme-card:focus-visible {
+  outline: 2px solid rgb(var(--v-theme-primary));
+  outline-offset: 2px;
+}
+
 .theme-active {
   border-color: rgb(var(--v-theme-primary));
   background: rgba(var(--v-theme-primary), 0.12) !important;
 }
-.theme-card__label { color: rgb(var(--v-theme-on-surface)); }
-.user-info-card, .profile-btn { transition: all 0.3s ease; }
-.profile-btn:hover { transform: translateX(4px); }
-.menu-erp :deep(.v-list-item--active) { font-weight: 600; }
+
+.theme-card__label {
+  color: rgb(var(--v-theme-on-surface));
+}
+
+.user-info-card,
+.profile-btn {
+  transition: all 0.3s ease;
+}
+
+.profile-btn:hover {
+  transform: translateX(4px);
+}
+
+.menu-erp :deep(.v-list-item--active) {
+  font-weight: 600;
+}
+
 .menu-group__children {
   position: relative;
   margin: 2px 0 4px 12px;
   padding-left: 6px;
   border-left: 2px solid rgba(var(--v-theme-primary), 0.18);
 }
-.menu-group__children :deep(.v-list-item) { padding-inline-start: 8px !important; }
-.menu-group__children :deep(.v-list-item-title) { font-size: 0.8125rem; opacity: 0.85; }
-.menu-group__children :deep(.v-icon) { font-size: 18px; }
-.menu-group__children:hover { border-left-color: rgba(var(--v-theme-primary), 0.35); }
-.menu-group__children :deep(.v-list-item--active) { position: relative; }
+
+.menu-group__children :deep(.v-list-item) {
+  padding-inline-start: 8px !important;
+}
+
+.menu-group__children :deep(.v-list-item-title) {
+  font-size: 0.8125rem;
+  opacity: 0.85;
+}
+
+.menu-group__children :deep(.v-icon) {
+  font-size: 18px;
+}
+
+.menu-group__children:hover {
+  border-left-color: rgba(var(--v-theme-primary), 0.35);
+}
+
+.menu-group__children :deep(.v-list-item--active) {
+  position: relative;
+}
+
 .menu-group__children :deep(.v-list-item--active)::before {
   content: '';
   position: absolute;
@@ -482,6 +493,12 @@ watch(
   border-radius: 3px;
   background: rgb(var(--v-theme-primary));
 }
-.menu-group--open .menu-group__activator { background: rgba(var(--v-theme-primary), 0.06); }
-.app-sidebar.v-navigation-drawer--rail :deep(.v-navigation-drawer__content) { scrollbar-width: none; }
+
+.menu-group--open .menu-group__activator {
+  background: rgba(var(--v-theme-primary), 0.06);
+}
+
+.app-sidebar.v-navigation-drawer--rail :deep(.v-navigation-drawer__content) {
+  scrollbar-width: none;
+}
 </style>

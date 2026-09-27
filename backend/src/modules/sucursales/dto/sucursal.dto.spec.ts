@@ -24,6 +24,28 @@ describe('datos de sucursal', () => {
     expect(CrearSucursalSchema.parse(sucursal).perfil.igv).toBe(18.99);
   });
 
+  it('completa la ubicación y el teléfono cuando llegan vacíos', () => {
+    const parsed = CrearSucursalSchema.parse({
+      ...sucursal,
+      perfil: {
+        ...sucursal.perfil,
+        departamento: '',
+        provincia: '   ',
+        distrito: null,
+        ubigeo: '',
+        telefono: null,
+      },
+    });
+
+    expect(parsed.perfil).toMatchObject({
+      departamento: 'Arequipa',
+      provincia: 'Arequipa',
+      distrito: 'Arequipa',
+      ubigeo: '040101',
+      telefono: '-',
+    });
+  });
+
   it('rechaza la creación sin RUC y contacto completos', () => {
     expect(CrearSucursalSchema.safeParse({ nombre: 'Sucursal Principal' }).success).toBe(false);
     expect(CrearSucursalSchema.safeParse({

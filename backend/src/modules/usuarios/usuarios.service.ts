@@ -395,18 +395,11 @@ export class UsuariosService {
     }
 
     private exigirPermisosDeActualizacion(actor: UsuarioAutenticado, dto: ActualizarUsuarioDto) {
-        const requeridos: PermisoSistema[] = [];
-        if (dto.correo !== undefined || dto.perfil !== undefined) {
-            requeridos.push(PermisoSistema.USUARIOS_EDITAR);
-        }
-        if (dto.estado === 'ACTIVO') requeridos.push(PermisoSistema.USUARIOS_ACTIVAR);
-        if (dto.estado === 'INACTIVO') requeridos.push(PermisoSistema.USUARIOS_DESACTIVAR);
-
         if (dto.idRol !== undefined && actor.rol.nombre !== RolSistema.SUPERADMIN) {
             throw new ForbiddenException('Solo SUPERADMIN puede cambiar el rol de un usuario');
         }
 
-        if (requeridos.some((permiso) => !actor.permisos.includes(permiso))) {
+        if (!actor.permisos.includes(PermisoSistema.USUARIOS_GESTIONAR)) {
             throw new ForbiddenException('Permiso requerido para actualizar el usuario');
         }
     }

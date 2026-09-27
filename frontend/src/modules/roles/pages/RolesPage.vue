@@ -1,31 +1,26 @@
 <template>
   <div class="roles-page">
-    <v-card class="mb-6 rounded-xl shadow-sm" elevation="0" border
-      ><v-card-text class="d-flex flex-wrap align-center ga-3 pa-4">
-        <v-text-field
-          v-model="searchRole"
-          placeholder="Buscar rol..."
-          prepend-inner-icon="mdi-magnify"
-          variant="outlined"
-          density="comfortable"
-          rounded="lg"
-          hide-details
-          clearable
-          class="role-search"
-        />
-        <v-btn
-          color="primary"
-          prepend-icon="mdi-plus"
-          rounded="lg"
-          @click="openCreate"
-          >Nuevo Rol</v-btn
-        >
-        <span class="text-body-2 text-medium-emphasis"
-          ><v-icon size="19" class="me-1">mdi-shield-account</v-icon
-          >{{ roles.length }} roles</span
-        >
-      </v-card-text></v-card
-    >
+    <v-card class="mb-6 rounded-xl shadow-sm" elevation="0" border>
+      <v-card-text class="pa-4">
+        <div class="roles-filter-bar">
+          <v-text-field
+            v-model="searchRole"
+            placeholder="Buscar rol..."
+            prepend-inner-icon="mdi-magnify"
+            variant="outlined"
+            density="comfortable"
+            rounded="lg"
+            hide-details
+            clearable
+            class="role-search"
+          />
+          <span class="roles-filter-count text-body-2 text-medium-emphasis">
+            <v-icon size="19" class="me-1">mdi-shield-account</v-icon>
+            {{ roles.length }} roles
+          </span>
+        </div>
+      </v-card-text>
+    </v-card>
     <v-alert
       v-if="error"
       type="error"
@@ -38,13 +33,34 @@
     <div v-if="loading" class="text-center py-16">
       <v-progress-circular indeterminate color="primary" size="58" />
     </div>
-    <v-row v-else>
+    <template v-else>
+      <v-alert
+        v-if="selectedRole && showInfoAlert"
+        color="info"
+        variant="tonal"
+        density="compact"
+        class="mb-4 rounded-xl"
+        closable
+        @click:close="showInfoAlert = false"
+      >
+        <div class="d-flex align-center ga-2">
+          <v-icon color="info" size="18">mdi-information-outline</v-icon>
+          <span class="text-body-2">
+            <strong>Importante:</strong> Marca <strong>“Ver”</strong> para mostrar el módulo en el menú. Los demás permisos solo funcionan adentro.
+          </span>
+        </div>
+      </v-alert>
+
+      <v-row class="roles-layout">
       <v-col cols="12" md="4" lg="3"
         ><v-card class="rounded-xl shadow-sm" elevation="0" border>
-          <v-list color="primary" class="pa-2"
-            ><v-list-subheader class="font-weight-bold text-primary"
-              >ROLES DEL SISTEMA</v-list-subheader
-            >
+          <v-list color="primary" class="pa-2">
+            <v-list-subheader class="font-weight-bold text-primary">
+              <div class="d-flex align-center ga-2">
+                <v-icon size="18" color="primary">mdi-shield-account</v-icon>
+                ROLES DEL SISTEMA
+              </div>
+            </v-list-subheader>
             <v-list-item
               v-for="role in filteredRoles"
               :key="role.idRol"
@@ -61,15 +77,27 @@
               <v-list-item-title class="font-weight-bold">{{
                 role.nombre
               }}</v-list-item-title
-              ><v-list-item-subtitle
-                >{{ role.cantidadPermisos }} permisos ·
-                {{ role.cantidadUsuarios }} usuarios</v-list-item-subtitle
-              >
+              ><v-list-item-subtitle>{{ role.cantidadPermisos }} permisos</v-list-item-subtitle>
             </v-list-item>
             <v-list-item
               v-if="!filteredRoles.length"
               title="No se encontraron roles"
             />
+
+            <v-divider class="my-2" />
+            <v-list-item
+              rounded="lg"
+              class="my-1"
+              @click="openCreate"
+            >
+              <template #prepend>
+                <v-avatar color="primary" variant="tonal" size="34">
+                  <v-icon size="19">mdi-plus</v-icon>
+                </v-avatar>
+              </template>
+              <v-list-item-title class="font-weight-bold text-primary">Nuevo Rol</v-list-item-title>
+              <v-list-item-subtitle>Crear nuevo rol</v-list-item-subtitle>
+            </v-list-item>
           </v-list> </v-card
       ></v-col>
       <v-col cols="12" md="8" lg="9"
@@ -111,11 +139,7 @@
               >
             </div>
           </div>
-          <v-card-text class="pa-4"
-            ><v-alert type="info" variant="tonal" density="compact" class="mb-4"
-              >El permiso «Ver» habilita el módulo en el menú. Los cambios
-              afectan a todos los usuarios con este rol.</v-alert
-            >
+          <v-card-text class="pa-4">
             <v-text-field
               v-model="searchPermission"
               placeholder="Buscar permiso..."
@@ -127,34 +151,27 @@
               clearable
               class="mb-4"
             />
+            <v-row density="comfortable">
+              <v-col
+                v-for="permission in filteredPermissions"
+                :key="permission.idPermiso"
+                cols="12"
+                sm="6"
+                lg="4"
+              >
+                <div class="permission-cell">
+                  <v-checkbox-btn
+                    v-model="selectedPermissions"
+                    :value="permission.idPermiso"
+                    color="primary"
+                    :label="permission.etiqueta"
+                    class="flex-grow-1"
+                  />
+                </div>
+              </v-col>
+            </v-row>
             <div
-              v-for="group in permissionGroups"
-              :key="group.name"
-              class="mb-5"
-            >
-              <div class="text-subtitle-2 font-weight-bold mb-2">
-                {{ group.name }}
-              </div>
-              <v-row density="compact">
-                <v-col
-                  v-for="permission in group.items"
-                  :key="permission.idPermiso"
-                  cols="12"
-                  sm="6"
-                  lg="4"
-                  ><div class="permission-cell">
-                    <v-checkbox-btn
-                      v-model="selectedPermissions"
-                      :value="permission.idPermiso"
-                      color="primary"
-                      :label="permission.etiqueta"
-                      class="flex-grow-1"
-                    /></div
-                ></v-col>
-              </v-row>
-            </div>
-            <div
-              v-if="!permissionGroups.length"
+              v-if="!filteredPermissions.length"
               class="text-center text-medium-emphasis py-8"
             >
               No se encontraron permisos
@@ -174,7 +191,8 @@
           </p></v-card
         ></v-col
       >
-    </v-row>
+      </v-row>
+    </template>
     <v-dialog v-model="roleDialog" max-width="430" persistent
       ><v-card rounded="xl"
         ><v-card-title class="pa-5 bg-primary text-white">Nuevo Rol</v-card-title
@@ -239,7 +257,8 @@ const searchRole = ref(""),
 const loading = ref(true),
   saving = ref(false),
   roleDialog = ref(false),
-  confirmDelete = ref(false);
+  confirmDelete = ref(false),
+  showInfoAlert = ref(true);
 const error = ref(""),
   dialogError = ref(""),
   notice = ref(""),
@@ -252,17 +271,15 @@ const filteredRoles = computed(() =>
     role.nombre.toLowerCase().includes((searchRole.value || "").toLowerCase()),
   ),
 );
-const permissionGroups = computed(() => {
-  const matching = permissions.value.filter((p) =>
-    `${p.modulo} ${p.etiqueta} ${p.nombre}`
-      .toLowerCase()
-      .includes((searchPermission.value || "").toLowerCase()),
-  );
-  return [...new Set(matching.map((p) => p.modulo))].map((name) => ({
-    name,
-    items: matching.filter((p) => p.modulo === name),
-  }));
-});
+const filteredPermissions = computed(() =>
+  permissions.value
+    .filter((p) =>
+      `${p.modulo} ${p.etiqueta} ${p.nombre}`
+        .toLowerCase()
+        .includes((searchPermission.value || "").toLowerCase()),
+    )
+    .sort((a, b) => a.etiqueta.localeCompare(b.etiqueta, "es")),
+);
 function selectRole(role: RolRegistro) {
   selectedId.value = role.idRol;
   selectedPermissions.value = role.permisos.map((p) => p.idPermiso);
@@ -358,9 +375,24 @@ onMounted(() => load());
   max-width: 1600px;
   margin: 0 auto;
 }
+.roles-filter-bar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) max-content;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+}
 .role-search {
-  flex: 1 1 260px;
-  max-width: 500px;
+  min-width: 0;
+  width: 100%;
+}
+.role-search :deep(.v-input) {
+  width: 100%;
+}
+.roles-filter-count {
+  display: flex;
+  align-items: center;
+  white-space: nowrap;
 }
 .role-header {
   padding: 18px 22px;
@@ -378,5 +410,20 @@ onMounted(() => load());
   border: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
   border-radius: 10px;
   background: rgba(var(--v-theme-primary), 0.045);
+  min-height: 56px;
+}
+@media (max-width: 767px) {
+  .roles-filter-bar {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .roles-filter-count {
+    justify-self: start;
+  }
+  .roles-layout {
+    margin: 0;
+  }
+  .role-header {
+    align-items: flex-start;
+  }
 }
 </style>

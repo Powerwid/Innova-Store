@@ -8,6 +8,9 @@ import type {
   Usuario,
   UsuarioPayload,
   MedioPago,
+  PersonaPayload,
+  PersonaRegistro,
+  TipoPersona,
 } from "@/core/types/administracion.types";
 
 export const usuariosApi = {
@@ -58,6 +61,21 @@ export const documentosApi = {
     http.get<DatosDocumento>(
       `/documentos/${tipo}/${encodeURIComponent(numero)}`,
     ),
+};
+
+export const personasApi = {
+  listar: (tipo: TipoPersona, buscar = '', idSucursal?: number | null) =>
+    http.get<PersonaRegistro[]>('/personas', {
+      params: { tipo, buscar: buscar || undefined, idSucursal: idSucursal || undefined },
+    }),
+  obtener: (tipo: TipoPersona, id: number) =>
+    http.get<PersonaRegistro>(`/personas/${tipo}/${id}`),
+  crear: (payload: PersonaPayload & { tipo: TipoPersona }) =>
+    http.post<{ message: string; persona: PersonaRegistro }>('/personas', payload),
+  actualizar: (tipo: TipoPersona, id: number, payload: Partial<PersonaPayload>) =>
+    http.patch<{ message: string; persona: PersonaRegistro }>(`/personas/${tipo}/${id}`, payload),
+  eliminar: (tipo: TipoPersona, id: number) =>
+    http.delete<{ message: string }>(`/personas/${tipo}/${id}`),
 };
 
 export const mediosPagoApi = {

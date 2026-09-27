@@ -29,6 +29,8 @@ model TipoDocumento {
 
   usuariosPerfiles   UsuarioPerfil[]
   sucursalesPerfiles SucursalPerfil[]
+  clientes           Cliente[]
+  proveedores        Proveedor[]
 
   @@map("tipos_documento")
 }
@@ -48,8 +50,9 @@ model Usuario {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  perfil     UsuarioPerfil?
-  sucursales UsuarioSucursal[]
+  perfil                UsuarioPerfil?
+  sucursales            UsuarioSucursal[]
+  movimientosInventario InventarioMovimiento[]
 
   @@map("usuarios")
 }
@@ -125,10 +128,59 @@ model Sucursal {
   createdAt  DateTime @default(now()) @map("created_at")
   updatedAt  DateTime @updatedAt @map("updated_at")
 
-  perfil   SucursalPerfil?
-  usuarios UsuarioSucursal[]
+  perfil      SucursalPerfil?
+  usuarios    UsuarioSucursal[]
+  proveedores Proveedor[]
+  productos   ProductoSucursal[]
+  almacenes   Almacen[]
 
   @@map("sucursales")
+}
+
+// CLIENTES
+model Cliente {
+  idCliente       Int      @id @default(autoincrement()) @map("id_cliente")
+  nombre          String   @db.VarChar(255)
+  idTipoDocumento Int      @map("id_tipo_documento")
+  numeroDocumento String   @map("numero_documento") @db.VarChar(20)
+  direccion       String?  @db.VarChar(255)
+  ubigeo          String?  @db.VarChar(6)
+  correo          String?  @db.VarChar(255)
+  telefono        String?  @db.VarChar(20)
+  activo          Boolean  @default(true)
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  tipoDocumento TipoDocumento @relation(fields: [idTipoDocumento], references: [idTipoDocumento], onDelete: Restrict)
+
+  @@unique([idTipoDocumento, numeroDocumento])
+  @@index([nombre])
+  @@index([activo])
+  @@map("clientes")
+}
+
+// PROVEEDORES POR SUCURSAL
+model Proveedor {
+  idProveedor     Int      @id @default(autoincrement()) @map("id_proveedor")
+  nombre          String   @db.VarChar(255)
+  idTipoDocumento Int      @map("id_tipo_documento")
+  numeroDocumento String   @map("numero_documento") @db.VarChar(20)
+  direccion       String?  @db.VarChar(255)
+  ubigeo          String?  @db.VarChar(6)
+  correo          String?  @db.VarChar(255)
+  telefono        String?  @db.VarChar(20)
+  idSucursal      Int      @map("id_sucursal")
+  activo          Boolean  @default(true)
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  tipoDocumento TipoDocumento @relation(fields: [idTipoDocumento], references: [idTipoDocumento], onDelete: Restrict)
+  sucursal      Sucursal      @relation(fields: [idSucursal], references: [idSucursal], onDelete: Restrict)
+
+  @@unique([idSucursal, idTipoDocumento, numeroDocumento])
+  @@index([nombre])
+  @@index([idSucursal, activo])
+  @@map("proveedores")
 }
 
 // PERFIL DE SUCURSAL
@@ -140,16 +192,16 @@ model SucursalPerfil {
   razonSocial     String?        @map("razon_social") @db.VarChar(255)
   nombreComercial String?        @map("nombre_comercial") @db.VarChar(255)
 
-  departamento       String?  @db.VarChar(100)
-  provincia          String?  @db.VarChar(100)
-  distrito           String?  @db.VarChar(100)
-  direccionComercial String?  @map("direccion_comercial") @db.VarChar(255)
-  direccionFiscal    String?  @map("direccion_fiscal") @db.VarChar(255)
-  direccionWeb       String?  @map("direccion_web") @db.VarChar(255)
-  ubigeo             String?  @db.VarChar(6)
-  igv                Decimal  @default(18.00) @db.Decimal(5, 2)
-  telefono           String?  @db.VarChar(20)
-  correo             String?  @db.VarChar(255)
+  departamento       String  @default("Arequipa") @db.VarChar(100)
+  provincia          String  @default("Arequipa") @db.VarChar(100)
+  distrito           String  @default("Arequipa") @db.VarChar(100)
+  direccionComercial String? @map("direccion_comercial") @db.VarChar(255)
+  direccionFiscal    String? @map("direccion_fiscal") @db.VarChar(255)
+  direccionWeb       String? @map("direccion_web") @db.VarChar(255)
+  ubigeo             String  @default("040101") @db.VarChar(6)
+  igv                Decimal @default(18.00) @db.Decimal(5, 2)
+  telefono           String  @default("-") @db.VarChar(20)
+  correo             String? @db.VarChar(255)
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -169,4 +221,156 @@ model UsuarioSucursal {
 
   @@id([idUsuario, idSucursal])
   @@map("usuarios_sucursales")
+}
+
+enum NaturalezaMovimiento {
+  ENTRADA
+  SALIDA
+}
+
+model TipoProducto {
+  idTipoProducto Int        @id @default(autoincrement()) @map("id_tipo_producto")
+  nombre         String     @unique @db.VarChar(100)
+  estado         Boolean    @default(true)
+  createdAt      DateTime   @default(now()) @map("created_at")
+  updatedAt      DateTime   @updatedAt @map("updated_at")
+  productos      Producto[]
+
+  @@map("tipos_producto")
+}
+
+model Categoria {
+  idCategoria Int        @id @default(autoincrement()) @map("id_categoria")
+  nombre      String     @unique @db.VarChar(100)
+  color       String?    @db.VarChar(7)
+  estado      Boolean    @default(true)
+  createdAt   DateTime   @default(now()) @map("created_at")
+  updatedAt   DateTime   @updatedAt @map("updated_at")
+  productos   Producto[]
+
+  @@map("categorias")
+}
+
+model UnidadMedida {
+  idUnidadMedida Int        @id @default(autoincrement()) @map("id_unidad_medida")
+  nombre         String     @unique @db.VarChar(50)
+  simbolo        String     @unique @db.VarChar(10)
+  estado         Boolean    @default(true)
+  createdAt      DateTime   @default(now()) @map("created_at")
+  updatedAt      DateTime   @updatedAt @map("updated_at")
+  productos      Producto[]
+
+  @@map("unidades_medida")
+}
+
+model Producto {
+  idProducto     Int                @id @default(autoincrement()) @map("id_producto")
+  idTipoProducto Int                @map("id_tipo_producto")
+  idCategoria    Int                @map("id_categoria")
+  idUnidadMedida Int                @map("id_unidad_medida")
+  nombre         String             @db.VarChar(255)
+  detalle        String?            @db.VarChar(500)
+  codigoBarras   String?            @map("codigo_barras") @db.VarChar(100)
+  imagen         String?            @db.VarChar(255)
+  estado         Boolean            @default(true)
+  createdAt      DateTime           @default(now()) @map("created_at")
+  updatedAt      DateTime           @updatedAt @map("updated_at")
+  tipoProducto   TipoProducto       @relation(fields: [idTipoProducto], references: [idTipoProducto], onDelete: Restrict)
+  categoria      Categoria          @relation(fields: [idCategoria], references: [idCategoria], onDelete: Restrict)
+  unidadMedida   UnidadMedida       @relation(fields: [idUnidadMedida], references: [idUnidadMedida], onDelete: Restrict)
+  sucursales     ProductoSucursal[]
+
+  @@index([nombre])
+  @@map("productos")
+}
+
+model ProductoSucursal {
+  idProductoSucursal Int          @id @default(autoincrement()) @map("id_producto_sucursal")
+  idProducto         Int          @map("id_producto")
+  idSucursal         Int          @map("id_sucursal")
+  precioCompra       Decimal      @default(0) @map("precio_compra") @db.Decimal(14, 2)
+  precioVenta        Decimal      @default(0) @map("precio_venta") @db.Decimal(14, 2)
+  estado             Boolean      @default(true)
+  createdAt          DateTime     @default(now()) @map("created_at")
+  updatedAt          DateTime     @updatedAt @map("updated_at")
+  producto           Producto     @relation(fields: [idProducto], references: [idProducto], onDelete: Restrict)
+  sucursal           Sucursal     @relation(fields: [idSucursal], references: [idSucursal], onDelete: Restrict)
+  inventarios        Inventario[]
+
+  @@unique([idProducto, idSucursal])
+  @@unique([idProductoSucursal, idSucursal])
+  @@map("producto_sucursal")
+}
+
+model Almacen {
+  idAlmacen   Int          @id @default(autoincrement()) @map("id_almacen")
+  idSucursal  Int          @map("id_sucursal")
+  nombre      String       @db.VarChar(100)
+  direccion   String?      @db.VarChar(255)
+  estado      Boolean      @default(true)
+  createdAt   DateTime     @default(now()) @map("created_at")
+  updatedAt   DateTime     @updatedAt @map("updated_at")
+  sucursal    Sucursal     @relation(fields: [idSucursal], references: [idSucursal], onDelete: Restrict)
+  inventarios Inventario[]
+
+  @@unique([idSucursal, nombre])
+  @@unique([idAlmacen, idSucursal])
+  @@map("almacenes")
+}
+
+model Inventario {
+  idInventario       Int                    @id @default(autoincrement()) @map("id_inventario")
+  idProductoSucursal Int                    @map("id_producto_sucursal")
+  idAlmacen          Int                    @map("id_almacen")
+  // Clave compartida para impedir relaciones entre sucursales diferentes en MySQL.
+  idSucursal         Int                    @map("id_sucursal")
+  stock              Decimal                @default(0) @db.Decimal(14, 3)
+  stockMinimo        Decimal                @default(0) @map("stock_minimo") @db.Decimal(14, 3)
+  createdAt          DateTime               @default(now()) @map("created_at")
+  updatedAt          DateTime               @updatedAt @map("updated_at")
+  productoSucursal   ProductoSucursal       @relation(fields: [idProductoSucursal, idSucursal], references: [idProductoSucursal, idSucursal], onDelete: Restrict, onUpdate: Restrict)
+  almacen            Almacen                @relation(fields: [idAlmacen, idSucursal], references: [idAlmacen, idSucursal], onDelete: Restrict, onUpdate: Restrict)
+  movimientos        InventarioMovimiento[]
+
+  @@unique([idProductoSucursal, idAlmacen])
+  @@index([idSucursal])
+  @@map("inventarios")
+}
+
+model TipoMovimientoInventario {
+  idTipoMovimiento Int                    @id @map("id_tipo_movimiento")
+  nombre           String                 @unique @db.VarChar(100)
+  entradaSalida    NaturalezaMovimiento   @map("entrada_salida")
+  movimientos      InventarioMovimiento[]
+
+  @@map("tipos_movimiento_inventario")
+}
+
+model InventarioMovimiento {
+  idMovimiento     Int                      @id @default(autoincrement()) @map("id_movimiento")
+  idInventario     Int                      @map("id_inventario")
+  idTipoMovimiento Int                      @map("id_tipo_movimiento")
+  idUsuario        Int                      @map("id_usuario")
+  cantidad         Decimal                  @db.Decimal(14, 3)
+  stockAnterior    Decimal                  @map("stock_anterior") @db.Decimal(14, 3)
+  stockResultante  Decimal                  @map("stock_resultante") @db.Decimal(14, 3)
+  observacion      String?                  @db.VarChar(500)
+  fechaMovimiento  DateTime                 @default(now()) @map("fecha_movimiento")
+  createdAt        DateTime                 @default(now()) @map("created_at")
+  inventario       Inventario               @relation(fields: [idInventario], references: [idInventario], onDelete: Restrict)
+  tipoMovimiento   TipoMovimientoInventario @relation(fields: [idTipoMovimiento], references: [idTipoMovimiento], onDelete: Restrict)
+  usuario          Usuario                  @relation(fields: [idUsuario], references: [idUsuario], onDelete: Restrict)
+
+  @@index([idInventario, fechaMovimiento])
+  @@map("inventario_movimientos")
+}
+
+// Catálogo de configuraciones compartido por todas las sucursales.
+model ConfiguracionGlobal {
+  nombre    String   @id @db.VarChar(100)
+  activo    Boolean  @default(false)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("configuraciones_globales")
 }

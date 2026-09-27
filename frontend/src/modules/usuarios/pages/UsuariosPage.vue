@@ -24,7 +24,7 @@
           class="filter-select"
         />
         <v-btn
-          v-if="auth.puede(Permiso.USUARIOS_CREAR)"
+          v-if="auth.puede(Permiso.USUARIOS_GESTIONAR)"
           color="primary"
           prepend-icon="mdi-plus"
           rounded="lg"
@@ -182,123 +182,187 @@
         </div></v-card
       >
     </template>
-    <v-dialog v-model="formDialog" max-width="760" persistent scrollable
-      ><v-card rounded="xl"
-        ><v-card-title class="pa-5 bg-primary text-white"
-          ><v-icon class="me-2">mdi-account-edit-outline</v-icon
-          >{{ editing ? "Editar Usuario" : "Nuevo Usuario" }}</v-card-title
-        ><v-card-text class="pa-5">
-          <v-alert
-            v-if="formError"
-            type="error"
-            variant="tonal"
-            density="compact"
-            class="mb-4"
-            >{{ formError }}</v-alert
-          ><v-row>
-            <v-col cols="12" sm="6"
-              ><v-text-field
-                v-model="form.nombres"
-                label="Nombres *"
-                variant="outlined"
-                density="comfortable" /></v-col
-            ><v-col cols="12" sm="6"
-              ><v-text-field
-                v-model="form.apellidos"
-                label="Apellidos *"
-                variant="outlined"
-                density="comfortable"
-            /></v-col>
-            <v-col cols="12" sm="6"
-              ><v-text-field
-                v-model="form.correo"
-                label="Correo electrónico *"
-                type="email"
-                variant="outlined"
-                density="comfortable" /></v-col
-            ><v-col v-if="!editing" cols="12" sm="6"
-              ><v-text-field
-                v-model="form.contrasena"
-                label="Contraseña *"
-                type="password"
-                hint="Mínimo 8 caracteres, una mayúscula y un número"
-                persistent-hint
-                variant="outlined"
-                density="comfortable"
-            /></v-col>
-            <v-col v-if="!editing || auth.esSuperadmin" cols="12" sm="6"
-              ><v-select
-                v-model="form.idRol"
-                :items="activeRoles"
-                item-title="nombre"
-                item-value="idRol"
-                label="Rol *"
-                variant="outlined"
-                density="comfortable"
-            /></v-col>
-            <v-col cols="12" sm="6"
-              ><v-select
+    <v-dialog v-model="formDialog" max-width="720" persistent>
+      <v-card class="user-form-card rounded-xl" elevation="24">
+        <v-card-item class="user-form-header pa-3 pa-sm-5">
+          <template #prepend>
+            <v-avatar color="rgba(255,255,255,0.2)" size="48" class="me-3">
+              <v-icon color="white" size="25">{{ editing ? 'mdi-account-edit' : 'mdi-account-plus' }}</v-icon>
+            </v-avatar>
+          </template>
+          <v-card-title class="text-white font-weight-bold text-h6">
+            {{ editing ? "Editar usuario" : "Nuevo usuario" }}
+          </v-card-title>
+          <v-card-subtitle class="text-white opacity-90 d-none d-sm-block">
+            Completa los datos de acceso y del perfil
+          </v-card-subtitle>
+          <template #append>
+            <v-btn icon="mdi-close" color="white" variant="text" :disabled="saving" @click="formDialog = false" />
+          </template>
+        </v-card-item>
+
+        <v-card-text class="user-form-body pa-4 pa-sm-6">
+          <v-alert v-if="formError" type="error" variant="tonal" density="compact" class="mb-4">
+            {{ formError }}
+          </v-alert>
+
+          <section>
+            <div class="user-form-section-title">
+              <v-icon size="20" color="primary">mdi-card-account-details-outline</v-icon>
+              Documento
+            </div>
+            <div class="user-form-grid user-document-grid">
+              <v-select
                 v-model="form.idTipoDocumento"
                 :items="documentTypes"
                 item-title="nombre"
                 item-value="idTipoDocumento"
                 label="Tipo de documento"
-                clearable
+                placeholder="Selecciona el tipo"
                 variant="outlined"
-                density="comfortable"
-            /></v-col>
-            <v-col cols="12" sm="6"
-              ><v-text-field
+                density="compact"
+                hide-details="auto"
+                @update:model-value="changeUserDocumentType"
+              />
+              <v-text-field
                 v-model="form.numeroDocumento"
                 label="Número de documento"
+                :placeholder="documentPlaceholder"
+                :maxlength="documentMaxLength"
+                :inputmode="documentKind === 'CE' ? 'text' : 'numeric'"
+                :disabled="!form.idTipoDocumento"
                 variant="outlined"
-                density="comfortable"
+                density="compact"
+                hide-details="auto"
+                @update:model-value="sanitizeUserDocument"
                 @blur="lookupDocument()"
-                ><template #append-inner
-                  ><v-btn
+                @keyup.enter="lookupDocument(true)"
+              >
+                <template #append-inner>
+                  <v-btn
                     v-if="documentKind === 'DNI'"
                     icon="mdi-magnify"
                     size="small"
                     variant="text"
                     color="primary"
                     :loading="lookupLoading"
+                    :disabled="!/^\d{8}$/.test(form.numeroDocumento)"
                     aria-label="Consultar DNI"
-                    @click="lookupDocument(true)" /></template></v-text-field
-            ></v-col>
-            <v-col cols="12" sm="6"
-              ><v-text-field
-                v-model="form.telefono"
-                label="Teléfono"
+                    @click="lookupDocument(true)"
+                  />
+                </template>
+              </v-text-field>
+            </div>
+          </section>
+
+          <section class="user-form-section">
+            <div class="user-form-section-title">
+              <v-icon size="20" color="primary">mdi-account-outline</v-icon>
+              Datos personales
+            </div>
+            <div class="user-form-grid">
+              <v-text-field
+                v-model="form.nombres"
+                label="Nombres"
+                placeholder="Ingresa los nombres"
                 variant="outlined"
-                density="comfortable" /></v-col
-            ><v-col cols="12"
-              ><v-text-field
-                v-model="form.direccion"
-                label="Dirección"
+                density="compact"
+                hide-details="auto"
+              />
+              <v-text-field
+                v-model="form.apellidos"
+                label="Apellidos"
+                placeholder="Ingresa los apellidos"
                 variant="outlined"
-                density="comfortable"
-            /></v-col>
-            <v-col
-              v-if="
-                editing &&
-                (auth.puede(Permiso.USUARIOS_ACTIVAR) ||
-                  auth.puede(Permiso.USUARIOS_DESACTIVAR))
-              "
-              cols="12"
-              ><v-switch
-                v-model="form.activo"
-                :label="form.activo ? 'Usuario activo' : 'Usuario inactivo'"
-                color="primary"
-                hide-details
-            /></v-col> </v-row></v-card-text
-        ><v-card-actions class="pa-4 justify-end"
-          ><v-btn variant="text" @click="formDialog = false">Cancelar</v-btn
-          ><v-btn color="primary" :loading="saving" @click="saveUser"
-            >Guardar</v-btn
-          ></v-card-actions
-        ></v-card
-      ></v-dialog
-    >
+                density="compact"
+                hide-details="auto"
+              />
+            </div>
+          </section>
+
+          <section class="user-form-section">
+            <div class="user-form-section-title">
+              <v-icon size="20" color="primary">mdi-shield-account-outline</v-icon>
+              Acceso al sistema
+            </div>
+            <div class="user-form-grid">
+              <v-text-field
+                v-model="form.correo"
+                label="Correo electrónico"
+                placeholder="usuario@empresa.com"
+                type="email"
+                variant="outlined"
+                density="compact"
+                hide-details="auto"
+              />
+              <v-text-field
+                v-if="!editing"
+                v-model="form.contrasena"
+                label="Contraseña"
+                placeholder="Mínimo 8 caracteres"
+                type="password"
+                hint="Debe incluir una mayúscula y un número"
+                persistent-hint
+                variant="outlined"
+                density="compact"
+              />
+              <v-select
+                v-if="!editing || auth.esSuperadmin"
+                v-model="form.idRol"
+                :items="activeRoles"
+                item-title="nombre"
+                item-value="idRol"
+                label="Rol"
+                placeholder="Selecciona un rol"
+                variant="outlined"
+                density="compact"
+                hide-details="auto"
+              />
+            </div>
+          </section>
+
+          <section class="user-form-section">
+            <div class="user-form-section-title">
+              <v-icon size="20" color="primary">mdi-phone-outline</v-icon>
+              Datos opcionales
+            </div>
+            <v-text-field
+              v-model="form.telefono"
+              label="Teléfono"
+              placeholder="Ingresa un teléfono"
+              variant="outlined"
+              density="compact"
+              hide-details="auto"
+            />
+            <v-text-field
+              v-model="form.direccion"
+              label="Dirección"
+              placeholder="Ingresa una dirección"
+              variant="outlined"
+              density="compact"
+              hide-details="auto"
+              class="mt-2"
+            />
+          </section>
+
+          <section v-if="editing && auth.puede(Permiso.USUARIOS_GESTIONAR)" class="user-form-section user-form-status">
+            <div>
+              <div class="font-weight-bold">Estado</div>
+              <div class="text-caption text-medium-emphasis">Controla si el usuario puede ingresar al sistema.</div>
+            </div>
+            <v-switch v-model="form.activo" color="primary" inset hide-details />
+          </section>
+        </v-card-text>
+
+        <v-card-actions class="pa-4 border-t">
+          <v-spacer />
+          <v-btn variant="text" :disabled="saving" @click="formDialog = false">Cancelar</v-btn>
+          <v-btn color="primary" variant="flat" min-width="130" :loading="saving" @click="saveUser">
+            {{ editing ? 'Actualizar' : 'Guardar' }}
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
     <v-dialog v-model="branchesDialog" max-width="520"
       ><v-card rounded="xl"
         ><v-card-title class="pa-5 bg-primary text-white"
@@ -406,6 +470,18 @@ const documentKind = computed(
       (item) => item.idTipoDocumento === form.idTipoDocumento,
     )?.nombre,
 );
+const documentMaxLength = computed(() =>
+  documentKind.value === "DNI" ? 8 : documentKind.value === "RUC" ? 11 : 20,
+);
+const documentPlaceholder = computed(() =>
+  documentKind.value === "DNI"
+    ? "Ingresa 8 dígitos"
+    : documentKind.value === "RUC"
+      ? "Ingresa 11 dígitos"
+      : documentKind.value === "CE"
+        ? "Ingresa el carné de extranjería"
+        : "Selecciona primero el tipo",
+);
 function fullName(user: Usuario) {
   return (
     [user.perfil?.nombres, user.perfil?.apellidos].filter(Boolean).join(" ") ||
@@ -432,16 +508,13 @@ function canEdit(user: Usuario) {
   return (
     user.idUsuario !== auth.usuario?.idUsuario &&
     user.rol.nombre !== "SUPERADMIN" &&
-    (auth.puede(Permiso.USUARIOS_EDITAR) ||
-      auth.esSuperadmin ||
-      auth.puede(Permiso.USUARIOS_ACTIVAR) ||
-      auth.puede(Permiso.USUARIOS_DESACTIVAR))
+    (auth.puede(Permiso.USUARIOS_GESTIONAR) || auth.esSuperadmin)
   );
 }
 function canAssign(user: Usuario) {
   return (
     user.idUsuario !== auth.usuario?.idUsuario &&
-    auth.puede(Permiso.USUARIOS_ASIGNAR_SUCURSALES) &&
+    auth.puede(Permiso.USUARIOS_GESTIONAR) &&
     auth.puede(Permiso.SUCURSALES_VER)
   );
 }
@@ -451,7 +524,7 @@ async function load() {
   try {
     const [u, r, b, d] = await Promise.all([
       usuariosApi.listar(),
-      auth.puede(Permiso.USUARIOS_CREAR)
+      auth.puede(Permiso.USUARIOS_GESTIONAR)
         ? usuariosApi.rolesDisponibles()
         : Promise.resolve(null),
       auth.puede(Permiso.SUCURSALES_VER)
@@ -473,13 +546,14 @@ async function load() {
   }
 }
 function resetForm() {
+  const dni = documentTypes.value.find((item) => item.nombre === "DNI");
   Object.assign(form, {
     correo: "",
     contrasena: "",
     idRol: null,
     nombres: "",
     apellidos: "",
-    idTipoDocumento: null,
+    idTipoDocumento: dni?.idTipoDocumento ?? null,
     numeroDocumento: "",
     telefono: "",
     direccion: "",
@@ -487,6 +561,16 @@ function resetForm() {
   });
   formError.value = "";
   lastDniLookup = "";
+}
+function changeUserDocumentType() {
+  form.numeroDocumento = "";
+  lastDniLookup = "";
+}
+function sanitizeUserDocument(value: string) {
+  const raw = String(value || "").toUpperCase();
+  form.numeroDocumento = documentKind.value === "CE"
+    ? raw.replace(/[^A-Z0-9]/g, "").slice(0, documentMaxLength.value)
+    : raw.replace(/\D/g, "").slice(0, documentMaxLength.value);
 }
 function openCreate() {
   editing.value = null;
@@ -522,7 +606,7 @@ function optional(value: string) {
 async function saveUser() {
   formError.value = "";
   if (
-    (!editing.value || auth.puede(Permiso.USUARIOS_EDITAR)) &&
+    (!editing.value || auth.puede(Permiso.USUARIOS_GESTIONAR)) &&
     (!form.nombres.trim() || !form.apellidos.trim() || !form.correo.trim())
   ) {
     formError.value = "Completa nombres, apellidos y correo";
@@ -549,7 +633,7 @@ async function saveUser() {
     if (editing.value) {
       const current = editing.value;
       const payload: Record<string, unknown> = {};
-      if (auth.puede(Permiso.USUARIOS_EDITAR)) {
+      if (auth.puede(Permiso.USUARIOS_GESTIONAR)) {
         payload.correo = form.correo.trim();
         payload.perfil = {
           ...perfil,
@@ -662,6 +746,48 @@ onMounted(load);
 .admin-mobile-list {
   display: none;
 }
+.user-form-card {
+  max-height: calc(100vh - 32px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.user-form-header {
+  flex: 0 0 auto;
+  background: linear-gradient(135deg, rgb(var(--v-theme-primary)), rgb(var(--v-theme-primary-darken-1)));
+}
+.user-form-body {
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+}
+.user-form-section {
+  margin-top: 18px;
+  padding-top: 18px;
+  border-top: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
+}
+.user-form-section-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  font-size: 1rem;
+  font-weight: 700;
+}
+.user-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.user-document-grid {
+  grid-template-columns: 0.85fr 1.15fr;
+}
+.user-form-status {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
 @media (max-width: 800px) {
   .admin-desktop-list {
     display: none;
@@ -671,6 +797,10 @@ onMounted(load);
   }
   .filter-select {
     flex: 1 1 140px;
+  }
+  .user-form-grid,
+  .user-document-grid {
+    grid-template-columns: 1fr;
   }
 }
 </style>

@@ -76,6 +76,36 @@ export interface MedioPago {
   idMedioPago: number;
   nombre: string;
 }
+export type TipoPersona = "CLIENTE" | "PROVEEDOR";
+export interface PersonaRegistro {
+  id: number;
+  tipo: TipoPersona;
+  nombre: string;
+  idTipoDocumento: number;
+  numeroDocumento: string;
+  direccion: string | null;
+  ubigeo: string | null;
+  correo: string | null;
+  telefono: string | null;
+  activo: boolean;
+  idSucursal: number | null;
+  sucursal?: { idSucursal: number; nombre: string } | null;
+  tipoDocumento: TipoDocumento;
+  createdAt: string;
+  updatedAt: string;
+}
+export interface PersonaPayload {
+  tipo?: TipoPersona;
+  nombre: string;
+  idTipoDocumento: number;
+  numeroDocumento: string;
+  direccion: string | null;
+  ubigeo: string | null;
+  correo: string | null;
+  telefono: string | null;
+  activo: boolean;
+  idSucursal?: number;
+}
 export type DatosDocumento =
   | {
       tipoDocumento: "DNI";

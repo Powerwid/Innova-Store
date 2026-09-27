@@ -20,7 +20,7 @@ export class UsuariosController {
     ) { }
 
     @Post()
-    @RequierePermiso(PermisoSistema.USUARIOS_CREAR)
+    @RequierePermiso(PermisoSistema.USUARIOS_GESTIONAR)
     crear(
         @Body(new ZodValidationPipe(CrearUsuarioSchema))
         dto: CrearUsuarioDto,
@@ -35,7 +35,7 @@ export class UsuariosController {
     }
 
     @Get('roles-disponibles')
-    @RequierePermiso(PermisoSistema.USUARIOS_CREAR)
+    @RequierePermiso(PermisoSistema.USUARIOS_GESTIONAR)
     rolesDisponibles() {
         return this.usuariosService.rolesDisponibles();
     }
@@ -61,7 +61,7 @@ export class UsuariosController {
     }
 
     @Patch(':id/sucursales')
-    @RequierePermiso(PermisoSistema.USUARIOS_ASIGNAR_SUCURSALES)
+    @RequierePermiso(PermisoSistema.USUARIOS_GESTIONAR)
     asignarSucursales(
         @Param('id', ParseIntPipe) id: number,
         @Body(new ZodValidationPipe(AsignarSucursalesSchema)) dto: AsignarSucursalesDto,

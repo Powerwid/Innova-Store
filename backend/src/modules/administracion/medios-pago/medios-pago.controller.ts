@@ -17,13 +17,13 @@ export class MediosPagoController {
   }
 
   @Post()
-  @RequierePermiso(PermisoSistema.MEDIOS_PAGO_CREAR)
+  @RequierePermiso(PermisoSistema.MEDIOS_PAGO_GESTIONAR)
   crear(@Body(new ZodValidationPipe(MedioPagoSchema)) dto: MedioPagoDto) {
     return this.mediosPago.crear(dto);
   }
 
   @Patch(':id')
-  @RequierePermiso(PermisoSistema.MEDIOS_PAGO_EDITAR)
+  @RequierePermiso(PermisoSistema.MEDIOS_PAGO_GESTIONAR)
   actualizar(
     @Param('id', ParseIntPipe) id: number,
     @Body(new ZodValidationPipe(MedioPagoSchema)) dto: MedioPagoDto,
@@ -32,7 +32,7 @@ export class MediosPagoController {
   }
 
   @Delete(':id')
-  @RequierePermiso(PermisoSistema.MEDIOS_PAGO_ELIMINAR)
+  @RequierePermiso(PermisoSistema.MEDIOS_PAGO_GESTIONAR)
   eliminar(@Param('id', ParseIntPipe) id: number) {
     return this.mediosPago.eliminar(id);
   }

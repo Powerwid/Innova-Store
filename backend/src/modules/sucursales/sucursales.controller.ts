@@ -8,9 +8,6 @@ import {
   Post,
 } from '@nestjs/common';
 import { RequierePermiso } from '../../common/decorators/requiere-permiso.decorator.js';
-import { Autenticado } from '../../common/decorators/autenticado.decorator.js';
-import { UsuarioActual } from '../../common/decorators/usuario-actual.decorator.js';
-import type { UsuarioAutenticado } from '../../common/types/usuario-autenticado.js';
 import { PermisoSistema } from '../../common/enums/permiso-sistema.enum.js';
 import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe.js';
 import {
@@ -22,7 +19,6 @@ import type {
   CrearSucursalDto,
 } from './dto/sucursal.dto.js';
 import { SucursalesService } from './sucursales.service.js';
-import { ForbiddenException } from '@nestjs/common';
 
 @Controller('sucursales')
 export class SucursalesController {
@@ -41,7 +37,7 @@ export class SucursalesController {
   }
 
   @Post()
-  @RequierePermiso(PermisoSistema.SUCURSALES_CREAR)
+  @RequierePermiso(PermisoSistema.SUCURSALES_GESTIONAR)
   crear(
     @Body(new ZodValidationPipe(CrearSucursalSchema)) dto: CrearSucursalDto,
   ) {
@@ -49,25 +45,12 @@ export class SucursalesController {
   }
 
   @Patch(':id')
-  @Autenticado()
+  @RequierePermiso(PermisoSistema.SUCURSALES_GESTIONAR)
   actualizar(
     @Param('id', ParseIntPipe) id: number,
     @Body(new ZodValidationPipe(ActualizarSucursalSchema))
     dto: ActualizarSucursalDto,
-    @UsuarioActual() actor: UsuarioAutenticado,
   ) {
-    const requeridos = [
-      ...(dto.nombre !== undefined || dto.perfil !== undefined
-        ? [PermisoSistema.SUCURSALES_EDITAR]
-        : []),
-      ...(dto.activo === true ? [PermisoSistema.SUCURSALES_ACTIVAR] : []),
-      ...(dto.activo === false ? [PermisoSistema.SUCURSALES_DESACTIVAR] : []),
-    ];
-    if (requeridos.some((permiso) => !actor.permisos.includes(permiso))) {
-      throw new ForbiddenException(
-        'Permiso requerido para actualizar la sucursal',
-      );
-    }
     return this.sucursales.actualizar(id, dto);
   }
 }

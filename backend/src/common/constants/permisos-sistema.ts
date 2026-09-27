@@ -8,6 +8,8 @@ export interface DefinicionPermiso {
 }
 
 export const PERMISOS_SISTEMA: readonly DefinicionPermiso[] = [
+  { nombre: PermisoSistema.LOGISTICA_VER, etiqueta: 'Ver logística', modulo: 'Logística', orden: 500 },
+  { nombre: PermisoSistema.LOGISTICA_GESTIONAR, etiqueta: 'Gestionar logística', modulo: 'Logística', orden: 510 },
   {
     nombre: PermisoSistema.DASHBOARD_VER,
     etiqueta: 'Ver dashboard',
@@ -21,34 +23,10 @@ export const PERMISOS_SISTEMA: readonly DefinicionPermiso[] = [
     orden: 100,
   },
   {
-    nombre: PermisoSistema.USUARIOS_CREAR,
-    etiqueta: 'Crear usuarios',
+    nombre: PermisoSistema.USUARIOS_GESTIONAR,
+    etiqueta: 'Gestionar usuarios',
     modulo: 'Usuarios',
     orden: 110,
-  },
-  {
-    nombre: PermisoSistema.USUARIOS_EDITAR,
-    etiqueta: 'Editar usuarios',
-    modulo: 'Usuarios',
-    orden: 120,
-  },
-  {
-    nombre: PermisoSistema.USUARIOS_ACTIVAR,
-    etiqueta: 'Activar usuarios',
-    modulo: 'Usuarios',
-    orden: 130,
-  },
-  {
-    nombre: PermisoSistema.USUARIOS_DESACTIVAR,
-    etiqueta: 'Desactivar usuarios',
-    modulo: 'Usuarios',
-    orden: 140,
-  },
-  {
-    nombre: PermisoSistema.USUARIOS_ASIGNAR_SUCURSALES,
-    etiqueta: 'Asignar sucursales a usuarios',
-    modulo: 'Usuarios',
-    orden: 150,
   },
   {
     nombre: PermisoSistema.SUCURSALES_VER,
@@ -57,28 +35,10 @@ export const PERMISOS_SISTEMA: readonly DefinicionPermiso[] = [
     orden: 200,
   },
   {
-    nombre: PermisoSistema.SUCURSALES_CREAR,
-    etiqueta: 'Crear sucursales',
+    nombre: PermisoSistema.SUCURSALES_GESTIONAR,
+    etiqueta: 'Gestionar sucursales',
     modulo: 'Sucursales',
     orden: 210,
-  },
-  {
-    nombre: PermisoSistema.SUCURSALES_EDITAR,
-    etiqueta: 'Editar sucursales',
-    modulo: 'Sucursales',
-    orden: 220,
-  },
-  {
-    nombre: PermisoSistema.SUCURSALES_ACTIVAR,
-    etiqueta: 'Activar sucursales',
-    modulo: 'Sucursales',
-    orden: 230,
-  },
-  {
-    nombre: PermisoSistema.SUCURSALES_DESACTIVAR,
-    etiqueta: 'Desactivar sucursales',
-    modulo: 'Sucursales',
-    orden: 240,
   },
   {
     nombre: PermisoSistema.MEDIOS_PAGO_VER,
@@ -87,22 +47,22 @@ export const PERMISOS_SISTEMA: readonly DefinicionPermiso[] = [
     orden: 300,
   },
   {
-    nombre: PermisoSistema.MEDIOS_PAGO_CREAR,
-    etiqueta: 'Crear medios de pago',
+    nombre: PermisoSistema.MEDIOS_PAGO_GESTIONAR,
+    etiqueta: 'Gestionar medios de pago',
     modulo: 'Medios de pago',
     orden: 310,
   },
   {
-    nombre: PermisoSistema.MEDIOS_PAGO_EDITAR,
-    etiqueta: 'Editar medios de pago',
-    modulo: 'Medios de pago',
-    orden: 320,
+    nombre: PermisoSistema.PERSONAS_VER,
+    etiqueta: 'Ver clientes y proveedores',
+    modulo: 'Clientes y proveedores',
+    orden: 400,
   },
   {
-    nombre: PermisoSistema.MEDIOS_PAGO_ELIMINAR,
-    etiqueta: 'Eliminar medios de pago',
-    modulo: 'Medios de pago',
-    orden: 330,
+    nombre: PermisoSistema.PERSONAS_GESTIONAR,
+    etiqueta: 'Gestionar clientes y proveedores',
+    modulo: 'Clientes y proveedores',
+    orden: 410,
   },
 ];
 

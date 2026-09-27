@@ -5,11 +5,11 @@
         <v-text-field
           v-model="search"
           placeholder="Buscar sucursal..."
-          prepend-inner-icon="mdi-magnify"
-          variant="outlined"
           density="comfortable"
-          rounded="lg"
+          variant="outlined"
+          prepend-inner-icon="mdi-magnify"
           hide-details
+          rounded="lg"
           clearable
           class="filter-search"
         />
@@ -24,14 +24,14 @@
           class="filter-status"
         />
         <v-btn
-          v-if="auth.puede(Permiso.SUCURSALES_CREAR)"
+          v-if="auth.puede(Permiso.SUCURSALES_GESTIONAR)"
           color="primary"
           prepend-icon="mdi-plus"
           rounded="lg"
           @click="openCreate"
           >Nueva Sucursal</v-btn
         >
-        <span class="text-body-2 text-medium-emphasis"
+        <span class="filter-count text-body-2 text-medium-emphasis"
           ><v-icon size="19" class="me-1">mdi-store</v-icon
           >{{ filtered.length }} sucursales</span
         >
@@ -87,7 +87,7 @@
               {{ branch.perfil?.numeroDocumento || "Sin documento" }}
             </div></v-card-text
           ><v-divider /><v-card-actions
-            v-if="auth.puede(Permiso.SUCURSALES_EDITAR)"
+            v-if="auth.puede(Permiso.SUCURSALES_GESTIONAR)"
             class="justify-end"
             ><v-btn
               color="primary"
@@ -141,11 +141,7 @@
               </td>
               <td class="text-center">
                 <v-btn
-                  v-if="
-                    auth.puede(Permiso.SUCURSALES_EDITAR) ||
-                    auth.puede(Permiso.SUCURSALES_ACTIVAR) ||
-                    auth.puede(Permiso.SUCURSALES_DESACTIVAR)
-                  "
+                  v-if="auth.puede(Permiso.SUCURSALES_GESTIONAR)"
                   icon="mdi-pencil-outline"
                   size="small"
                   variant="text"
@@ -193,6 +189,7 @@
                 density="comfortable"
                 maxlength="11"
                 @blur="lookupRuc()"
+                @keyup.enter.prevent="lookupRuc(true)"
               ><template #append-inner><v-btn
                 icon="mdi-magnify" variant="text" size="small" color="primary"
                 :loading="lookupLoading" aria-label="Consultar RUC" @click="lookupRuc(true)"
@@ -209,25 +206,147 @@
 
             <div class="branch-section-title"><v-icon size="18">mdi-map-marker-outline</v-icon>Ubicación</div>
             <v-row>
-              <v-col cols="12" sm="4"><label class="branch-field-label" for="branch-departamento">Departamento *</label><v-text-field id="branch-departamento" v-model="form.departamento" variant="outlined" density="comfortable" /></v-col>
-              <v-col cols="12" sm="4"><label class="branch-field-label" for="branch-provincia">Provincia *</label><v-text-field id="branch-provincia" v-model="form.provincia" variant="outlined" density="comfortable" /></v-col>
-              <v-col cols="12" sm="4"><label class="branch-field-label" for="branch-distrito">Distrito *</label><v-text-field id="branch-distrito" v-model="form.distrito" variant="outlined" density="comfortable" /></v-col>
-              <v-col cols="12" sm="6"><label class="branch-field-label" for="branch-comercial">Dirección comercial *</label><v-text-field id="branch-comercial" v-model="form.direccionComercial" variant="outlined" density="comfortable" /></v-col>
-              <v-col cols="12" sm="6"><label class="branch-field-label" for="branch-fiscal">Dirección fiscal *</label><v-text-field id="branch-fiscal" v-model="form.direccionFiscal" variant="outlined" density="comfortable" /></v-col>
-              <v-col cols="12" sm="6"><label class="branch-field-label" for="branch-web">Dirección web</label><v-text-field id="branch-web" v-model="form.direccionWeb" placeholder="https://ejemplo.com" variant="outlined" density="comfortable" /></v-col>
-              <v-col cols="12" sm="6"><label class="branch-field-label" for="branch-igv">IGV (%)</label><v-text-field id="branch-igv" v-model="form.igv" type="number" min="0" max="100" step="0.01" variant="outlined" density="comfortable" /></v-col>
+              <v-col cols="12" sm="6" md="3">
+                <label class="branch-field-label" for="branch-departamento">
+                  Departamento *
+                </label>
+                <v-text-field
+                  id="branch-departamento"
+                  v-model="form.departamento"
+                  placeholder="Arequipa"
+                  variant="outlined"
+                  density="comfortable"
+                />
+              </v-col>
+
+              <v-col cols="12" sm="6" md="3">
+                <label class="branch-field-label" for="branch-provincia">
+                  Provincia *
+                </label>
+                <v-text-field
+                  id="branch-provincia"
+                  v-model="form.provincia"
+                  placeholder="Arequipa"
+                  variant="outlined"
+                  density="comfortable"
+                />
+              </v-col>
+
+              <v-col cols="12" sm="6" md="3">
+                <label class="branch-field-label" for="branch-distrito">
+                  Distrito *
+                </label>
+                <v-text-field
+                  id="branch-distrito"
+                  v-model="form.distrito"
+                  placeholder="Cerro Colorado"
+                  variant="outlined"
+                  density="comfortable"
+                />
+              </v-col>
+
+              <v-col cols="12" sm="6" md="3">
+                <label class="branch-field-label" for="branch-ubigeo">
+                  Ubigeo
+                </label>
+                <v-text-field
+                  id="branch-ubigeo"
+                  v-model="form.ubigeo"
+                  placeholder="040101"
+                  inputmode="numeric"
+                  maxlength="6"
+                  variant="outlined"
+                  density="comfortable"
+                  @update:model-value="sanitizeUbigeo"
+                />
+              </v-col>
+
+              <v-col cols="12" sm="6">
+                <label class="branch-field-label" for="branch-comercial">
+                  Dirección comercial *
+                </label>
+                <v-text-field
+                  id="branch-comercial"
+                  v-model="form.direccionComercial"
+                  placeholder="Av. Principal 123"
+                  variant="outlined"
+                  density="comfortable"
+                />
+              </v-col>
+
+              <v-col cols="12" sm="6">
+                <label class="branch-field-label" for="branch-fiscal">
+                  Dirección fiscal *
+                </label>
+                <v-text-field
+                  id="branch-fiscal"
+                  v-model="form.direccionFiscal"
+                  placeholder="Av. Principal 123"
+                  variant="outlined"
+                  density="comfortable"
+                />
+              </v-col>
+
+              <v-col cols="12" sm="6">
+                <label class="branch-field-label" for="branch-web">
+                  Dirección web
+                </label>
+                <v-text-field
+                  id="branch-web"
+                  v-model="form.direccionWeb"
+                  placeholder="https://ejemplo.com"
+                  variant="outlined"
+                  density="comfortable"
+                />
+              </v-col>
+
+              <v-col cols="12" sm="6">
+                <label class="branch-field-label" for="branch-igv">
+                  IGV (%)
+                </label>
+                <v-text-field
+                  id="branch-igv"
+                  v-model="form.igv"
+                  placeholder="18"
+                  type="number"
+                  min="0"
+                  max="100"
+                  step="0.01"
+                  variant="outlined"
+                  density="comfortable"
+                />
+              </v-col>
             </v-row>
 
             <div class="branch-section-title"><v-icon size="18">mdi-phone-outline</v-icon>Contacto</div>
             <v-row>
-              <v-col cols="12" sm="6"><label class="branch-field-label" for="branch-telefono">Teléfono *</label><v-text-field id="branch-telefono" v-model="form.telefono" variant="outlined" density="comfortable" /></v-col>
-              <v-col cols="12" sm="6"><label class="branch-field-label" for="branch-correo">Correo electrónico *</label><v-text-field id="branch-correo" v-model="form.correo" type="email" variant="outlined" density="comfortable" /></v-col>
+              <v-col cols="12" sm="6">
+                <label class="branch-field-label" for="branch-telefono">
+                  Teléfono *
+                </label>
+                <v-text-field 
+                  id="branch-telefono" 
+                  v-model="form.telefono" 
+                  variant="outlined" 
+                  density="comfortable"
+                  placeholder="(01) 123-4567" 
+                />
+              </v-col>
+              <v-col cols="12" sm="6">
+                <label class="branch-field-label" for="branch-correo">
+                  Correo electrónico *
+                </label>
+                <v-text-field 
+                  id="branch-correo" 
+                  v-model="form.correo" 
+                  type="email" 
+                  variant="outlined" 
+                  density="comfortable" 
+                  placeholder="sucursal@corre.com"
+                />
+              </v-col>
             <v-col
-              v-if="
-                editing &&
-                (auth.puede(Permiso.SUCURSALES_ACTIVAR) ||
-                  auth.puede(Permiso.SUCURSALES_DESACTIVAR))
-              "
+              v-if="editing && auth.puede(Permiso.SUCURSALES_GESTIONAR)"
               cols="12"
               ><v-switch
                 v-model="form.activo"
@@ -282,15 +401,15 @@ const form = reactive({
   idTipoDocumento: null as number | null,
   numeroDocumento: "",
   razonSocial: "",
-  departamento: "",
-  provincia: "",
-  distrito: "",
+  departamento: "Arequipa",
+  provincia: "Arequipa",
+  distrito: "Arequipa",
   direccionComercial: "",
   direccionFiscal: "",
   direccionWeb: "",
-  ubigeo: "",
+  ubigeo: "040101",
   igv: "18.00",
-  telefono: "",
+  telefono: "-",
   correo: "",
   activo: true,
 });
@@ -336,15 +455,15 @@ function resetForm() {
     idTipoDocumento: rucTypeId.value,
     numeroDocumento: "",
     razonSocial: "",
-    departamento: "",
-    provincia: "",
-    distrito: "",
+    departamento: "Arequipa",
+    provincia: "Arequipa",
+    distrito: "Arequipa",
     direccionComercial: "",
     direccionFiscal: "",
     direccionWeb: "",
-    ubigeo: "",
+    ubigeo: "040101",
     igv: "18.00",
-    telefono: "",
+    telefono: "-",
     correo: "",
     activo: true,
   });
@@ -366,15 +485,15 @@ async function openEdit(branch: Sucursal) {
       idTipoDocumento: data.perfil?.idTipoDocumento ?? rucTypeId.value,
       numeroDocumento: data.perfil?.numeroDocumento ?? "",
       razonSocial: data.perfil?.razonSocial ?? "",
-      departamento: data.perfil?.departamento ?? "",
-      provincia: data.perfil?.provincia ?? "",
-      distrito: data.perfil?.distrito ?? "",
+      departamento: data.perfil?.departamento?.trim() || "Arequipa",
+      provincia: data.perfil?.provincia?.trim() || "Arequipa",
+      distrito: data.perfil?.distrito?.trim() || "Arequipa",
       direccionComercial: data.perfil?.direccionComercial ?? "",
       direccionFiscal: data.perfil?.direccionFiscal ?? "",
       direccionWeb: data.perfil?.direccionWeb ?? "",
-      ubigeo: data.perfil?.ubigeo ?? "",
+      ubigeo: data.perfil?.ubigeo?.trim() || "040101",
       igv: String(data.perfil?.igv ?? "18.00"),
-      telefono: data.perfil?.telefono ?? "",
+      telefono: data.perfil?.telefono?.trim() || "-",
       correo: data.perfil?.correo ?? "",
       activo: data.activo,
     });
@@ -384,11 +503,19 @@ async function openEdit(branch: Sucursal) {
     error.value = getApiErrorMessage(e);
   }
 }
+function sanitizeUbigeo(value: string) {
+  form.ubigeo = String(value || "").replace(/\D/g, "").slice(0, 6);
+}
 function nullable(value: string) {
   return value.trim() || null;
 }
 async function save() {
   formError.value = "";
+  form.departamento = form.departamento.trim() || "Arequipa";
+  form.provincia = form.provincia.trim() || "Arequipa";
+  form.distrito = form.distrito.trim() || "Arequipa";
+  form.ubigeo = form.ubigeo.trim() || "040101";
+  form.telefono = form.telefono.trim() || "-";
   if (form.nombre.trim().length < 2) {
     formError.value = "Escribe un nombre de al menos 2 caracteres";
     return;
@@ -432,14 +559,14 @@ async function save() {
       direccionComercial: form.direccionComercial.trim(),
       direccionFiscal: form.direccionFiscal.trim(),
       direccionWeb: nullable(form.direccionWeb),
-      ubigeo: nullable(form.ubigeo),
+      ubigeo: form.ubigeo.trim() || "040101",
       igv,
       telefono: form.telefono.trim(),
       correo: form.correo.trim(),
     };
     if (editing.value) {
       const payload: Record<string, unknown> = {};
-      if (auth.puede(Permiso.SUCURSALES_EDITAR)) {
+      if (auth.puede(Permiso.SUCURSALES_GESTIONAR)) {
         payload.nombre = form.nombre.trim();
         payload.perfil = perfil;
       }
@@ -480,10 +607,10 @@ async function lookupRuc(force = false) {
       form.razonSocial = data.razonSocial;
       form.direccionFiscal = data.direccion ?? "";
       if (!form.direccionComercial.trim()) form.direccionComercial = data.direccion ?? "";
-      form.ubigeo = data.ubigeo ?? "";
-      form.departamento = data.departamento ?? "";
-      form.provincia = data.provincia ?? "";
-      form.distrito = data.distrito ?? "";
+      form.ubigeo = data.ubigeo?.trim() || "040101";
+      form.departamento = data.departamento?.trim() || "Arequipa";
+      form.provincia = data.provincia?.trim() || "Arequipa";
+      form.distrito = data.distrito?.trim() || "Arequipa";
       lastRucLookup = numero;
     }
   } catch (e) {
@@ -501,17 +628,27 @@ onMounted(load);
   margin: 0 auto;
 }
 .filter-bar {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) clamp(180px, 14vw, 220px) max-content max-content;
   align-items: center;
-  flex-wrap: wrap;
   gap: 12px;
+  width: 100%;
 }
 .filter-search {
-  flex: 1 1 260px;
-  max-width: 500px;
+  min-width: 0;
+  width: 100%;
 }
 .filter-status {
-  flex: 0 1 170px;
+  min-width: 0;
+  width: 100%;
+}
+.filter-bar :deep(.v-input) {
+  width: 100%;
+}
+.filter-count {
+  display: flex;
+  align-items: center;
+  white-space: nowrap;
 }
 .branch-section-title {
   display: flex;
@@ -538,8 +675,19 @@ onMounted(load);
   .branch-desktop-list {
     display: none;
   }
-  .filter-status {
-    flex: 1 1 140px;
+  .filter-bar {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .filter-count {
+    justify-self: start;
+  }
+}
+@media (min-width: 801px) and (max-width: 1100px) {
+  .filter-bar {
+    grid-template-columns: minmax(0, 1fr) minmax(180px, 220px);
+  }
+  .filter-count {
+    justify-self: end;
   }
 }
 </style>

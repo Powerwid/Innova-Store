@@ -51,6 +51,47 @@ export const routes: RouteRecordRaw[] = [
         meta: { title: 'Medios de pago', requiresAuth: true, permission: Permiso.MEDIOS_PAGO_VER },
       },
       {
+        path: 'administracion/personas',
+        name: 'personas',
+        component: () => import('@/modules/personas/pages/PersonasPage.vue'),
+        meta: { title: 'Clientes y proveedores', requiresAuth: true, permission: Permiso.PERSONAS_VER },
+      },
+      {
+        path: 'logistica/catalogos', name: 'logistica-catalogos',
+        component: () => import('@/modules/logistica/pages/CatalogosPage.vue'),
+        meta: { title: 'Tipos y categorías', requiresAuth: true, permission: Permiso.LOGISTICA_VER },
+      },
+      {
+        path: 'logistica/unidades-medida', name: 'logistica-unidades-medida',
+        component: () => import('@/modules/logistica/pages/CatalogosPage.vue'),
+        meta: { title: 'Unidades de medida', requiresAuth: true, permission: Permiso.LOGISTICA_VER },
+      },
+      {
+        path: 'logistica/productos', name: 'logistica-productos',
+        component: () => import('@/modules/logistica/pages/ProductosPage.vue'),
+        meta: { title: 'Productos', requiresAuth: true, permission: Permiso.LOGISTICA_VER },
+      },
+      {
+        path: 'logistica/almacenes', name: 'logistica-almacenes',
+        component: () => import('@/modules/logistica/pages/AlmacenesPage.vue'),
+        meta: { title: 'Almacenes', requiresAuth: true, permission: Permiso.LOGISTICA_VER },
+      },
+      {
+        path: 'logistica/inventario', name: 'logistica-inventario',
+        component: () => import('@/modules/logistica/pages/InventarioPage.vue'),
+        meta: { title: 'Inventario', requiresAuth: true, permission: Permiso.LOGISTICA_VER },
+      },
+      {
+        path: 'logistica/kardex', name: 'logistica-kardex',
+        component: () => import('@/modules/logistica/pages/InventarioPage.vue'),
+        meta: { title: 'Kardex', requiresAuth: true, permission: Permiso.LOGISTICA_VER },
+      },
+      {
+        path: 'logistica/configuracion', name: 'logistica-configuracion',
+        component: () => import('@/modules/logistica/pages/InventarioPage.vue'),
+        meta: { title: 'Configuración logística', requiresAuth: true, superadminOnly: true },
+      },
+      {
         path: 'sin-acceso',
         name: 'sin-acceso',
         component: () => import('@/shared/components/feedback/AccessDeniedPage.vue'),
