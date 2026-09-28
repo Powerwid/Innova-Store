@@ -220,6 +220,28 @@ Migraciones: `20260926050000_logistica`,
 específico anterior en `nombre` y `activo` sin perder el valor guardado.
 El seed de logística es idempotente y no reinicia la configuración.
 
+### Unidades y datos de demostración
+
+El seed normal carga las unidades de medida compartidas (`UND`, `KG`, `G`,
+`L`, `ML`, `M`, `CM`, `PAR`, `DOC`, `PQT`, `CJA` y `BOL`). El seed de prueba se
+ejecuta aparte y agrega datos a la sucursal activa asignada al usuario ADMIN:
+categorías, productos por unidad y peso, dos almacenes, existencias y kardex.
+Incluye un producto inactivo, inventario en cero y stock bajo el mínimo.
+Repetirlo no vuelve a aplicar movimientos ni restablece precios o existencias
+que se hayan editado después.
+
+Desde `backend`:
+```powershell
+npx prisma migrate deploy --config prisma7.config.ts
+npx prisma db seed --config prisma7.config.ts
+npm run seed:test
+```
+
+Los datos de prueba usan el prefijo `DEMO LOG -` y no se cargan mediante
+`prisma db seed`. Para verlos con el ADMIN, asígnale los permisos
+`LOGISTICA_VER` y `LOGISTICA_GESTIONAR` desde SUPERADMIN; este último también
+puede acceder directamente a la sucursal.
+
 Desde backend:
 ```powershell
 npx prisma generate

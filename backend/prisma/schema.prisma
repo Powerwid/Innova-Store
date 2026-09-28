@@ -53,6 +53,11 @@ model Usuario {
   perfil                UsuarioPerfil?
   sucursales            UsuarioSucursal[]
   movimientosInventario InventarioMovimiento[]
+  cajasAbiertas         Caja[]                 @relation("CajaUsuarioApertura")
+  cajasCerradas         Caja[]                 @relation("CajaUsuarioCierre")
+  ingresos              Ingreso[]
+  egresos               Egreso[]
+  compras               Compra[]
 
   @@map("usuarios")
 }
@@ -105,7 +110,143 @@ model MedioPago {
   idMedioPago Int    @id @default(autoincrement()) @map("id_medio_pago")
   nombre      String @unique @db.VarChar(45)
 
+  detallesCaja  CajaDetalle[]
+  pagosIngresos IngresoDetallePago[]
+  pagosEgresos  EgresoDetallePago[]
+
   @@map("medios_pago")
+}
+
+// CAJA Y SALDOS POR MEDIO DE PAGO
+model Caja {
+  idCaja            Int       @id @default(autoincrement()) @map("id_caja")
+  idSucursal        Int       @map("id_sucursal")
+  idUsuarioApertura Int       @map("id_usuario_apertura")
+  fechaApertura     DateTime  @default(now()) @map("fecha_apertura")
+  montoApertura     Decimal   @map("monto_apertura") @db.Decimal(14, 2)
+  idUsuarioCierre   Int?      @map("id_usuario_cierre")
+  fechaCierre       DateTime? @map("fecha_cierre")
+  montoCierre       Decimal?  @map("monto_cierre") @db.Decimal(14, 2)
+
+  sucursal        Sucursal      @relation(fields: [idSucursal], references: [idSucursal], onDelete: Restrict)
+  usuarioApertura Usuario       @relation("CajaUsuarioApertura", fields: [idUsuarioApertura], references: [idUsuario], onDelete: Restrict)
+  usuarioCierre   Usuario?      @relation("CajaUsuarioCierre", fields: [idUsuarioCierre], references: [idUsuario], onDelete: Restrict)
+  detalles        CajaDetalle[]
+  ingresos        Ingreso[]
+  egresos         Egreso[]
+
+  @@unique([idCaja, idSucursal])
+  @@index([idSucursal, fechaCierre])
+  @@map("cajas")
+}
+
+model CajaDetalle {
+  idCaja      Int     @map("id_caja")
+  idMedioPago Int     @map("id_medio_pago")
+  monto       Decimal @db.Decimal(14, 2)
+
+  caja      Caja      @relation(fields: [idCaja], references: [idCaja], onDelete: Restrict)
+  medioPago MedioPago @relation(fields: [idMedioPago], references: [idMedioPago], onDelete: Restrict)
+
+  @@id([idCaja, idMedioPago])
+  @@map("caja_detalle")
+}
+
+model MotivoIngreso {
+  idMotivoIngreso Int     @id @default(autoincrement()) @map("id_motivo_ingreso")
+  motivo          String  @unique @db.VarChar(100)
+  activo          Boolean @default(true)
+
+  ingresos Ingreso[]
+
+  @@map("motivo_ingreso")
+}
+
+model MotivoEgreso {
+  idMotivoEgreso Int     @id @default(autoincrement()) @map("id_motivo_egreso")
+  motivo         String  @unique @db.VarChar(100)
+  activo         Boolean @default(true)
+
+  egresos Egreso[]
+
+  @@map("motivo_egreso")
+}
+
+model Ingreso {
+  idIngreso       Int      @id @default(autoincrement()) @map("id_ingreso")
+  idCaja          Int      @map("id_caja")
+  idSucursal      Int      @map("id_sucursal")
+  idMotivoIngreso Int      @map("id_motivo_ingreso")
+  idUsuario       Int      @map("id_usuario")
+  monto           Decimal  @db.Decimal(14, 2)
+  detalle         String?  @db.VarChar(500)
+  fechaIngreso    DateTime @default(now()) @map("fecha_ingreso")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  caja           Caja                 @relation(fields: [idCaja, idSucursal], references: [idCaja, idSucursal], onDelete: Restrict, onUpdate: Restrict)
+  sucursal       Sucursal             @relation(fields: [idSucursal], references: [idSucursal], onDelete: Restrict)
+  motivoIngreso  MotivoIngreso        @relation(fields: [idMotivoIngreso], references: [idMotivoIngreso], onDelete: Restrict)
+  usuario        Usuario              @relation(fields: [idUsuario], references: [idUsuario], onDelete: Restrict)
+  productos      IngresoProducto[]
+  pagos          IngresoDetallePago[]
+  deudaOriginada DeudaCliente?        @relation("IngresoOrigenDeuda")
+  abonoDeuda     AbonoDeudaCliente?
+
+  @@index([idCaja, fechaIngreso])
+  @@map("ingresos")
+}
+
+model Egreso {
+  idEgreso       Int      @id @default(autoincrement()) @map("id_egreso")
+  idCaja         Int      @map("id_caja")
+  idSucursal     Int      @map("id_sucursal")
+  idMotivoEgreso Int      @map("id_motivo_egreso")
+  idCompra       Int?     @map("id_compra")
+  idUsuario      Int      @map("id_usuario")
+  monto          Decimal  @db.Decimal(14, 2)
+  detalle        String?  @db.VarChar(500)
+  fechaEgreso    DateTime @default(now()) @map("fecha_egreso")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  caja         Caja                @relation(fields: [idCaja, idSucursal], references: [idCaja, idSucursal], onDelete: Restrict, onUpdate: Restrict)
+  sucursal     Sucursal            @relation(fields: [idSucursal], references: [idSucursal], onDelete: Restrict)
+  compra       Compra?             @relation(fields: [idCompra, idSucursal], references: [idCompra, idSucursal], onDelete: Restrict, onUpdate: Restrict)
+  motivoEgreso MotivoEgreso        @relation(fields: [idMotivoEgreso], references: [idMotivoEgreso], onDelete: Restrict)
+  usuario      Usuario             @relation(fields: [idUsuario], references: [idUsuario], onDelete: Restrict)
+  pagos        EgresoDetallePago[]
+  percepciones CompraPercepcion[]
+  deudaCliente DeudaCliente?
+
+  @@unique([idEgreso, idCompra])
+  @@index([idCaja, fechaEgreso])
+  @@map("egresos")
+}
+
+// Cada detalle guarda el monto recibido o entregado por un medio de pago real.
+model IngresoDetallePago {
+  idIngreso   Int     @map("id_ingreso")
+  idMedioPago Int     @map("id_medio_pago")
+  monto       Decimal @db.Decimal(14, 2)
+
+  ingreso   Ingreso   @relation(fields: [idIngreso], references: [idIngreso], onDelete: Restrict)
+  medioPago MedioPago @relation(fields: [idMedioPago], references: [idMedioPago], onDelete: Restrict)
+
+  @@id([idIngreso, idMedioPago])
+  @@map("ingresos_detalle_pago")
+}
+
+model EgresoDetallePago {
+  idEgreso    Int     @map("id_egreso")
+  idMedioPago Int     @map("id_medio_pago")
+  monto       Decimal @db.Decimal(14, 2)
+
+  egreso    Egreso    @relation(fields: [idEgreso], references: [idEgreso], onDelete: Restrict)
+  medioPago MedioPago @relation(fields: [idMedioPago], references: [idMedioPago], onDelete: Restrict)
+
+  @@id([idEgreso, idMedioPago])
+  @@map("egresos_detalle_pago")
 }
 
 // ROLES - PERMISOS
@@ -128,11 +269,14 @@ model Sucursal {
   createdAt  DateTime @default(now()) @map("created_at")
   updatedAt  DateTime @updatedAt @map("updated_at")
 
-  perfil      SucursalPerfil?
-  usuarios    UsuarioSucursal[]
-  proveedores Proveedor[]
-  productos   ProductoSucursal[]
-  almacenes   Almacen[]
+  perfil    SucursalPerfil?
+  usuarios  UsuarioSucursal[]
+  productos ProductoSucursal[]
+  almacenes Almacen[]
+  cajas     Caja[]
+  compras   Compra[]
+  ingresos  Ingreso[]
+  egresos   Egreso[]
 
   @@map("sucursales")
 }
@@ -151,7 +295,8 @@ model Cliente {
   createdAt       DateTime @default(now()) @map("created_at")
   updatedAt       DateTime @updatedAt @map("updated_at")
 
-  tipoDocumento TipoDocumento @relation(fields: [idTipoDocumento], references: [idTipoDocumento], onDelete: Restrict)
+  tipoDocumento TipoDocumento  @relation(fields: [idTipoDocumento], references: [idTipoDocumento], onDelete: Restrict)
+  deudas        DeudaCliente[]
 
   @@unique([idTipoDocumento, numeroDocumento])
   @@index([nombre])
@@ -159,27 +304,27 @@ model Cliente {
   @@map("clientes")
 }
 
-// PROVEEDORES POR SUCURSAL
+// PROVEEDORES COMPARTIDOS POR TODAS LAS SUCURSALES
 model Proveedor {
-  idProveedor     Int      @id @default(autoincrement()) @map("id_proveedor")
-  nombre          String   @db.VarChar(255)
-  idTipoDocumento Int      @map("id_tipo_documento")
-  numeroDocumento String   @map("numero_documento") @db.VarChar(20)
-  direccion       String?  @db.VarChar(255)
-  ubigeo          String?  @db.VarChar(6)
-  correo          String?  @db.VarChar(255)
-  telefono        String?  @db.VarChar(20)
-  idSucursal      Int      @map("id_sucursal")
-  activo          Boolean  @default(true)
-  createdAt       DateTime @default(now()) @map("created_at")
-  updatedAt       DateTime @updatedAt @map("updated_at")
+  idProveedor                Int      @id @default(autoincrement()) @map("id_proveedor")
+  nombre                     String   @db.VarChar(255)
+  idTipoDocumento            Int      @map("id_tipo_documento")
+  numeroDocumento            String   @map("numero_documento") @db.VarChar(20)
+  direccion                  String?  @db.VarChar(255)
+  ubigeo                     String?  @db.VarChar(6)
+  correo                     String?  @db.VarChar(255)
+  telefono                   String?  @db.VarChar(20)
+  activo                     Boolean  @default(true)
+  aplicaPercepcionPorDefecto Boolean  @default(false) @map("aplica_percepcion_por_defecto")
+  createdAt                  DateTime @default(now()) @map("created_at")
+  updatedAt                  DateTime @updatedAt @map("updated_at")
 
   tipoDocumento TipoDocumento @relation(fields: [idTipoDocumento], references: [idTipoDocumento], onDelete: Restrict)
-  sucursal      Sucursal      @relation(fields: [idSucursal], references: [idSucursal], onDelete: Restrict)
+  compras       Compra[]
 
-  @@unique([idSucursal, idTipoDocumento, numeroDocumento])
+  @@unique([idTipoDocumento, numeroDocumento])
   @@index([nombre])
-  @@index([idSucursal, activo])
+  @@index([activo])
   @@map("proveedores")
 }
 
@@ -226,6 +371,11 @@ model UsuarioSucursal {
 enum NaturalezaMovimiento {
   ENTRADA
   SALIDA
+}
+
+enum TipoAlmacen {
+  ALMACEN
+  AREA_VENTA
 }
 
 model TipoProducto {
@@ -285,17 +435,19 @@ model Producto {
 }
 
 model ProductoSucursal {
-  idProductoSucursal Int          @id @default(autoincrement()) @map("id_producto_sucursal")
-  idProducto         Int          @map("id_producto")
-  idSucursal         Int          @map("id_sucursal")
-  precioCompra       Decimal      @default(0) @map("precio_compra") @db.Decimal(14, 2)
-  precioVenta        Decimal      @default(0) @map("precio_venta") @db.Decimal(14, 2)
-  estado             Boolean      @default(true)
-  createdAt          DateTime     @default(now()) @map("created_at")
-  updatedAt          DateTime     @updatedAt @map("updated_at")
-  producto           Producto     @relation(fields: [idProducto], references: [idProducto], onDelete: Restrict)
-  sucursal           Sucursal     @relation(fields: [idSucursal], references: [idSucursal], onDelete: Restrict)
+  idProductoSucursal Int               @id @default(autoincrement()) @map("id_producto_sucursal")
+  idProducto         Int               @map("id_producto")
+  idSucursal         Int               @map("id_sucursal")
+  precioCompra       Decimal           @default(0) @map("precio_compra") @db.Decimal(14, 2)
+  precioVenta        Decimal           @default(0) @map("precio_venta") @db.Decimal(14, 2)
+  estado             Boolean           @default(true)
+  createdAt          DateTime          @default(now()) @map("created_at")
+  updatedAt          DateTime          @updatedAt @map("updated_at")
+  producto           Producto          @relation(fields: [idProducto], references: [idProducto], onDelete: Restrict)
+  sucursal           Sucursal          @relation(fields: [idSucursal], references: [idSucursal], onDelete: Restrict)
   inventarios        Inventario[]
+  comprasDetalle     CompraDetalle[]
+  ingresosProductos  IngresoProducto[]
 
   @@unique([idProducto, idSucursal])
   @@unique([idProductoSucursal, idSucursal])
@@ -303,15 +455,18 @@ model ProductoSucursal {
 }
 
 model Almacen {
-  idAlmacen   Int          @id @default(autoincrement()) @map("id_almacen")
-  idSucursal  Int          @map("id_sucursal")
-  nombre      String       @db.VarChar(100)
-  direccion   String?      @db.VarChar(255)
-  estado      Boolean      @default(true)
-  createdAt   DateTime     @default(now()) @map("created_at")
-  updatedAt   DateTime     @updatedAt @map("updated_at")
-  sucursal    Sucursal     @relation(fields: [idSucursal], references: [idSucursal], onDelete: Restrict)
-  inventarios Inventario[]
+  idAlmacen         Int               @id @default(autoincrement()) @map("id_almacen")
+  idSucursal        Int               @map("id_sucursal")
+  nombre            String            @db.VarChar(100)
+  tipo              TipoAlmacen       @default(ALMACEN)
+  direccion         String?           @db.VarChar(255)
+  estado            Boolean           @default(true)
+  createdAt         DateTime          @default(now()) @map("created_at")
+  updatedAt         DateTime          @updatedAt @map("updated_at")
+  sucursal          Sucursal          @relation(fields: [idSucursal], references: [idSucursal], onDelete: Restrict)
+  inventarios       Inventario[]
+  compras           Compra[]
+  ingresosProductos IngresoProducto[]
 
   @@unique([idSucursal, nombre])
   @@unique([idAlmacen, idSucursal])
@@ -347,22 +502,166 @@ model TipoMovimientoInventario {
 }
 
 model InventarioMovimiento {
-  idMovimiento     Int                      @id @default(autoincrement()) @map("id_movimiento")
-  idInventario     Int                      @map("id_inventario")
-  idTipoMovimiento Int                      @map("id_tipo_movimiento")
-  idUsuario        Int                      @map("id_usuario")
-  cantidad         Decimal                  @db.Decimal(14, 3)
-  stockAnterior    Decimal                  @map("stock_anterior") @db.Decimal(14, 3)
-  stockResultante  Decimal                  @map("stock_resultante") @db.Decimal(14, 3)
-  observacion      String?                  @db.VarChar(500)
-  fechaMovimiento  DateTime                 @default(now()) @map("fecha_movimiento")
-  createdAt        DateTime                 @default(now()) @map("created_at")
-  inventario       Inventario               @relation(fields: [idInventario], references: [idInventario], onDelete: Restrict)
-  tipoMovimiento   TipoMovimientoInventario @relation(fields: [idTipoMovimiento], references: [idTipoMovimiento], onDelete: Restrict)
-  usuario          Usuario                  @relation(fields: [idUsuario], references: [idUsuario], onDelete: Restrict)
+  idMovimiento      Int                      @id @default(autoincrement()) @map("id_movimiento")
+  idInventario      Int                      @map("id_inventario")
+  idTipoMovimiento  Int                      @map("id_tipo_movimiento")
+  idUsuario         Int                      @map("id_usuario")
+  idCompraDetalle   Int?                     @map("id_compra_detalle")
+  idIngresoProducto Int?                     @map("id_ingreso_producto")
+  cantidad          Decimal                  @db.Decimal(14, 3)
+  stockAnterior     Decimal                  @map("stock_anterior") @db.Decimal(14, 3)
+  stockResultante   Decimal                  @map("stock_resultante") @db.Decimal(14, 3)
+  observacion       String?                  @db.VarChar(500)
+  fechaMovimiento   DateTime                 @default(now()) @map("fecha_movimiento")
+  createdAt         DateTime                 @default(now()) @map("created_at")
+  inventario        Inventario               @relation(fields: [idInventario], references: [idInventario], onDelete: Restrict)
+  tipoMovimiento    TipoMovimientoInventario @relation(fields: [idTipoMovimiento], references: [idTipoMovimiento], onDelete: Restrict)
+  usuario           Usuario                  @relation(fields: [idUsuario], references: [idUsuario], onDelete: Restrict)
+  compraDetalle     CompraDetalle?           @relation(fields: [idCompraDetalle], references: [idCompraDetalle], onDelete: Restrict)
+  ingresoProducto   IngresoProducto?         @relation(fields: [idIngresoProducto], references: [idIngresoProducto], onDelete: Restrict)
 
   @@index([idInventario, fechaMovimiento])
   @@map("inventario_movimientos")
+}
+
+// COMPRAS: el destino se elige una sola vez para toda la compra.
+model Compra {
+  idCompra        Int      @id @default(autoincrement()) @map("id_compra")
+  idProveedor     Int?     @map("id_proveedor")
+  nombreProveedor String   @map("nombre_proveedor") @db.VarChar(255)
+  idSucursal      Int      @map("id_sucursal")
+  idAlmacen       Int      @map("id_almacen")
+  idUsuario       Int      @map("id_usuario")
+  fechaCompra     DateTime @default(now()) @map("fecha_compra")
+  subtotal        Decimal? @db.Decimal(14, 2)
+  igv             Decimal? @db.Decimal(14, 2)
+  total           Decimal  @db.Decimal(14, 2)
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  proveedor    Proveedor?         @relation(fields: [idProveedor], references: [idProveedor], onDelete: Restrict)
+  sucursal     Sucursal           @relation(fields: [idSucursal], references: [idSucursal], onDelete: Restrict)
+  almacen      Almacen            @relation(fields: [idAlmacen, idSucursal], references: [idAlmacen, idSucursal], onDelete: Restrict, onUpdate: Restrict)
+  usuario      Usuario            @relation(fields: [idUsuario], references: [idUsuario], onDelete: Restrict)
+  detalles     CompraDetalle[]
+  comprobante  Comprobante?
+  egresos      Egreso[]
+  percepciones CompraPercepcion[]
+
+  @@unique([idCompra, idSucursal])
+  @@index([idSucursal, fechaCompra])
+  @@map("compras")
+}
+
+model CompraDetalle {
+  idCompraDetalle    Int      @id @default(autoincrement()) @map("id_compra_detalle")
+  idCompra           Int      @map("id_compra")
+  idProductoSucursal Int      @map("id_producto_sucursal")
+  cantidad           Decimal  @db.Decimal(14, 3)
+  // Precio final de la unidad; el desglose de IGV está en la cabecera.
+  precioUnitario     Decimal  @map("precio_unitario") @db.Decimal(14, 4)
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
+
+  compra           Compra                 @relation(fields: [idCompra], references: [idCompra], onDelete: Restrict)
+  productoSucursal ProductoSucursal       @relation(fields: [idProductoSucursal], references: [idProductoSucursal], onDelete: Restrict)
+  movimientos      InventarioMovimiento[]
+
+  @@index([idCompra])
+  @@map("compras_detalle")
+}
+
+model TipoComprobante {
+  idTipoComprobante Int     @id @default(autoincrement()) @map("id_tipo_comprobante")
+  nombre            String  @unique @db.VarChar(100)
+  // Es opcional para documentos internos, como una nota de pedido.
+  codigoSunat       String? @unique @map("codigo_sunat") @db.VarChar(2)
+
+  comprobantes Comprobante[]
+
+  @@map("tipos_comprobante")
+}
+
+// Documentos recibidos por compras; no se duplican los importes de Compra.
+model Comprobante {
+  idComprobante     Int      @id @default(autoincrement()) @map("id_comprobante")
+  idCompra          Int      @unique @map("id_compra")
+  idTipoComprobante Int      @map("id_tipo_comprobante")
+  serie             String?  @db.VarChar(20)
+  numero            String?  @db.VarChar(40)
+  fechaEmision      DateTime @map("fecha_emision") @db.Date
+
+  compra          Compra          @relation(fields: [idCompra], references: [idCompra], onDelete: Restrict)
+  tipoComprobante TipoComprobante @relation(fields: [idTipoComprobante], references: [idTipoComprobante], onDelete: Restrict)
+
+  @@map("comprobantes")
+}
+
+model CompraPercepcion {
+  idPercepcion     Int      @id @default(autoincrement()) @map("id_percepcion")
+  idCompra         Int      @map("id_compra")
+  idEgreso         Int      @map("id_egreso")
+  fechaPercepcion  DateTime @map("fecha_percepcion") @db.Date
+  baseCalculo      Decimal  @map("base_calculo") @db.Decimal(14, 2)
+  porcentaje       Decimal  @db.Decimal(6, 3)
+  monto            Decimal  @db.Decimal(14, 2)
+  numeroConstancia String?  @map("numero_constancia") @db.VarChar(80)
+
+  compra Compra @relation(fields: [idCompra], references: [idCompra], onDelete: Restrict)
+  // El egreso debe pertenecer a la misma compra que la percepción.
+  egreso Egreso @relation(fields: [idEgreso, idCompra], references: [idEgreso, idCompra], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([idCompra, idEgreso])
+  @@map("compras_percepciones")
+}
+
+// Solo los ingresos por venta de mercadería llevan productos.
+model IngresoProducto {
+  idIngresoProducto  Int      @id @default(autoincrement()) @map("id_ingreso_producto")
+  idIngreso          Int      @map("id_ingreso")
+  idProductoSucursal Int      @map("id_producto_sucursal")
+  idAlmacen          Int      @map("id_almacen")
+  cantidad           Decimal  @db.Decimal(14, 3)
+  precioUnitario     Decimal  @map("precio_unitario") @db.Decimal(14, 4)
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
+
+  ingreso          Ingreso                @relation(fields: [idIngreso], references: [idIngreso], onDelete: Restrict)
+  productoSucursal ProductoSucursal       @relation(fields: [idProductoSucursal], references: [idProductoSucursal], onDelete: Restrict)
+  almacen          Almacen                @relation(fields: [idAlmacen], references: [idAlmacen], onDelete: Restrict)
+  movimientos      InventarioMovimiento[]
+
+  @@index([idIngreso])
+  @@map("ingresos_productos")
+}
+
+model DeudaCliente {
+  idDeudaCliente   Int       @id @default(autoincrement()) @map("id_deuda_cliente")
+  idCliente        Int       @map("id_cliente")
+  idIngresoOrigen  Int       @unique @map("id_ingreso_origen")
+  idEgreso         Int       @unique @map("id_egreso")
+  fechaVencimiento DateTime? @map("fecha_vencimiento") @db.Date
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+
+  cliente       Cliente             @relation(fields: [idCliente], references: [idCliente], onDelete: Restrict)
+  ingresoOrigen Ingreso             @relation("IngresoOrigenDeuda", fields: [idIngresoOrigen], references: [idIngreso], onDelete: Restrict)
+  egreso        Egreso              @relation(fields: [idEgreso], references: [idEgreso], onDelete: Restrict)
+  abonos        AbonoDeudaCliente[]
+
+  @@index([idCliente])
+  @@map("deudas_clientes")
+}
+
+model AbonoDeudaCliente {
+  idDeudaCliente Int @map("id_deuda_cliente")
+  idIngresoAbono Int @unique @map("id_ingreso_abono")
+
+  deudaCliente DeudaCliente @relation(fields: [idDeudaCliente], references: [idDeudaCliente], onDelete: Restrict)
+  ingresoAbono Ingreso      @relation(fields: [idIngresoAbono], references: [idIngreso], onDelete: Restrict)
+
+  @@id([idDeudaCliente, idIngresoAbono])
+  @@map("abonos_deuda_cliente")
 }
 
 // Catálogo de configuraciones compartido por todas las sucursales.
