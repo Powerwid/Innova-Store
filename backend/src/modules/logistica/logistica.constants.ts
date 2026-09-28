@@ -1,4 +1,6 @@
 export const MOVIMIENTO_INICIAL = 1;
+export const MOVIMIENTO_COMPRA = 5;
+export const MOVIMIENTO_VENTA = 6;
 export const CONFIG_STOCK_NEGATIVO = 'STOCK_NEGATIVO';
 export const TIPOS_MOVIMIENTO = [
   {
@@ -13,4 +15,14 @@ export const TIPOS_MOVIMIENTO = [
   },
   { idTipoMovimiento: 3, nombre: 'Ajuste de salida', entradaSalida: 'SALIDA' },
   { idTipoMovimiento: 4, nombre: 'Merma', entradaSalida: 'SALIDA' },
+  {
+    idTipoMovimiento: MOVIMIENTO_COMPRA,
+    nombre: 'Compra',
+    entradaSalida: 'ENTRADA',
+  },
+  {
+    idTipoMovimiento: MOVIMIENTO_VENTA,
+    nombre: 'Venta',
+    entradaSalida: 'SALIDA',
+  },
 ] as const;

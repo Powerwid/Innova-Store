@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   CantidadSchema,
   PrecioSchema,
+  TipoAlmacenSchema,
   MovimientoSchema,
   ActualizarInventarioSchema,
   ActualizarConfiguracionGlobalSchema,
@@ -11,6 +12,7 @@ import {
   CategoriaSchema,
   ListarSchema,
   ProductoSchema,
+  AlmacenSchema,
 } from './logistica.dto.js';
 
 describe('validaciones de logística', () => {
@@ -62,6 +64,29 @@ describe('validaciones de logística', () => {
     expect(
       ActualizarProductoSucursalSchema.safeParse({ idProducto: 2 }).success,
     ).toBe(false);
+  });
+  it('valida el tipo de almacén y no lo reinicia en PATCH', () => {
+    expect(TipoAlmacenSchema.parse('ALMACEN')).toBe('ALMACEN');
+    expect(TipoAlmacenSchema.parse('AREA_VENTA')).toBe('AREA_VENTA');
+    expect(
+      TipoAlmacenSchema.safeParse('BODEGA').error?.issues[0]?.message,
+    ).toBe('El tipo de almacén debe ser ALMACEN o AREA_VENTA');
+    expect(
+      AlmacenSchema.parse({ idSucursal: 1, nombre: 'Principal' }).tipo,
+    ).toBe('ALMACEN');
+    expect(
+      AlmacenSchema.parse({
+        idSucursal: 1,
+        nombre: 'Mostrador',
+        tipo: 'AREA_VENTA',
+      }).tipo,
+    ).toBe('AREA_VENTA');
+    expect(ActualizarAlmacenSchema.parse({ nombre: 'Principal' })).toEqual({
+      nombre: 'Principal',
+    });
+    expect(ActualizarAlmacenSchema.parse({ tipo: 'AREA_VENTA' })).toEqual({
+      tipo: 'AREA_VENTA',
+    });
   });
   it('valida colores, deja código de barras opcional y no reinicia estados en PATCH', () => {
     expect(

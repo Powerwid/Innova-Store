@@ -36,19 +36,23 @@ const personaBaseSchema = z.object({
   activo: z
     .boolean()
     .default(true),
-  idSucursal: z
-    .number()
-    .int()
-    .positive()
-    .optional(),
 });
 
-export const CrearPersonaSchema = personaBaseSchema.extend({
-  tipo: TipoPersonaSchema,
-});
+export const CrearPersonaSchema = z.discriminatedUnion('tipo', [
+  personaBaseSchema.extend({
+    tipo: z.literal('CLIENTE'),
+  }),
+  personaBaseSchema.extend({
+    tipo: z.literal('PROVEEDOR'),
+    aplicaPercepcionPorDefecto: z.boolean().default(false),
+  }),
+]);
 export type CrearPersonaDto = z.infer<typeof CrearPersonaSchema>;
 
 export const ActualizarPersonaSchema = personaBaseSchema
+  .extend({
+    aplicaPercepcionPorDefecto: z.boolean().optional(),
+  })
   .partial()
   .refine((data) => Object.keys(data).length > 0, 'Debe enviar al menos un campo');
 export type ActualizarPersonaDto = z.infer<typeof ActualizarPersonaSchema>;
@@ -56,6 +60,5 @@ export type ActualizarPersonaDto = z.infer<typeof ActualizarPersonaSchema>;
 export const ListarPersonasSchema = z.object({
   tipo: TipoPersonaSchema.default('CLIENTE'),
   buscar: z.string().trim().max(255).optional(),
-  idSucursal: z.coerce.number().int().positive().optional(),
 });
 export type ListarPersonasDto = z.infer<typeof ListarPersonasSchema>;

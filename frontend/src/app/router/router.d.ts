@@ -8,6 +8,7 @@ declare module 'vue-router' {
     requiresAuth?: boolean
     guestOnly?: boolean
     permission?: string
+    permissionsAny?: string[]
     superadminOnly?: boolean
   }
 }

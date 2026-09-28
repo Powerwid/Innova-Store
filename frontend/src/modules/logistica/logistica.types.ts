@@ -67,6 +67,7 @@ export interface Almacen {
   idSucursal: number
   nombre: string
   direccion: string | null
+  tipo: 'ALMACEN' | 'AREA_VENTA'
   estado: boolean
   createdAt: string
   updatedAt: string

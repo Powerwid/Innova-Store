@@ -20,6 +20,9 @@ router.beforeEach(async (to) => {
 
   if (to.meta.superadminOnly && !authStore.esSuperadmin) return { name: 'sin-acceso' }
   if (to.meta.permission && !authStore.puede(to.meta.permission)) return { name: 'sin-acceso' }
+  if (to.meta.permissionsAny?.length && !to.meta.permissionsAny.some((permission) => authStore.puede(permission))) {
+    return { name: 'sin-acceso' }
+  }
 
   return true
 })

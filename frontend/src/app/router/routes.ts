@@ -57,6 +57,41 @@ export const routes: RouteRecordRaw[] = [
         meta: { title: 'Clientes y proveedores', requiresAuth: true, permission: Permiso.PERSONAS_VER },
       },
       {
+        path: 'operaciones/caja', name: 'operaciones-caja',
+        component: () => import('@/modules/operaciones/pages/CajaPage.vue'),
+        meta: { title: 'Caja', requiresAuth: true, permission: Permiso.CAJA_VER },
+      },
+      {
+        path: 'operaciones/ingresos', name: 'operaciones-ingresos',
+        component: () => import('@/modules/operaciones/pages/MovimientosPage.vue'),
+        meta: { title: 'Ingresos', requiresAuth: true, permission: Permiso.CAJA_VER },
+      },
+      {
+        path: 'operaciones/egresos', name: 'operaciones-egresos',
+        component: () => import('@/modules/operaciones/pages/MovimientosPage.vue'),
+        meta: { title: 'Egresos', requiresAuth: true, permission: Permiso.CAJA_VER },
+      },
+      {
+        path: 'operaciones/ventas', name: 'operaciones-ventas',
+        component: () => import('@/modules/operaciones/pages/VentasPage.vue'),
+        meta: { title: 'Ventas', requiresAuth: true, permission: Permiso.VENTAS_VER },
+      },
+      {
+        path: 'operaciones/compras', name: 'operaciones-compras',
+        component: () => import('@/modules/operaciones/pages/ComprasPage.vue'),
+        meta: { title: 'Compras', requiresAuth: true, permission: Permiso.COMPRAS_VER },
+      },
+      {
+        path: 'operaciones/deudas', name: 'operaciones-deudas',
+        component: () => import('@/modules/operaciones/pages/DeudasPage.vue'),
+        meta: { title: 'Deudas de clientes', requiresAuth: true, permission: Permiso.DEUDAS_VER },
+      },
+      {
+        path: 'operaciones/catalogos', name: 'operaciones-catalogos',
+        component: () => import('@/modules/operaciones/pages/CatalogosPage.vue'),
+        meta: { title: 'Catálogos operativos', requiresAuth: true, permissionsAny: [Permiso.CAJA_VER, Permiso.COMPRAS_VER] },
+      },
+      {
         path: 'logistica/catalogos', name: 'logistica-catalogos',
         component: () => import('@/modules/logistica/pages/CatalogosPage.vue'),
         meta: { title: 'Tipos y categorías', requiresAuth: true, permission: Permiso.LOGISTICA_VER },

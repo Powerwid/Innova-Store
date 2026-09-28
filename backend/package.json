@@ -20,7 +20,8 @@
     "test:cov": "vitest run --coverage",
     "test:debug": "vitest --inspect-brk --no-file-parallelism",
     "test:e2e": "vitest run --config ./vitest.config.e2e.ts",
-    "seed:test": "tsx prisma/seeds/test.ts"
+    "seed:test": "tsx prisma/seeds/test.ts",
+    "seed:motivos": "tsx prisma/seeds/motivos.ts"
   },
   "dependencies": {
     "@bwip-js/node": "^4.11.4",

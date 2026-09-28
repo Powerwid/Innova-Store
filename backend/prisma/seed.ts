@@ -9,33 +9,37 @@ import { seedAdminSucursal } from './seeds/usuarios/admin-sucursal.seed.js';
 import { seedMediosPago } from './seeds/base/medios-pago.seed.js';
 import { seedLogistica } from './seeds/base/logistica.seed.js';
 import { seedUnidadesMedida } from './seeds/base/unidades-medida.seed.js';
+import { seedMotivosOperacion } from './seeds/base/motivos-operacion.seed.js';
+import { seedTiposComprobante } from './seeds/base/tipos-comprobante.seed.js';
 
 async function main() {
-    console.log('\nIniciando seed de Innova-Store...\n');
+  console.log('\nIniciando seed de Innova-Store...\n');
 
-    await seedEstados();
-    await seedTiposDocumento();
-    await seedMediosPago();
-    await seedLogistica();
-    await seedUnidadesMedida();
+  await seedEstados();
+  await seedTiposDocumento();
+  await seedMediosPago();
+  await seedLogistica();
+  await seedUnidadesMedida();
+  await seedMotivosOperacion();
+  await seedTiposComprobante();
 
-    await seedRoles();
-    await seedPermisos();
-    await seedRolesPermisos();
+  await seedRoles();
+  await seedPermisos();
+  await seedRolesPermisos();
 
-    await seedSuperadmin();
-    await seedAdminSucursal();
+  await seedSuperadmin();
+  await seedAdminSucursal();
 
-    console.log('\nSeed finalizado correctamente.\n');
+  console.log('\nSeed finalizado correctamente.\n');
 }
 
 main()
-    .catch((error) => {
-        console.error('\nError ejecutando los seeders:\n');
-        console.error(error);
+  .catch((error) => {
+    console.error('\nError ejecutando los seeders:\n');
+    console.error(error);
 
-        process.exitCode = 1;
-    })
-    .finally(async () => {
-        await prisma.$disconnect();
-    });
+    process.exitCode = 1;
+  })
+  .finally(async () => {
+    await prisma.$disconnect();
+  });

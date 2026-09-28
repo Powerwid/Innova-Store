@@ -222,6 +222,7 @@
                 variant="outlined"
                 density="compact"
                 hide-details="auto"
+                :error-messages="fieldErrors.idTipoDocumento"
                 @update:model-value="changeUserDocumentType"
               />
               <v-text-field
@@ -234,6 +235,7 @@
                 variant="outlined"
                 density="compact"
                 hide-details="auto"
+                :error-messages="fieldErrors.numeroDocumento"
                 @update:model-value="sanitizeUserDocument"
                 @blur="lookupDocument()"
                 @keyup.enter="lookupDocument(true)"
@@ -263,19 +265,23 @@
             <div class="user-form-grid">
               <v-text-field
                 v-model="form.nombres"
-                label="Nombres"
+                label="Nombres *"
                 placeholder="Ingresa los nombres"
                 variant="outlined"
                 density="compact"
                 hide-details="auto"
+                :error-messages="fieldErrors.nombres"
+                @update:model-value="clearFieldError('nombres')"
               />
               <v-text-field
                 v-model="form.apellidos"
-                label="Apellidos"
+                label="Apellidos *"
                 placeholder="Ingresa los apellidos"
                 variant="outlined"
                 density="compact"
                 hide-details="auto"
+                :error-messages="fieldErrors.apellidos"
+                @update:model-value="clearFieldError('apellidos')"
               />
             </div>
           </section>
@@ -288,21 +294,25 @@
             <div class="user-form-grid">
               <v-text-field
                 v-model="form.correo"
-                label="Correo electrónico"
+                label="Correo electrónico *"
                 placeholder="usuario@empresa.com"
                 type="email"
                 variant="outlined"
                 density="compact"
                 hide-details="auto"
+                :error-messages="fieldErrors.correo"
+                @update:model-value="clearFieldError('correo')"
               />
               <v-text-field
                 v-if="!editing"
                 v-model="form.contrasena"
-                label="Contraseña"
+                label="Contraseña *"
                 placeholder="Mínimo 8 caracteres"
                 type="password"
                 hint="Debe incluir una mayúscula y un número"
                 persistent-hint
+                :error-messages="fieldErrors.contrasena"
+                @update:model-value="clearFieldError('contrasena')"
                 variant="outlined"
                 density="compact"
               />
@@ -312,11 +322,13 @@
                 :items="activeRoles"
                 item-title="nombre"
                 item-value="idRol"
-                label="Rol"
+                label="Rol *"
                 placeholder="Selecciona un rol"
                 variant="outlined"
                 density="compact"
                 hide-details="auto"
+                :error-messages="fieldErrors.idRol"
+                @update:model-value="clearFieldError('idRol')"
               />
             </div>
           </section>
@@ -447,6 +459,10 @@ const form = reactive({
   direccion: "",
   activo: true,
 });
+type UserField = "nombres" | "apellidos" | "correo" | "contrasena" | "idRol" | "idTipoDocumento" | "numeroDocumento";
+const fieldErrors = reactive<Record<UserField, string>>({
+  nombres: "", apellidos: "", correo: "", contrasena: "", idRol: "", idTipoDocumento: "", numeroDocumento: "",
+});
 const filtered = computed(() =>
   users.value.filter((user) => {
     const query = search.value?.toLocaleLowerCase("es").trim() || "";
@@ -560,10 +576,13 @@ function resetForm() {
     activo: true,
   });
   formError.value = "";
+  clearFieldErrors();
   lastDniLookup = "";
 }
 function changeUserDocumentType() {
   form.numeroDocumento = "";
+  clearFieldError("idTipoDocumento");
+  clearFieldError("numeroDocumento");
   lastDniLookup = "";
 }
 function sanitizeUserDocument(value: string) {
@@ -571,6 +590,37 @@ function sanitizeUserDocument(value: string) {
   form.numeroDocumento = documentKind.value === "CE"
     ? raw.replace(/[^A-Z0-9]/g, "").slice(0, documentMaxLength.value)
     : raw.replace(/\D/g, "").slice(0, documentMaxLength.value);
+  clearFieldError("numeroDocumento");
+}
+function clearFieldError(field: UserField) {
+  fieldErrors[field] = "";
+  if (!Object.values(fieldErrors).some(Boolean) && formError.value.startsWith("Revisa los campos")) formError.value = "";
+}
+function clearFieldErrors() {
+  for (const field of Object.keys(fieldErrors) as UserField[]) fieldErrors[field] = "";
+}
+function validateUserForm() {
+  clearFieldErrors();
+  if (!editing.value || auth.puede(Permiso.USUARIOS_GESTIONAR)) {
+    if (form.nombres.trim().length < 2) fieldErrors.nombres = "Ingresa los nombres (mínimo 2 caracteres)";
+    if (form.apellidos.trim().length < 2) fieldErrors.apellidos = "Ingresa los apellidos (mínimo 2 caracteres)";
+    if (!form.correo.trim()) fieldErrors.correo = "Ingresa el correo electrónico";
+    else if (!/^\S+@\S+\.\S+$/.test(form.correo.trim())) fieldErrors.correo = "Ingresa un correo electrónico válido";
+  }
+  if (form.numeroDocumento.trim()) {
+    if (!form.idTipoDocumento) fieldErrors.idTipoDocumento = "Selecciona el tipo de documento";
+    else if (documentKind.value === "DNI" && !/^\d{8}$/.test(form.numeroDocumento)) fieldErrors.numeroDocumento = "El DNI debe tener exactamente 8 dígitos";
+    else if (documentKind.value === "RUC" && !/^\d{11}$/.test(form.numeroDocumento)) fieldErrors.numeroDocumento = "El RUC debe tener exactamente 11 dígitos";
+    else if (documentKind.value === "CE" && !/^[A-Z0-9]{6,20}$/.test(form.numeroDocumento)) fieldErrors.numeroDocumento = "Ingresa un carné de extranjería válido";
+  }
+  if (!editing.value) {
+    if (!form.idRol) fieldErrors.idRol = "Selecciona el rol del usuario";
+    if (!form.contrasena) fieldErrors.contrasena = "Ingresa una contraseña";
+    else if (form.contrasena.length < 8) fieldErrors.contrasena = "La contraseña debe tener al menos 8 caracteres";
+    else if (!/[A-Z]/.test(form.contrasena)) fieldErrors.contrasena = "Incluye al menos una letra mayúscula";
+    else if (!/\d/.test(form.contrasena)) fieldErrors.contrasena = "Incluye al menos un número";
+  } else if (auth.esSuperadmin && !form.idRol) fieldErrors.idRol = "Selecciona el rol del usuario";
+  return !Object.values(fieldErrors).some(Boolean);
 }
 function openCreate() {
   editing.value = null;
@@ -579,6 +629,7 @@ function openCreate() {
 }
 async function openEdit(user: Usuario) {
   formError.value = "";
+  clearFieldErrors();
   try {
     const { data } = await usuariosApi.obtener(user.idUsuario);
     editing.value = data;
@@ -605,19 +656,8 @@ function optional(value: string) {
 }
 async function saveUser() {
   formError.value = "";
-  if (
-    (!editing.value || auth.puede(Permiso.USUARIOS_GESTIONAR)) &&
-    (!form.nombres.trim() || !form.apellidos.trim() || !form.correo.trim())
-  ) {
-    formError.value = "Completa nombres, apellidos y correo";
-    return;
-  }
-  if (form.numeroDocumento && !form.idTipoDocumento) {
-    formError.value = "Selecciona el tipo de documento";
-    return;
-  }
-  if (!editing.value && (!form.idRol || !form.contrasena)) {
-    formError.value = "Selecciona un rol y escribe una contraseña";
+  if (!validateUserForm()) {
+    formError.value = "Revisa los campos resaltados; cada uno indica qué dato falta o debe corregirse";
     return;
   }
   saving.value = true;
@@ -676,7 +716,7 @@ async function lookupDocument(force = false) {
   const numero = form.numeroDocumento.trim();
   if (!/^\d{8}$/.test(numero)) {
     if (!force) return;
-    formError.value = "Ingresa un DNI de 8 dígitos";
+    fieldErrors.numeroDocumento = "El DNI debe tener exactamente 8 dígitos";
     return;
   }
   if (lookupLoading.value || (!force && lastDniLookup === numero)) return;
@@ -685,6 +725,7 @@ async function lookupDocument(force = false) {
   try {
     const { data } = await documentosApi.consultar("DNI", numero);
     if (data.tipoDocumento === "DNI" && form.numeroDocumento.trim() === numero) {
+      clearFieldError("numeroDocumento");
       form.nombres = data.nombres;
       form.apellidos = data.apellidos;
       lastDniLookup = numero;

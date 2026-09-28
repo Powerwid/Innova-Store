@@ -8,8 +8,18 @@ export interface DefinicionPermiso {
 }
 
 export const PERMISOS_SISTEMA: readonly DefinicionPermiso[] = [
-  { nombre: PermisoSistema.LOGISTICA_VER, etiqueta: 'Ver logística', modulo: 'Logística', orden: 500 },
-  { nombre: PermisoSistema.LOGISTICA_GESTIONAR, etiqueta: 'Gestionar logística', modulo: 'Logística', orden: 510 },
+  {
+    nombre: PermisoSistema.LOGISTICA_VER,
+    etiqueta: 'Ver logística',
+    modulo: 'Logística',
+    orden: 500,
+  },
+  {
+    nombre: PermisoSistema.LOGISTICA_GESTIONAR,
+    etiqueta: 'Gestionar logística',
+    modulo: 'Logística',
+    orden: 510,
+  },
   {
     nombre: PermisoSistema.DASHBOARD_VER,
     etiqueta: 'Ver dashboard',
@@ -63,6 +73,54 @@ export const PERMISOS_SISTEMA: readonly DefinicionPermiso[] = [
     etiqueta: 'Gestionar clientes y proveedores',
     modulo: 'Clientes y proveedores',
     orden: 410,
+  },
+  {
+    nombre: PermisoSistema.CAJA_VER,
+    etiqueta: 'Ver caja',
+    modulo: 'Caja',
+    orden: 600,
+  },
+  {
+    nombre: PermisoSistema.CAJA_GESTIONAR,
+    etiqueta: 'Gestionar caja',
+    modulo: 'Caja',
+    orden: 610,
+  },
+  {
+    nombre: PermisoSistema.VENTAS_VER,
+    etiqueta: 'Ver ventas',
+    modulo: 'Ventas',
+    orden: 700,
+  },
+  {
+    nombre: PermisoSistema.VENTAS_GESTIONAR,
+    etiqueta: 'Gestionar ventas',
+    modulo: 'Ventas',
+    orden: 710,
+  },
+  {
+    nombre: PermisoSistema.COMPRAS_VER,
+    etiqueta: 'Ver compras',
+    modulo: 'Compras',
+    orden: 800,
+  },
+  {
+    nombre: PermisoSistema.COMPRAS_GESTIONAR,
+    etiqueta: 'Gestionar compras',
+    modulo: 'Compras',
+    orden: 810,
+  },
+  {
+    nombre: PermisoSistema.DEUDAS_VER,
+    etiqueta: 'Ver deudas de clientes',
+    modulo: 'Deudas de clientes',
+    orden: 900,
+  },
+  {
+    nombre: PermisoSistema.DEUDAS_GESTIONAR,
+    etiqueta: 'Gestionar deudas de clientes',
+    modulo: 'Deudas de clientes',
+    orden: 910,
   },
 ];
 

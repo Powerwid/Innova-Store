@@ -49,9 +49,9 @@ export const productoSucursalApi = {
 }
 export const almacenesApi = {
   listar: (params?: ConsultaLogistica) => http.get<Pagina<Almacen>>(`${base}/almacenes`, query(params)),
-  crear: (payload: { idSucursal: number; nombre: string; direccion: string | null; estado: boolean }) =>
+  crear: (payload: { idSucursal: number; nombre: string; direccion: string | null; tipo: 'ALMACEN' | 'AREA_VENTA'; estado: boolean }) =>
     http.post<Almacen>(`${base}/almacenes`, payload),
-  actualizar: (id: number, payload: { nombre?: string; direccion?: string | null; estado?: boolean }) =>
+  actualizar: (id: number, payload: { nombre?: string; direccion?: string | null; tipo?: 'ALMACEN' | 'AREA_VENTA'; estado?: boolean }) =>
     http.patch<Almacen>(`${base}/almacenes/${id}`, payload),
   eliminar: (id: number) => http.delete<{ message: string }>(`${base}/almacenes/${id}`),
 }

@@ -88,8 +88,7 @@ export interface PersonaRegistro {
   correo: string | null;
   telefono: string | null;
   activo: boolean;
-  idSucursal: number | null;
-  sucursal?: { idSucursal: number; nombre: string } | null;
+  aplicaPercepcionPorDefecto: boolean;
   tipoDocumento: TipoDocumento;
   createdAt: string;
   updatedAt: string;
@@ -104,7 +103,7 @@ export interface PersonaPayload {
   correo: string | null;
   telefono: string | null;
   activo: boolean;
-  idSucursal?: number;
+  aplicaPercepcionPorDefecto?: boolean;
 }
 export type DatosDocumento =
   | {

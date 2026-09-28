@@ -32,7 +32,7 @@
                 size="small"
                 class="text-none font-weight-bold px-5"
                 :loading="consulting"
-                :disabled="!validApiDocument || providerWithoutBranch"
+                :disabled="!validApiDocument"
                 @click="consultDocument"
               >
                 <v-icon start size="17">mdi-magnify</v-icon>
@@ -49,7 +49,6 @@
             class="personas-api-add text-none font-weight-bold"
             rounded="lg"
             height="40"
-            :disabled="providerWithoutBranch"
             @click="openManualModal"
           >
             Registro Manual
@@ -57,15 +56,6 @@
         </div>
       </v-card-text>
     </v-card>
-
-    <v-alert
-      v-if="providerWithoutBranch"
-      type="warning"
-      variant="tonal"
-      class="mb-4 rounded-xl"
-    >
-      Selecciona una sucursal para administrar sus proveedores.
-    </v-alert>
 
     <v-alert v-if="error" type="error" variant="tonal" class="mb-4 rounded-xl" closable @click:close="error = ''">
       {{ error }}
@@ -271,7 +261,6 @@
       :role="role"
       :person="editingPerson"
       :document-types="documentTypes"
-      :id-sucursal="currentBranchId"
       @saved="onSaved"
     />
 
@@ -308,17 +297,15 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { documentosApi, personasApi } from '@/core/api/administracion.api'
 import { getApiErrorMessage } from '@/core/api/api-error'
 import { Permiso } from '@/core/constants/permisos'
 import type { PersonaRegistro, TipoDocumento, TipoPersona } from '@/core/types/administracion.types'
 import { useAuthStore } from '@/modules/auth/auth.store'
-import { useSucursalStore } from '@/shared/stores/sucursal.store'
 import PersonFormDialog from '@/modules/personas/components/PersonFormDialog.vue'
 
 const auth = useAuthStore()
-const branchStore = useSucursalStore()
 const role = ref<TipoPersona>('CLIENTE')
 const search = ref('')
 const apiDocument = ref('')
@@ -338,8 +325,6 @@ const page = ref(1)
 const perPage = 15
 let searchTimer: ReturnType<typeof setTimeout> | null = null
 
-const currentBranchId = computed(() => branchStore.idSucursalActual)
-const providerWithoutBranch = computed(() => role.value === 'PROVEEDOR' && !currentBranchId.value)
 const canManage = computed(() => auth.puede(Permiso.PERSONAS_GESTIONAR))
 const canCreate = canManage
 const canEdit = canManage
@@ -352,14 +337,10 @@ const paginatedPeople = computed(() => {
 })
 
 async function load() {
-  if (providerWithoutBranch.value) {
-    people.value = []
-    return
-  }
   loading.value = true
   error.value = ''
   try {
-    const { data } = await personasApi.listar(role.value, search.value.trim(), currentBranchId.value)
+    const { data } = await personasApi.listar(role.value, search.value.trim())
     people.value = data
     if (page.value > totalPages.value) page.value = totalPages.value
   } catch (e) {
@@ -390,7 +371,7 @@ function sanitizeApiDocument(value: string) {
 }
 
 async function consultDocument() {
-  if (!validApiDocument.value || consulting.value || providerWithoutBranch.value) return
+  if (!validApiDocument.value || consulting.value) return
   consulting.value = true
   error.value = ''
   try {
@@ -406,7 +387,7 @@ async function consultDocument() {
       correo: null,
       telefono: null,
       activo: true,
-      ...(role.value === 'PROVEEDOR' ? { idSucursal: Number(currentBranchId.value) } : {}),
+      ...(role.value === 'PROVEEDOR' ? { aplicaPercepcionPorDefecto: false } : {}),
     })
     notice.value = created.message
     noticeVisible.value = true
@@ -478,12 +459,6 @@ onMounted(async () => {
   await load()
 })
 
-watch(currentBranchId, (next, previous) => {
-  if (role.value === 'PROVEEDOR' && next !== previous) {
-    page.value = 1
-    load()
-  }
-})
 onBeforeUnmount(() => { if (searchTimer) clearTimeout(searchTimer) })
 </script>
 

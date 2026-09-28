@@ -22,6 +22,9 @@ const decimal = (escala: number) =>
     );
 export const CantidadSchema = decimal(3);
 export const PrecioSchema = decimal(2);
+export const TipoAlmacenSchema = z.enum(['ALMACEN', 'AREA_VENTA'], {
+  error: 'El tipo de almacén debe ser ALMACEN o AREA_VENTA',
+});
 
 export const TipoProductoSchema = z
   .object({ nombre: nombre(100), estado: z.boolean().default(true) })
@@ -65,6 +68,7 @@ export const AlmacenSchema = z
   .object({
     idSucursal: id,
     nombre: nombre(100),
+    tipo: TipoAlmacenSchema.default('ALMACEN'),
     direccion: opcional(255).optional(),
     estado: z.boolean().default(true),
   })
@@ -118,7 +122,10 @@ export const ActualizarProductoSucursalSchema = ProductoSucursalSchema.omit({
   .refine(noVacio, 'Envía al menos un campo');
 export const ActualizarAlmacenSchema = AlmacenSchema.omit({ idSucursal: true })
   .partial()
-  .extend(estadoOpcional)
+  .extend({
+    ...estadoOpcional,
+    tipo: TipoAlmacenSchema.optional(),
+  })
   .refine(noVacio, 'Envía al menos un campo');
 export const ActualizarInventarioSchema = z
   .object({ stockMinimo: CantidadSchema })

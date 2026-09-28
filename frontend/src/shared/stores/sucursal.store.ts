@@ -32,13 +32,31 @@ export const useSucursalStore = defineStore(
       sucursales.value = sucursales.value.map((item) => items.find((candidate) => candidate.idSucursal === item.idSucursal) ?? item)
     }
 
+    function reemplazarDisponibles(items: SucursalAsignada[]) {
+      const unicas = new Map(items.map((item) => [item.idSucursal, item]))
+      sucursales.value = [...unicas.values()]
+
+      const seleccionValida = sucursales.value.some(
+        (item) => item.idSucursal === idSucursalActual.value,
+      )
+      if (!seleccionValida) idSucursalActual.value = sucursales.value[0]?.idSucursal ?? null
+    }
+
     function seleccionar(idSucursal: number) {
       if (sucursales.value.some((item) => item.idSucursal === idSucursal)) {
         idSucursalActual.value = idSucursal
       }
     }
 
-    return { idSucursalActual, sucursales, sucursalActual, sincronizar, actualizarNombres, seleccionar }
+    return {
+      idSucursalActual,
+      sucursales,
+      sucursalActual,
+      sincronizar,
+      actualizarNombres,
+      reemplazarDisponibles,
+      seleccionar,
+    }
   },
   { persist: { pick: ['idSucursalActual'] } },
 )

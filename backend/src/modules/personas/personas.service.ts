@@ -1,4 +1,4 @@
-import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma/prisma.service.js';
 import type { UsuarioAutenticado } from '../../common/types/usuario-autenticado.js';
 import type { ActualizarPersonaDto, CrearPersonaDto, ListarPersonasDto, TipoPersona } from './dto/persona.dto.js';
@@ -7,7 +7,7 @@ import type { ActualizarPersonaDto, CrearPersonaDto, ListarPersonasDto, TipoPers
 export class PersonasService {
   constructor(private readonly prisma: PrismaService) { }
 
-  async listar(dto: ListarPersonasDto, actor: UsuarioAutenticado) {
+  async listar(dto: ListarPersonasDto, _actor: UsuarioAutenticado) {
     const buscar = dto.buscar || undefined;
     if (dto.tipo === 'CLIENTE') {
       const rows = await this.prisma.cliente.findMany({
@@ -27,28 +27,24 @@ export class PersonasService {
       return rows.map((row) => this.normalizar('CLIENTE', row));
     }
 
-    const idSucursal = await this.validarSucursal(dto.idSucursal, actor);
     const rows = await this.prisma.proveedor.findMany({
-      where: {
-        idSucursal,
-        ...(buscar
-          ? {
-            OR: [
-              { nombre: { contains: buscar } },
-              { numeroDocumento: { contains: buscar } },
-              { correo: { contains: buscar } },
-              { telefono: { contains: buscar } },
-            ],
-          }
-          : {}),
-      },
-      include: { tipoDocumento: true, sucursal: { select: { idSucursal: true, nombre: true } } },
+      where: buscar
+        ? {
+          OR: [
+            { nombre: { contains: buscar } },
+            { numeroDocumento: { contains: buscar } },
+            { correo: { contains: buscar } },
+            { telefono: { contains: buscar } },
+          ],
+        }
+        : undefined,
+      include: { tipoDocumento: true },
       orderBy: { createdAt: 'desc' },
     });
     return rows.map((row) => this.normalizar('PROVEEDOR', row));
   }
 
-  async obtener(tipo: TipoPersona, id: number, actor: UsuarioAutenticado) {
+  async obtener(tipo: TipoPersona, id: number, _actor: UsuarioAutenticado) {
     if (tipo === 'CLIENTE') {
       const row = await this.prisma.cliente.findUnique({
         where: { idCliente: id },
@@ -60,10 +56,9 @@ export class PersonasService {
 
     const row = await this.prisma.proveedor.findUnique({
       where: { idProveedor: id },
-      include: { tipoDocumento: true, sucursal: { select: { idSucursal: true, nombre: true } } },
+      include: { tipoDocumento: true },
     });
     if (!row) throw new NotFoundException('Proveedor no encontrado');
-    await this.validarSucursal(row.idSucursal, actor);
     return this.normalizar(tipo, row);
   }
 
@@ -78,16 +73,16 @@ export class PersonasService {
       };
     }
 
-    const idSucursal = await this.validarSucursal(dto.idSucursal, actor);
     await this.validarDocumentoDuplicado(
       'PROVEEDOR',
       datos.idTipoDocumento,
       datos.numeroDocumento,
-      undefined,
-      idSucursal,
     );
     const row = await this.prisma.proveedor.create({
-      data: { ...datos, idSucursal },
+      data: {
+        ...datos,
+        aplicaPercepcionPorDefecto: dto.aplicaPercepcionPorDefecto,
+      },
     });
     return {
       message: 'Proveedor creado correctamente',
@@ -107,9 +102,11 @@ export class PersonasService {
     await this.validarDocumento(idTipoDocumento, numeroDocumento);
 
     const datos = this.limpiarOpcionales(dto);
-    delete datos.idSucursal;
 
     if (tipo === 'CLIENTE') {
+      if (dto.aplicaPercepcionPorDefecto !== undefined) {
+        throw new BadRequestException('La percepción por defecto solo aplica a proveedores');
+      }
       await this.validarDocumentoDuplicado(tipo, idTipoDocumento, numeroDocumento, id);
       await this.prisma.cliente.update({ where: { idCliente: id }, data: datos });
       return {
@@ -118,12 +115,10 @@ export class PersonasService {
       };
     }
 
-    const idSucursal = dto.idSucursal ?? actual.idSucursal;
-    await this.validarSucursal(idSucursal, actor);
-    await this.validarDocumentoDuplicado(tipo, idTipoDocumento, numeroDocumento, id, idSucursal);
+    await this.validarDocumentoDuplicado(tipo, idTipoDocumento, numeroDocumento, id);
     await this.prisma.proveedor.update({
       where: { idProveedor: id },
-      data: { ...datos, ...(dto.idSucursal !== undefined ? { idSucursal } : {}) },
+      data: datos,
     });
     return {
       message: 'Proveedor actualizado correctamente',
@@ -192,7 +187,6 @@ export class PersonasService {
     idTipoDocumento: number,
     numeroDocumento: string,
     idExcluir?: number,
-    idSucursal?: number,
   ) {
     const duplicado = tipo === 'CLIENTE'
       ? await this.prisma.cliente.findFirst({
@@ -204,26 +198,12 @@ export class PersonasService {
       })
       : await this.prisma.proveedor.findFirst({
         where: {
-          idSucursal,
           idTipoDocumento,
           numeroDocumento,
           ...(idExcluir ? { idProveedor: { not: idExcluir } } : {}),
         },
       });
     if (duplicado) throw new ConflictException('Este documento ya se encuentra registrado');
-  }
-
-  private async validarSucursal(idSucursal: number | undefined, actor: UsuarioAutenticado) {
-    if (!idSucursal) throw new BadRequestException('Debe seleccionar una sucursal');
-    if (!actor.sucursales.includes(idSucursal)) {
-      throw new ForbiddenException('No tiene acceso a la sucursal seleccionada');
-    }
-    const sucursal = await this.prisma.sucursal.findFirst({
-      where: { idSucursal, activo: true },
-      select: { idSucursal: true },
-    });
-    if (!sucursal) throw new NotFoundException('Sucursal activa no encontrada');
-    return idSucursal;
   }
 
   private parseTipo(tipoEntrada: string): TipoPersona {
@@ -260,8 +240,8 @@ export class PersonasService {
       correo: row.correo,
       telefono: row.telefono,
       activo: row.activo,
-      idSucursal: row.idSucursal ?? null,
-      sucursal: row.sucursal ?? null,
+      aplicaPercepcionPorDefecto:
+        tipo === 'PROVEEDOR' ? row.aplicaPercepcionPorDefecto : false,
       tipoDocumento: row.tipoDocumento,
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,

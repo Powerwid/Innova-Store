@@ -43,14 +43,14 @@ describe('guards de acceso', () => {
     expect(() => guard.canActivate(contexto(usuario()))).toThrow();
   });
 
-  it('acepta únicamente los permisos vigentes del usuario', () => {
+  it('acepta los permisos vigentes y concede acceso total a SUPERADMIN', () => {
     const guard = new PermisosGuard(reflector({ [PERMISOS_KEY]: ['VENTAS_VER'] }));
     expect(guard.canActivate(contexto(usuario()))).toBe(true);
     expect(() => guard.canActivate(contexto(usuario({ permisos: [] })))).toThrow();
-    expect(() => guard.canActivate(contexto(usuario({
+    expect(guard.canActivate(contexto(usuario({
       rol: { idRol: 1, nombre: RolSistema.SUPERADMIN },
       permisos: [],
-    })))).toThrow();
+    })))).toBe(true);
   });
 
   it('no permite administrar roles solo por tener un permiso', () => {

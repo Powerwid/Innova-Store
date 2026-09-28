@@ -47,7 +47,7 @@
                 variant="outlined"
                 density="compact"
                 hide-details="auto"
-                :rules="[requiredRule]"
+                :rules="[documentTypeRule]"
                 @update:model-value="changeDocumentType"
               />
               <v-text-field
@@ -139,6 +139,14 @@
             </div>
             <v-switch v-model="form.activo" color="primary" inset hide-details />
           </section>
+
+          <section v-if="role === 'PROVEEDOR'" class="form-section form-status">
+            <div>
+              <div class="font-weight-bold">Percepción por defecto</div>
+              <div class="text-caption text-medium-emphasis">Preselecciona la percepción al registrar compras de este proveedor.</div>
+            </div>
+            <v-switch v-model="form.aplicaPercepcionPorDefecto" color="primary" inset hide-details />
+          </section>
         </v-form>
       </v-card-text>
 
@@ -150,7 +158,6 @@
           variant="flat"
           min-width="130"
           :loading="saving"
-          :disabled="!formValid"
           @click="save"
         >
           {{ editing ? 'Actualizar' : 'Guardar' }}
@@ -171,7 +178,6 @@ const props = defineProps<{
   role: TipoPersona
   person: Partial<PersonaRegistro> | null
   documentTypes: TipoDocumento[]
-  idSucursal: number | null
 }>()
 
 const emit = defineEmits<{
@@ -188,6 +194,7 @@ const emptyForm = () => ({
   correo: '',
   telefono: '',
   activo: true,
+  aplicaPercepcionPorDefecto: false,
 })
 
 const formRef = ref()
@@ -209,9 +216,15 @@ const documentReady = computed(() => {
   return /^[A-Z0-9]{6,20}$/.test(form.numeroDocumento)
 })
 
-const requiredRule = (value: unknown) => (value !== null && value !== undefined && value !== '') || 'Este campo es obligatorio'
-const nameRules = [requiredRule, (value: string) => value?.trim().length >= 3 || 'Debe contener al menos 3 caracteres']
-const documentRules = [requiredRule, () => documentReady.value || 'El número no corresponde al tipo de documento']
+const documentTypeRule = (value: unknown) => (value !== null && value !== undefined && value !== '') || 'Selecciona el tipo de documento'
+const nameRules = [
+  (value: string) => Boolean(value?.trim()) || `Ingresa ${props.role === 'CLIENTE' ? 'el nombre o razón social' : 'la razón social del proveedor'}`,
+  (value: string) => value?.trim().length >= 3 || 'El nombre debe contener al menos 3 caracteres',
+]
+const documentRules = [
+  (value: string) => Boolean(value?.trim()) || 'Ingresa el número de documento',
+  () => documentReady.value || `Ingresa un ${selectedDocumentType.value?.nombre || 'documento'} válido`,
+]
 const emailRules = [(value: string) => !value || /^\S+@\S+\.\S+$/.test(value) || 'Correo electrónico no válido']
 
 function reset() {
@@ -224,6 +237,7 @@ function reset() {
     correo: props.person.correo || '',
     telefono: props.person.telefono || '',
     activo: props.person.activo ?? true,
+    aplicaPercepcionPorDefecto: props.person.aplicaPercepcionPorDefecto ?? false,
   } : emptyForm())
   if (!props.person) {
     form.idTipoDocumento = props.documentTypes.find((item) => item.nombre === 'DNI')?.idTipoDocumento ?? props.documentTypes[0]?.idTipoDocumento ?? null
@@ -277,9 +291,8 @@ async function lookupDocument() {
 
 async function save() {
   const validation = await formRef.value?.validate()
-  if (!validation?.valid || saving.value) return
-  if (props.role === 'PROVEEDOR' && !props.idSucursal) {
-    errorMessage.value = 'Debe seleccionar una sucursal para registrar proveedores'
+  if (!validation?.valid || saving.value) {
+    if (!validation?.valid) errorMessage.value = 'Revisa los campos resaltados; cada uno indica qué dato falta o debe corregirse'
     return
   }
 
@@ -294,7 +307,9 @@ async function save() {
     correo: form.correo.trim() || null,
     telefono: form.telefono.trim() || null,
     activo: form.activo,
-    ...(props.role === 'PROVEEDOR' && !editing.value ? { idSucursal: Number(props.idSucursal) } : {}),
+    ...(props.role === 'PROVEEDOR'
+      ? { aplicaPercepcionPorDefecto: form.aplicaPercepcionPorDefecto }
+      : {}),
   }
 
   try {
@@ -312,6 +327,7 @@ async function save() {
 
 watch(() => props.modelValue, (open) => { if (open) reset() })
 watch(() => props.person, () => { if (props.modelValue) reset() })
+watch(form, () => { if (errorMessage.value.startsWith('Revisa los campos')) errorMessage.value = '' })
 </script>
 
 <style scoped>

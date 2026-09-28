@@ -9,6 +9,7 @@ import { SucursalesModule } from './modules/sucursales/sucursales.module.js';
 import { AdministracionModule } from './modules/administracion/administracion.module.js';
 import { PersonasModule } from './modules/personas/personas.module.js';
 import { LogisticaModule } from './modules/logistica/logistica.module.js';
+import { OperacionesModule } from './modules/operaciones/operaciones.module.js';
 import { APP_GUARD } from '@nestjs/core';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard.js';
 import { EstadoGuard } from './common/guards/estado.guard.js';
@@ -32,6 +33,7 @@ export const { ObserveModule, ObserveInstrument } = createObserveModule();
     AdministracionModule,
     PersonasModule,
     LogisticaModule,
+    OperacionesModule,
 
     ObserveModule.forRoot({
       appKey: 'YOUR_APP_KEY',
@@ -48,4 +50,4 @@ export const { ObserveModule, ObserveInstrument } = createObserveModule();
     { provide: APP_GUARD, useClass: PermisosGuard },
   ],
 })
-export class AppModule { }
+export class AppModule {}

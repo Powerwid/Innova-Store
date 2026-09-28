@@ -205,10 +205,12 @@
             >{{ dialogError }}</v-alert
           ><v-text-field
             v-model="roleName"
-            label="Nombre del rol"
+            label="Nombre del rol *"
             hint="Letras, números y guiones bajos"
             persistent-hint
             variant="outlined"
+            :error-messages="roleNameError"
+            @update:model-value="roleNameError = ''; dialogError = ''"
             @keyup.enter="saveRole" /></v-card-text
         ><v-card-actions class="pa-4 justify-end"
           ><v-btn variant="text" @click="roleDialog = false">Cancelar</v-btn
@@ -261,6 +263,7 @@ const loading = ref(true),
   showInfoAlert = ref(true);
 const error = ref(""),
   dialogError = ref(""),
+  roleNameError = ref(""),
   notice = ref(""),
   noticeVisible = ref(false);
 const selectedRole = computed(
@@ -309,14 +312,21 @@ async function load(preferredId?: number) {
 function openCreate() {
   roleName.value = "";
   dialogError.value = "";
+  roleNameError.value = "";
   roleDialog.value = true;
 }
 async function saveRole() {
   dialogError.value = "";
+  roleNameError.value = "";
   const name = roleName.value.trim().toUpperCase();
+  if (!name) {
+    roleNameError.value = "Ingresa el nombre del rol";
+    dialogError.value = "Revisa el campo resaltado";
+    return;
+  }
   if (!/^[A-Z][A-Z0-9_]{2,49}$/.test(name)) {
-    dialogError.value =
-      "Usa al menos 3 caracteres: letras, números y guiones bajos";
+    roleNameError.value = "Usa entre 3 y 50 caracteres: letras, números y guiones bajos";
+    dialogError.value = "Revisa el campo resaltado";
     return;
   }
   saving.value = true;

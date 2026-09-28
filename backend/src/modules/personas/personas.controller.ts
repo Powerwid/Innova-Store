@@ -23,7 +23,6 @@ import type {
   ActualizarPersonaDto,
   CrearPersonaDto,
   ListarPersonasDto,
-  TipoPersona,
 } from './dto/persona.dto.js';
 import { PersonasService } from './personas.service.js';
 

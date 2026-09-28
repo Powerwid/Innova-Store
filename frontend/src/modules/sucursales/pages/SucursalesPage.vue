@@ -188,6 +188,8 @@
                 variant="outlined"
                 density="comfortable"
                 maxlength="11"
+                :error-messages="fieldErrors.numeroDocumento"
+                @update:model-value="clearFieldError('numeroDocumento')"
                 @blur="lookupRuc()"
                 @keyup.enter.prevent="lookupRuc(true)"
               ><template #append-inner><v-btn
@@ -197,10 +199,14 @@
               <v-col cols="12" sm="4"><label class="branch-field-label" for="branch-name">Nombre de la sucursal *</label><v-text-field
                 id="branch-name" v-model="form.nombre" placeholder="Sucursal Principal"
                 variant="outlined" density="comfortable"
+                :error-messages="fieldErrors.nombre"
+                @update:model-value="clearFieldError('nombre')"
               /></v-col>
               <v-col cols="12" sm="4"><label class="branch-field-label" for="branch-razon">Razón social *</label><v-text-field
                 id="branch-razon" v-model="form.razonSocial" placeholder="Empresa S.A.C."
                 variant="outlined" density="comfortable"
+                :error-messages="fieldErrors.razonSocial"
+                @update:model-value="clearFieldError('razonSocial')"
               /></v-col>
             </v-row>
 
@@ -213,6 +219,8 @@
                 <v-text-field
                   id="branch-departamento"
                   v-model="form.departamento"
+                  :error-messages="fieldErrors.departamento"
+                  @update:model-value="clearFieldError('departamento')"
                   placeholder="Arequipa"
                   variant="outlined"
                   density="comfortable"
@@ -226,6 +234,8 @@
                 <v-text-field
                   id="branch-provincia"
                   v-model="form.provincia"
+                  :error-messages="fieldErrors.provincia"
+                  @update:model-value="clearFieldError('provincia')"
                   placeholder="Arequipa"
                   variant="outlined"
                   density="comfortable"
@@ -239,6 +249,8 @@
                 <v-text-field
                   id="branch-distrito"
                   v-model="form.distrito"
+                  :error-messages="fieldErrors.distrito"
+                  @update:model-value="clearFieldError('distrito')"
                   placeholder="Cerro Colorado"
                   variant="outlined"
                   density="comfortable"
@@ -252,6 +264,7 @@
                 <v-text-field
                   id="branch-ubigeo"
                   v-model="form.ubigeo"
+                  :error-messages="fieldErrors.ubigeo"
                   placeholder="040101"
                   inputmode="numeric"
                   maxlength="6"
@@ -268,6 +281,8 @@
                 <v-text-field
                   id="branch-comercial"
                   v-model="form.direccionComercial"
+                  :error-messages="fieldErrors.direccionComercial"
+                  @update:model-value="clearFieldError('direccionComercial')"
                   placeholder="Av. Principal 123"
                   variant="outlined"
                   density="comfortable"
@@ -281,6 +296,8 @@
                 <v-text-field
                   id="branch-fiscal"
                   v-model="form.direccionFiscal"
+                  :error-messages="fieldErrors.direccionFiscal"
+                  @update:model-value="clearFieldError('direccionFiscal')"
                   placeholder="Av. Principal 123"
                   variant="outlined"
                   density="comfortable"
@@ -294,6 +311,8 @@
                 <v-text-field
                   id="branch-web"
                   v-model="form.direccionWeb"
+                  :error-messages="fieldErrors.direccionWeb"
+                  @update:model-value="clearFieldError('direccionWeb')"
                   placeholder="https://ejemplo.com"
                   variant="outlined"
                   density="comfortable"
@@ -302,11 +321,13 @@
 
               <v-col cols="12" sm="6">
                 <label class="branch-field-label" for="branch-igv">
-                  IGV (%)
+                  IGV (%) *
                 </label>
                 <v-text-field
                   id="branch-igv"
                   v-model="form.igv"
+                  :error-messages="fieldErrors.igv"
+                  @update:model-value="clearFieldError('igv')"
                   placeholder="18"
                   type="number"
                   min="0"
@@ -327,6 +348,8 @@
                 <v-text-field 
                   id="branch-telefono" 
                   v-model="form.telefono" 
+                  :error-messages="fieldErrors.telefono"
+                  @update:model-value="clearFieldError('telefono')"
                   variant="outlined" 
                   density="comfortable"
                   placeholder="(01) 123-4567" 
@@ -339,6 +362,8 @@
                 <v-text-field 
                   id="branch-correo" 
                   v-model="form.correo" 
+                  :error-messages="fieldErrors.correo"
+                  @update:model-value="clearFieldError('correo')"
                   type="email" 
                   variant="outlined" 
                   density="comfortable" 
@@ -409,9 +434,14 @@ const form = reactive({
   direccionWeb: "",
   ubigeo: "040101",
   igv: "18.00",
-  telefono: "-",
+  telefono: "",
   correo: "",
   activo: true,
+});
+type BranchField = "numeroDocumento" | "nombre" | "razonSocial" | "departamento" | "provincia" | "distrito" | "direccionComercial" | "direccionFiscal" | "direccionWeb" | "ubigeo" | "igv" | "telefono" | "correo";
+const fieldErrors = reactive<Record<BranchField, string>>({
+  numeroDocumento: "", nombre: "", razonSocial: "", departamento: "", provincia: "", distrito: "",
+  direccionComercial: "", direccionFiscal: "", direccionWeb: "", ubigeo: "", igv: "", telefono: "", correo: "",
 });
 const filtered = computed(() =>
   branches.value.filter((branch) => {
@@ -437,12 +467,14 @@ async function load() {
     ]);
     branches.value = b.data;
     documentTypes.value = d.data;
-    branchStore.actualizarNombres(
-      b.data.map((item) => ({
+    const sucursalesActivas = b.data
+      .filter((item) => item.activo)
+      .map((item) => ({
         idSucursal: item.idSucursal,
         nombre: item.nombre,
-      })),
-    );
+      }));
+    if (auth.esSuperadmin) branchStore.reemplazarDisponibles(sucursalesActivas);
+    else branchStore.actualizarNombres(sucursalesActivas);
   } catch (e) {
     error.value = getApiErrorMessage(e, "No se pudieron cargar las sucursales");
   } finally {
@@ -463,11 +495,12 @@ function resetForm() {
     direccionWeb: "",
     ubigeo: "040101",
     igv: "18.00",
-    telefono: "-",
+    telefono: "",
     correo: "",
     activo: true,
   });
   formError.value = "";
+  clearFieldErrors();
   lastRucLookup = "";
 }
 function openCreate() {
@@ -477,6 +510,7 @@ function openCreate() {
 }
 async function openEdit(branch: Sucursal) {
   formError.value = "";
+  clearFieldErrors();
   try {
     const { data } = await sucursalesApi.obtener(branch.idSucursal);
     editing.value = data;
@@ -493,7 +527,7 @@ async function openEdit(branch: Sucursal) {
       direccionWeb: data.perfil?.direccionWeb ?? "",
       ubigeo: data.perfil?.ubigeo?.trim() || "040101",
       igv: String(data.perfil?.igv ?? "18.00"),
-      telefono: data.perfil?.telefono?.trim() || "-",
+      telefono: data.perfil?.telefono?.trim() || "",
       correo: data.perfil?.correo ?? "",
       activo: data.activo,
     });
@@ -505,48 +539,46 @@ async function openEdit(branch: Sucursal) {
 }
 function sanitizeUbigeo(value: string) {
   form.ubigeo = String(value || "").replace(/\D/g, "").slice(0, 6);
+  clearFieldError("ubigeo");
+}
+function clearFieldError(field: BranchField) {
+  fieldErrors[field] = "";
+  if (!Object.values(fieldErrors).some(Boolean) && formError.value.startsWith("Revisa los campos")) formError.value = "";
+}
+function clearFieldErrors() {
+  for (const field of Object.keys(fieldErrors) as BranchField[]) fieldErrors[field] = "";
+}
+function validateBranchForm() {
+  clearFieldErrors();
+  if (form.nombre.trim().length < 2) fieldErrors.nombre = "Ingresa el nombre de la sucursal (mínimo 2 caracteres)";
+  if (!/^\d{11}$/.test(form.numeroDocumento)) fieldErrors.numeroDocumento = "Ingresa un RUC válido de 11 dígitos";
+  if (!form.razonSocial.trim()) fieldErrors.razonSocial = "Ingresa la razón social";
+  if (!form.departamento.trim()) fieldErrors.departamento = "Ingresa el departamento";
+  if (!form.provincia.trim()) fieldErrors.provincia = "Ingresa la provincia";
+  if (!form.distrito.trim()) fieldErrors.distrito = "Ingresa el distrito";
+  if (!form.direccionComercial.trim()) fieldErrors.direccionComercial = "Ingresa la dirección comercial";
+  if (!form.direccionFiscal.trim()) fieldErrors.direccionFiscal = "Ingresa la dirección fiscal";
+  if (!form.telefono.trim() || form.telefono.trim() === "-") fieldErrors.telefono = "Ingresa un teléfono de contacto";
+  if (!form.correo.trim()) fieldErrors.correo = "Ingresa el correo electrónico";
+  else if (!/^\S+@\S+\.\S+$/.test(form.correo.trim())) fieldErrors.correo = "Ingresa un correo electrónico válido";
+  if (form.direccionWeb.trim() && !/^https?:\/\/\S+$/i.test(form.direccionWeb.trim())) fieldErrors.direccionWeb = "La dirección web debe comenzar con http:// o https://";
+  if (form.ubigeo.trim() && !/^\d{6}$/.test(form.ubigeo.trim())) fieldErrors.ubigeo = "El ubigeo debe tener exactamente 6 dígitos";
+  const igv = Number(form.igv);
+  if (!form.igv.trim()) fieldErrors.igv = "Ingresa el porcentaje de IGV";
+  else if (!Number.isFinite(igv) || igv < 0 || igv > 100 || !/^\d+(?:\.\d{1,2})?$/.test(form.igv.trim())) fieldErrors.igv = "Usa un valor entre 0 y 100 con hasta dos decimales";
+  return !Object.values(fieldErrors).some(Boolean);
 }
 function nullable(value: string) {
   return value.trim() || null;
 }
 async function save() {
   formError.value = "";
-  form.departamento = form.departamento.trim() || "Arequipa";
-  form.provincia = form.provincia.trim() || "Arequipa";
-  form.distrito = form.distrito.trim() || "Arequipa";
+  if (!validateBranchForm() || !rucTypeId.value) {
+    formError.value = "Revisa los campos resaltados; cada uno indica qué dato falta o debe corregirse";
+    return;
+  }
   form.ubigeo = form.ubigeo.trim() || "040101";
-  form.telefono = form.telefono.trim() || "-";
-  if (form.nombre.trim().length < 2) {
-    formError.value = "Escribe un nombre de al menos 2 caracteres";
-    return;
-  }
-  if (!/^\d{11}$/.test(form.numeroDocumento) || !rucTypeId.value) {
-    formError.value = "Ingresa un RUC de 11 dígitos";
-    return;
-  }
-  const required = [form.razonSocial, form.departamento, form.provincia, form.distrito,
-    form.direccionComercial, form.direccionFiscal, form.telefono, form.correo];
-  if (required.some((value) => !value.trim())) {
-    formError.value = "Completa los datos generales, de ubicación y contacto obligatorios";
-    return;
-  }
-  if (!/^\S+@\S+\.\S+$/.test(form.correo.trim())) {
-    formError.value = "Ingresa un correo electrónico válido";
-    return;
-  }
-  if (form.direccionWeb.trim() && !/^https?:\/\/\S+$/i.test(form.direccionWeb.trim())) {
-    formError.value = "La dirección web debe comenzar con http:// o https://";
-    return;
-  }
-  if (form.ubigeo && !/^\d{6}$/.test(form.ubigeo)) {
-    formError.value = "El ubigeo debe tener 6 dígitos";
-    return;
-  }
   const igv = Number(form.igv);
-  if (!form.igv.trim() || !Number.isFinite(igv) || igv < 0 || igv > 100 || !/^\d+(?:\.\d{1,2})?$/.test(form.igv.trim())) {
-    formError.value = "El IGV debe estar entre 0 y 100 con hasta dos decimales";
-    return;
-  }
   saving.value = true;
   try {
     const perfil = {
@@ -594,7 +626,7 @@ async function lookupRuc(force = false) {
   const numero = form.numeroDocumento.trim();
   if (!/^\d{11}$/.test(numero)) {
     if (!force) return;
-    formError.value = "Ingresa un RUC de 11 dígitos";
+    fieldErrors.numeroDocumento = "Ingresa un RUC válido de 11 dígitos";
     return;
   }
   if (lookupLoading.value || (!force && lastRucLookup === numero)) return;
@@ -603,6 +635,7 @@ async function lookupRuc(force = false) {
   try {
     const { data } = await documentosApi.consultar("RUC", numero);
     if (data.tipoDocumento === "RUC" && form.numeroDocumento.trim() === numero) {
+      clearFieldError("numeroDocumento");
       form.idTipoDocumento = data.idTipoDocumento;
       form.razonSocial = data.razonSocial;
       form.direccionFiscal = data.direccion ?? "";

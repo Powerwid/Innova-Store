@@ -66,7 +66,8 @@
           <v-alert v-if="dialogError" type="error" variant="tonal" density="compact" class="mb-3">{{ dialogError }}</v-alert>
           <label class="payment-field-label" for="payment-name">Nombre del medio de pago *</label>
           <v-text-field id="payment-name" v-model="nombre" placeholder="Ej.: Efectivo, Yape, Plin"
-            variant="outlined" density="comfortable" maxlength="45" @keyup.enter="save" />
+            variant="outlined" density="comfortable" maxlength="45" :error-messages="nameError"
+            @update:model-value="nameError = ''; dialogError = ''" @keyup.enter="save" />
         </v-card-text>
         <v-card-actions class="pa-4 pt-0 justify-end">
           <v-btn variant="text" @click="dialog = false">Cancelar</v-btn>
@@ -113,6 +114,7 @@ const deleting = ref<MedioPago | null>(null);
 const nombre = ref('');
 const error = ref('');
 const dialogError = ref('');
+const nameError = ref('');
 const notice = ref('');
 const noticeVisible = ref(false);
 
@@ -133,6 +135,7 @@ function openCreate() {
   editing.value = null;
   nombre.value = '';
   dialogError.value = '';
+  nameError.value = '';
   dialog.value = true;
 }
 
@@ -140,13 +143,21 @@ function openEdit(medio: MedioPago) {
   editing.value = medio;
   nombre.value = medio.nombre;
   dialogError.value = '';
+  nameError.value = '';
   dialog.value = true;
 }
 
 async function save() {
   const value = nombre.value.trim();
-  if (!value || value.length > 45) {
-    dialogError.value = 'Escribe un nombre de hasta 45 caracteres';
+  nameError.value = '';
+  if (!value) {
+    nameError.value = 'Ingresa el nombre del medio de pago';
+    dialogError.value = 'Revisa el campo resaltado';
+    return;
+  }
+  if (value.length > 45) {
+    nameError.value = 'El nombre no puede superar los 45 caracteres';
+    dialogError.value = 'Revisa el campo resaltado';
     return;
   }
   saving.value = true;

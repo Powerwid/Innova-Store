@@ -1,0 +1,32 @@
+import { ArgumentsHost, Catch, type ExceptionFilter } from '@nestjs/common';
+import type { Response } from 'express';
+import { Prisma } from '../../generated/prisma/client.js';
+
+@Catch(Prisma.PrismaClientKnownRequestError)
+export class OperacionesPrismaFilter implements ExceptionFilter {
+  catch(error: Prisma.PrismaClientKnownRequestError, host: ArgumentsHost) {
+    const errores: Record<string, [number, string]> = {
+      P2002: [409, 'Ya existe un registro con esos datos'],
+      P2003: [
+        409,
+        'El registro está relacionado con otras operaciones y no puede eliminarse',
+      ],
+      P2025: [404, 'Registro no encontrado'],
+      P2020: [400, 'Uno de los valores supera el tamaño permitido'],
+      P2034: [
+        409,
+        'Los saldos cambiaron durante la operación; vuelve a intentarlo',
+      ],
+    };
+    const [statusCode, message] = errores[error.code] ?? [
+      500,
+      'No se pudo completar la operación',
+    ];
+
+    host
+      .switchToHttp()
+      .getResponse<Response>()
+      .status(statusCode)
+      .json({ statusCode, message });
+  }
+}

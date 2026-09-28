@@ -181,10 +181,17 @@ describe.skipIf(process.env.LOGISTICA_DB_TESTS !== '1')(
       almacen = (
         await api
           .post(base + '/almacenes')
-          .send({ nombre: 'Principal', idSucursal: sucursalA })
+          .send({
+            nombre: 'Principal',
+            idSucursal: sucursalA,
+            tipo: 'AREA_VENTA',
+          })
           .expect(201)
       ).body.idAlmacen;
       almacenesCreados.push(almacen);
+      expect(
+        (await api.get(base + '/almacenes/' + almacen).expect(200)).body.tipo,
+      ).toBe('AREA_VENTA');
       const creado = await api
         .post(base + '/inventarios')
         .send({
@@ -226,6 +233,23 @@ describe.skipIf(process.env.LOGISTICA_DB_TESTS !== '1')(
         .patch(base + '/categorias/' + categoria)
         .send({ color: '#000000' })
         .expect(200);
+      expect(
+        (
+          await api
+            .patch(base + '/almacenes/' + almacen)
+            .send({ tipo: 'ALMACEN' })
+            .expect(200)
+        ).body.tipo,
+      ).toBe('ALMACEN');
+      await api
+        .patch(base + '/almacenes/' + almacen)
+        .send({ tipo: 'BODEGA' })
+        .expect(400)
+        .expect(({ body }) => {
+          expect(body.fieldErrors.tipo).toBe(
+            'El tipo de almacén debe ser ALMACEN o AREA_VENTA',
+          );
+        });
       await api
         .patch(base + '/inventarios/' + inventario)
         .send({ stockMinimo: '3.250' })
@@ -299,7 +323,9 @@ describe.skipIf(process.env.LOGISTICA_DB_TESTS !== '1')(
             cantidad: '7',
           }),
       ]);
-      expect(salidas.map((r) => r.status).sort()).toEqual([201, 409]);
+      expect(salidas.map((r) => r.status).sort((a, b) => a - b)).toEqual([
+        201, 409,
+      ]);
       await request(app.getHttpServer())
         .post(base + '/inventario-movimientos')
         .send({

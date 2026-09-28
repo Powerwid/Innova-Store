@@ -21,7 +21,9 @@ import type {
 } from './dto/logistica.dto.js';
 import {
   CONFIG_STOCK_NEGATIVO,
+  MOVIMIENTO_COMPRA,
   MOVIMIENTO_INICIAL,
+  MOVIMIENTO_VENTA,
 } from './logistica.constants.js';
 
 const productoInclude = {
@@ -541,6 +543,14 @@ export class LogisticaService {
     return row;
   }
   crearMovimiento(dto: MovimientoDto, actor: UsuarioAutenticado) {
+    if (
+      dto.idTipoMovimiento === MOVIMIENTO_COMPRA ||
+      dto.idTipoMovimiento === MOVIMIENTO_VENTA
+    ) {
+      throw new BadRequestException(
+        'Los movimientos de compra y venta solo se generan desde su operación correspondiente',
+      );
+    }
     return this.prisma.$transaction((tx) =>
       this.aplicarMovimiento(tx, dto, actor),
     );

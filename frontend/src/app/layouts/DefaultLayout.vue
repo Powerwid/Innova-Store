@@ -256,6 +256,7 @@ interface MenuItem {
   icon: string
   to?: { name: string }
   permission?: string
+  permissionsAny?: string[]
   superadminOnly?: boolean
   children?: MenuItem[]
 }
@@ -281,15 +282,103 @@ const currentBranchName = computed(() => sucursalStore.sucursalActual?.nombre ||
 
 const menuConfig: MenuItem[] = [
   {
+    key: 'caja', title: 'Caja', icon: 'mdi-cash-register',
+    children: [
+      {
+        key: 'operaciones-caja',
+        title: 'Caja',
+        icon: 'mdi-cash-register',
+        to: { name: 'operaciones-caja' },
+        permission: Permiso.CAJA_VER },
+      {
+        key: 'operaciones-ingresos',
+        title: 'Ingresos',
+        icon: 'mdi-cash-plus',
+        to: { name: 'operaciones-ingresos' },
+        permission: Permiso.CAJA_VER },
+      {
+        key: 'operaciones-egresos',
+        title: 'Egresos',
+        icon: 'mdi-cash-minus',
+        to: { name: 'operaciones-egresos' },
+        permission: Permiso.CAJA_VER },
+      {
+        key: 'operaciones-catalogos',
+        title: 'Motivos y comprobantes',
+        icon: 'mdi-format-list-bulleted-type',
+        to: { name: 'operaciones-catalogos' },
+        permissionsAny: [Permiso.CAJA_VER, Permiso.COMPRAS_VER]
+      },
+    ],
+  },
+  {
+    key: 'comercial', title: 'Comercial', icon: 'mdi-storefront-outline',
+    children: [
+      { 
+        key: 'operaciones-ventas', 
+        title: 'Ventas', 
+        icon: 'mdi-cart-outline', 
+        to: { name: 'operaciones-ventas' }, 
+        permission: Permiso.VENTAS_VER },
+      { 
+        key: 'operaciones-compras', 
+        title: 'Compras', 
+        icon: 'mdi-truck-delivery-outline', 
+        to: { name: 'operaciones-compras' }, 
+        permission: Permiso.COMPRAS_VER },
+      { 
+        key: 'operaciones-deudas', 
+        title: 'Deudas de clientes', 
+        icon: 'mdi-account-cash-outline', 
+        to: { name: 'operaciones-deudas' }, 
+        permission: Permiso.DEUDAS_VER },
+    ],
+  },
+  {
     key: 'logistica', title: 'Logística', icon: 'mdi-package-variant-closed',
     children: [
-      { key: 'logistica-productos', title: 'Productos', icon: 'mdi-package-variant', to: { name: 'logistica-productos' }, permission: Permiso.LOGISTICA_VER },
-      { key: 'logistica-catalogos', title: 'Tipos y categorías', icon: 'mdi-shape-outline', to: { name: 'logistica-catalogos' }, permission: Permiso.LOGISTICA_VER },
-      { key: 'logistica-unidades-medida', title: 'Unidades de medida', icon: 'mdi-ruler-square', to: { name: 'logistica-unidades-medida' }, permission: Permiso.LOGISTICA_VER },
-      { key: 'logistica-almacenes', title: 'Almacenes', icon: 'mdi-warehouse', to: { name: 'logistica-almacenes' }, permission: Permiso.LOGISTICA_VER },
-      { key: 'logistica-inventario', title: 'Inventario', icon: 'mdi-clipboard-list-outline', to: { name: 'logistica-inventario' }, permission: Permiso.LOGISTICA_VER },
-      { key: 'logistica-kardex', title: 'Kardex', icon: 'mdi-history', to: { name: 'logistica-kardex' }, permission: Permiso.LOGISTICA_VER },
-      { key: 'logistica-configuracion', title: 'Configuración', icon: 'mdi-cog-outline', to: { name: 'logistica-configuracion' }, superadminOnly: true },
+      {
+        key: 'logistica-productos',
+        title: 'Productos',
+        icon: 'mdi-package-variant',
+        to: { name: 'logistica-productos' },
+        permission: Permiso.LOGISTICA_VER
+      },
+      {
+        key: 'logistica-catalogos',
+        title: 'Tipos y categorías',
+        icon: 'mdi-shape-outline',
+        to: { name: 'logistica-catalogos' },
+        permission: Permiso.LOGISTICA_VER
+      },
+      {
+        key: 'logistica-unidades-medida',
+        title: 'Unidades de medida',
+        icon: 'mdi-ruler-square',
+        to: { name: 'logistica-unidades-medida' },
+        permission: Permiso.LOGISTICA_VER
+      },
+      {
+        key: 'logistica-almacenes',
+        title: 'Almacenes',
+        icon: 'mdi-warehouse',
+        to: { name: 'logistica-almacenes' },
+        permission: Permiso.LOGISTICA_VER
+      },
+      {
+        key: 'logistica-inventario',
+        title: 'Inventario',
+        icon: 'mdi-clipboard-list-outline',
+        to: { name: 'logistica-inventario' },
+        permission: Permiso.LOGISTICA_VER
+      },
+      {
+        key: 'logistica-kardex',
+        title: 'Kardex',
+        icon: 'mdi-history',
+        to: { name: 'logistica-kardex' },
+        permission: Permiso.LOGISTICA_VER
+      },
     ],
   },
   {
@@ -334,10 +423,25 @@ const menuConfig: MenuItem[] = [
       },
     ],
   },
+  {
+    key: 'configuracion',
+    title: 'Configuración',
+    icon: 'mdi-cog-outline',
+    children: [
+      {
+        key: 'logistica-configuracion',
+        title: 'Configuraciónes Globales',
+        icon: 'mdi-tune-variant',
+        to: { name: 'logistica-configuracion' },
+        superadminOnly: true
+      },
+]
+  },
 ]
 
 function canSee(item: MenuItem) {
   if (item.superadminOnly) return authStore.esSuperadmin
+  if (item.permissionsAny?.length) return item.permissionsAny.some((permission) => authStore.puede(permission))
   return authStore.puede(item.permission)
 }
 
@@ -399,7 +503,12 @@ async function changePassword() {
 
 onMounted(async () => {
   if (!authStore.puede(Permiso.SUCURSALES_VER)) return
-  try { const { data } = await sucursalesApi.listar(); sucursalStore.actualizarNombres(data.map(({ idSucursal, nombre }) => ({ idSucursal, nombre }))) } catch { /* El menú conserva los identificadores si falla el catálogo. */ }
+  try {
+    const { data } = await sucursalesApi.listar()
+    const activas = data.filter(({ activo }) => activo).map(({ idSucursal, nombre }) => ({ idSucursal, nombre }))
+    if (authStore.esSuperadmin) sucursalStore.reemplazarDisponibles(activas)
+    else sucursalStore.actualizarNombres(activas)
+  } catch { /* El menú conserva los identificadores si falla el catálogo. */ }
 })
 
 watch(mobile, (value) => { drawer.value = !value })

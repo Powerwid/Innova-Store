@@ -29,6 +29,8 @@ export class PermisosGuard implements CanActivate {
     }
 
     const { user } = context.switchToHttp().getRequest<{ user: UsuarioAutenticado }>();
+    if (user?.rol.nombre === RolSistema.SUPERADMIN) return true;
+
     if (!permisos.every((permiso) => user?.permisos.includes(permiso))) {
       throw new ForbiddenException('Permiso requerido');
     }
