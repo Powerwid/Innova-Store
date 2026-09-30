@@ -161,13 +161,13 @@ precisión en JavaScript.
 ```json
 {
   "idSucursal": 1,
-  "montoApertura": "250.00",
-  "detalles": [{ "idMedioPago": 1, "monto": "250.00" }]
+  "montoApertura": "250.00"
 }
 ```
 
-La suma de `detalles` debe coincidir con `montoApertura`. Una apertura en cero
-acepta `montoApertura: "0"` y `detalles: []`. La sucursal debe estar activa y no
+El `montoApertura` representa exclusivamente el efectivo físico disponible al
+iniciar la caja. El backend lo asigna automáticamente al medio de pago Efectivo.
+La sucursal debe estar activa y no
 tener otra caja abierta.
 
 `PATCH /api/cajas/12/cerrar`

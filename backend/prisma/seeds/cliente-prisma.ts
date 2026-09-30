@@ -7,6 +7,8 @@ if (!process.env.DATABASE_URL) {
 }
 
 const url = new URL(process.env.DATABASE_URL);
+const allowPublicKeyRetrieval =
+  process.env.DB_ALLOW_PUBLIC_KEY_RETRIEVAL !== 'false';
 
 const adapter = new PrismaMariaDb({
   host: url.hostname,
@@ -15,6 +17,7 @@ const adapter = new PrismaMariaDb({
   password: decodeURIComponent(url.password),
   database: decodeURIComponent(url.pathname.substring(1)),
   connectionLimit: 5,
+  allowPublicKeyRetrieval,
 });
 
 export const prisma = new PrismaClient({

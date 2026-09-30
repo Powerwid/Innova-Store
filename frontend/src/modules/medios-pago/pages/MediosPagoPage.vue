@@ -6,7 +6,8 @@
           <v-icon icon="mdi-credit-card-outline" color="primary" size="24" class="me-2" />
           <span class="text-h6 font-weight-bold">Medios de Pago</span>
         </div>
-        <v-btn v-if="canCreate" prepend-icon="mdi-plus" color="primary" variant="tonal" rounded="lg" @click="openCreate">
+        <v-btn v-if="canCreate" prepend-icon="mdi-plus" color="primary" variant="tonal" rounded="lg"
+          @click="openCreate">
           Nuevo Medio de Pago
         </v-btn>
       </v-card-text>
@@ -39,21 +40,25 @@
           </v-card>
         </div>
         <v-table class="payment-desktop-list" hover>
-          <thead class="payment-table-head"><tr>
-            <th style="width: 100px">ID</th>
-            <th>Medio de Pago</th>
-            <th class="text-end" style="width: 140px">Acciones</th>
-          </tr></thead>
-          <tbody><tr v-for="medio in mediosPago" :key="medio.idMedioPago">
-            <td>{{ medio.idMedioPago }}</td>
-            <td class="font-weight-medium">{{ medio.nombre }}</td>
-            <td class="text-end">
-              <v-btn v-if="canEdit" icon="mdi-pencil" size="small" variant="text" color="primary"
-                :aria-label="`Editar ${medio.nombre}`" @click="openEdit(medio)" />
-              <v-btn v-if="canDelete" icon="mdi-delete" size="small" variant="text" color="error"
-                :aria-label="`Eliminar ${medio.nombre}`" @click="confirmDelete(medio)" />
-            </td>
-          </tr></tbody>
+          <thead class="payment-table-head">
+            <tr>
+              <th style="width: 100px">ID</th>
+              <th>Medio de Pago</th>
+              <th class="text-end" style="width: 140px">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="medio in mediosPago" :key="medio.idMedioPago">
+              <td>{{ medio.idMedioPago }}</td>
+              <td class="font-weight-medium">{{ medio.nombre }}</td>
+              <td class="text-end">
+                <v-btn v-if="canEdit" icon="mdi-pencil" size="small" variant="text" color="primary"
+                  :aria-label="`Editar ${medio.nombre}`" @click="openEdit(medio)" />
+                <v-btn v-if="canDelete" icon="mdi-delete" size="small" variant="text" color="error"
+                  :aria-label="`Eliminar ${medio.nombre}`" @click="confirmDelete(medio)" />
+              </td>
+            </tr>
+          </tbody>
         </v-table>
       </template>
       <div v-else class="text-center text-medium-emphasis py-12">No se encontraron medios de pago</div>
@@ -61,12 +66,14 @@
 
     <v-dialog v-model="dialog" max-width="450" persistent>
       <v-card rounded="xl">
-        <v-card-title class="payment-dialog-title pa-4">{{ editing ? 'Editar Medio de Pago' : 'Nuevo Medio de Pago' }}</v-card-title>
+        <v-card-title class="payment-dialog-title pa-4">{{ editing ? 'Editar Medio de Pago' : 'Nuevo Medio de Pago'
+          }}</v-card-title>
         <v-card-text class="pa-4">
-          <v-alert v-if="dialogError" type="error" variant="tonal" density="compact" class="mb-3">{{ dialogError }}</v-alert>
+          <v-alert v-if="dialogError" type="error" variant="tonal" density="compact" class="mb-3">{{ dialogError
+            }}</v-alert>
           <label class="payment-field-label" for="payment-name">Nombre del medio de pago *</label>
-          <v-text-field id="payment-name" v-model="nombre" placeholder="Ej.: Efectivo, Yape, Plin"
-            variant="outlined" density="comfortable" maxlength="45" :error-messages="nameError"
+          <v-text-field id="payment-name" v-model="nombre" placeholder="Ej.: Efectivo, Yape, Plin" variant="outlined"
+            density="comfortable" maxlength="45" :error-messages="nameError"
             @update:model-value="nameError = ''; dialogError = ''" @keyup.enter="save" />
         </v-card-text>
         <v-card-actions class="pa-4 pt-0 justify-end">
@@ -205,16 +212,39 @@ onMounted(load);
 </script>
 
 <style scoped>
-.payment-methods-page { max-width: 1600px; margin: 0 auto; }
-.payment-field-label { display: block; margin-bottom: 6px; font-size: 0.875rem; font-weight: 500; }
-.payment-table-head, .payment-dialog-title {
+.payment-methods-page {
+  max-width: 1600px;
+  margin: 0 auto;
+}
+
+.payment-field-label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.payment-table-head,
+.payment-dialog-title {
   background: rgb(var(--v-theme-surface-variant));
   color: rgb(var(--v-theme-on-surface));
 }
-.payment-table-head th { color: inherit !important; }
-.payment-mobile-list { display: none; }
+
+.payment-table-head th {
+  color: inherit !important;
+}
+
+.payment-mobile-list {
+  display: none;
+}
+
 @media (max-width: 767px) {
-  .payment-mobile-list { display: block; }
-  .payment-desktop-list { display: none; }
+  .payment-mobile-list {
+    display: block;
+  }
+
+  .payment-desktop-list {
+    display: none;
+  }
 }
 </style>

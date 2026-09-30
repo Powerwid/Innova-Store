@@ -15,6 +15,9 @@ export class PrismaService
         }
 
         const url = new URL(databaseUrl);
+        const allowPublicKeyRetrieval =
+            configService.get<string>('DB_ALLOW_PUBLIC_KEY_RETRIEVAL', 'true') ===
+            'true';
 
         const adapter = new PrismaMariaDb({
             host: url.hostname,
@@ -23,6 +26,7 @@ export class PrismaService
             password: decodeURIComponent(url.password),
             database: decodeURIComponent(url.pathname.substring(1)),
             connectionLimit: 10,
+            allowPublicKeyRetrieval,
         });
 
         super({

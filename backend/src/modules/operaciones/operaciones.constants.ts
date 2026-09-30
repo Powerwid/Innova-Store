@@ -6,6 +6,7 @@ export const MOTIVO_EGRESO_PERCEPCION = 2;
 export const MOTIVO_EGRESO_CREDITO_CLIENTE = 3;
 
 export const MEDIO_PAGO_FRACCIONADO = 'Fraccionado';
+export const MEDIO_PAGO_EFECTIVO = 'Efectivo';
 
 export const MOTIVOS_INGRESO_SISTEMA = new Set([
   MOTIVO_INGRESO_VENTA,

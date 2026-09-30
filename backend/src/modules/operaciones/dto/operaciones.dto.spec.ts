@@ -103,19 +103,18 @@ describe('DTO de operaciones', () => {
     ).toBe(false);
   });
 
-  it('valida apertura, cierre y saldos por medios sin errores de coma flotante', () => {
+  it('valida la apertura con un único monto físico y el cierre de caja', () => {
     expect(
       AbrirCajaSchema.parse({
         idSucursal: 1,
         montoApertura: '0.30',
-        detalles: [pago(1, '0.10'), pago(2, '0.20')],
       }).montoApertura,
     ).toBe('0.30');
     expect(
       AbrirCajaSchema.safeParse({
         idSucursal: 1,
         montoApertura: '10',
-        detalles: [pago(1, '9.99')],
+        detalles: [pago(1, '10')],
       }).success,
     ).toBe(false);
     expect(PagosSchema.safeParse([pago(1, '5'), pago(1, '5')]).success).toBe(

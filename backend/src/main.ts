@@ -1,5 +1,9 @@
 import { NestFactory } from '@nestjs/core';
-import { AppModule, ObserveInstrument } from './app.module.js';
+import {
+  AppModule,
+  ObserveInstrument,
+  observeEnabled,
+} from './app.module.js';
 import cookieParser from 'cookie-parser';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { existsSync } from 'node:fs';
@@ -8,9 +12,10 @@ import { fileURLToPath } from 'node:url';
 import type { NextFunction, Request, Response } from 'express';
 
 async function bootstrap() {
-  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
-    instrument: ObserveInstrument,
-  });
+  const app = await NestFactory.create<NestExpressApplication>(
+    AppModule,
+    observeEnabled ? { instrument: ObserveInstrument } : {},
+  );
   app.use(cookieParser());
   app.setGlobalPrefix('api');
 

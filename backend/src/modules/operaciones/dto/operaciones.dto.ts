@@ -261,19 +261,8 @@ export const AbrirCajaSchema = z
   .object({
     idSucursal: IdSchema,
     montoApertura: DineroSchema,
-    detalles: PagosOpcionalesSchema,
   })
-  .strict()
-  .superRefine((value, ctx) => {
-    if (sumaPagos(value.detalles) !== decimalEscalado(value.montoApertura, 2)) {
-      ctx.addIssue({
-        code: 'custom',
-        path: ['detalles'],
-        message:
-          'La suma de los saldos iniciales debe coincidir con el monto de apertura',
-      });
-    }
-  });
+  .strict();
 
 export const CerrarCajaSchema = z
   .object({

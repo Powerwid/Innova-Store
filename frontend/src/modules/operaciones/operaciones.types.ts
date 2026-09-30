@@ -58,9 +58,8 @@ export interface DeudaCliente {
 }
 export type Movimiento = Ingreso | Egreso
 export interface LineaProductoPayload { idProductoSucursal: number; idAlmacen?: number; cantidad: string; precioUnitario: string }
-export interface AbrirCajaPayload { idSucursal: number; montoApertura: string; detalles: PagoPayload[] }
+export interface AbrirCajaPayload { idSucursal: number; montoApertura: string }
 export interface MovimientoPayload {
   idCaja: number; idSucursal: number; monto: string; detalle?: string; pagos: PagoPayload[]
   idMotivoIngreso?: number; idMotivoEgreso?: number; fechaIngreso?: string; fechaEgreso?: string
 }
-

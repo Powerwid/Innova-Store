@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import { Module } from '@nestjs/common';
 import { createObserveModule } from '@nestjs/observe';
 import { PrismaModule } from './database/prisma/prisma.module.js';
@@ -19,6 +20,20 @@ import { PermisosGuard } from './common/guards/permisos.guard.js';
 
 export const { ObserveModule, ObserveInstrument } = createObserveModule();
 
+const observeAppKey = process.env.OBSERVE_APP_KEY?.trim();
+const observeAppSecret = process.env.OBSERVE_APP_SECRET?.trim();
+export const observeEnabled = Boolean(observeAppKey && observeAppSecret);
+
+const observabilityImports = observeEnabled
+  ? [
+      ObserveModule.forRoot({
+        appKey: observeAppKey!,
+        appSecret: observeAppSecret!,
+        serviceId: process.env.OBSERVE_SERVICE_ID?.trim() || 'backend',
+      }),
+    ]
+  : [];
+
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -35,11 +50,7 @@ export const { ObserveModule, ObserveInstrument } = createObserveModule();
     LogisticaModule,
     OperacionesModule,
 
-    ObserveModule.forRoot({
-      appKey: 'YOUR_APP_KEY',
-      appSecret: 'YOUR_APP_SECRET',
-      serviceId: 'backend',
-    }),
+    ...observabilityImports,
   ],
   controllers: [],
   providers: [

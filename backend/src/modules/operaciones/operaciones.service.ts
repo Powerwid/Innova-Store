@@ -14,6 +14,7 @@ import {
   MOVIMIENTO_VENTA,
 } from '../logistica/logistica.constants.js';
 import {
+  MEDIO_PAGO_EFECTIVO,
   MEDIO_PAGO_FRACCIONADO,
   MOTIVO_EGRESO_COMPRA,
   MOTIVO_EGRESO_CREDITO_CLIENTE,
@@ -54,7 +55,6 @@ interface ConsultaPaginada {
 interface AbrirCajaInput {
   idSucursal: number;
   montoApertura: string;
-  detalles: PagoInput[];
 }
 
 interface CerrarCajaInput {
@@ -634,10 +634,13 @@ export class OperacionesService {
       if (abierta) {
         throw new ConflictException('La sucursal ya tiene una caja abierta');
       }
-      await this.validarMediosPago(tx, dto.detalles);
-      if (!this.sumarPagos(dto.detalles).eq(dto.montoApertura)) {
+      const efectivo = await tx.medioPago.findUnique({
+        where: { nombre: MEDIO_PAGO_EFECTIVO },
+        select: { idMedioPago: true },
+      });
+      if (!efectivo) {
         throw new BadRequestException(
-          'La suma de los saldos iniciales debe coincidir con el monto de apertura',
+          'El medio de pago Efectivo no está configurado',
         );
       }
       const caja = await tx.caja.create({
@@ -646,10 +649,10 @@ export class OperacionesService {
           idUsuarioApertura: actor.idUsuario,
           montoApertura: dto.montoApertura,
           detalles: {
-            create: dto.detalles.map((detalle) => ({
-              idMedioPago: detalle.idMedioPago,
-              monto: detalle.monto,
-            })),
+            create: {
+              idMedioPago: efectivo.idMedioPago,
+              monto: dto.montoApertura,
+            },
           },
         },
       });
