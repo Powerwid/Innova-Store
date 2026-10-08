@@ -11,6 +11,7 @@ import { AdministracionModule } from './modules/administracion/administracion.mo
 import { PersonasModule } from './modules/personas/personas.module.js';
 import { LogisticaModule } from './modules/logistica/logistica.module.js';
 import { OperacionesModule } from './modules/operaciones/operaciones.module.js';
+import { ReconocimientoModule } from './modules/reconocimiento/reconocimiento.module.js';
 import { APP_GUARD } from '@nestjs/core';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard.js';
 import { EstadoGuard } from './common/guards/estado.guard.js';
@@ -49,6 +50,7 @@ const observabilityImports = observeEnabled
     PersonasModule,
     LogisticaModule,
     OperacionesModule,
+    ReconocimientoModule,
 
     ...observabilityImports,
   ],

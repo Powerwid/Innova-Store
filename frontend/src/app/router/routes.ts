@@ -72,6 +72,11 @@ export const routes: RouteRecordRaw[] = [
         meta: { title: 'Egresos', requiresAuth: true, permission: Permiso.CAJA_VER },
       },
       {
+        path: 'pos', name: 'pos', alias: '/comercial/pos',
+        component: () => import('@/modules/pos/pages/PosPage.vue'),
+        meta: { title: 'Punto de venta', requiresAuth: true, permission: Permiso.VENTAS_VER },
+      },
+      {
         path: 'operaciones/ventas', name: 'operaciones-ventas',
         component: () => import('@/modules/operaciones/pages/VentasPage.vue'),
         meta: { title: 'Ventas', requiresAuth: true, permission: Permiso.VENTAS_VER },

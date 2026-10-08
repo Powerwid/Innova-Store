@@ -250,7 +250,7 @@
                           variant="text"
                           color="primary"
                           size="small"
-                          @click="openDetailDialog(item)"
+                          :aria-label="`Ver detalle de caja ${item.idCaja}`" @click="openDetailDialog(item)"
                         />
                       </template>
                     </v-tooltip>
@@ -318,7 +318,7 @@
                   color="primary"
                   variant="text"
                   prepend-icon="mdi-file-document-outline"
-                  @click="openDetailDialog(item)"
+                  :aria-label="`Ver detalle de caja ${item.idCaja}`" @click="openDetailDialog(item)"
                 >
                   Ver detalle
                 </v-btn>

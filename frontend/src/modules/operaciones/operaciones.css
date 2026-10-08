@@ -97,6 +97,24 @@
   min-width: 0;
 }
 
+.operaciones-mobile .flex-grow-1 { min-width: 0; overflow-wrap: anywhere; }
+.operaciones-mobile .d-flex.justify-end { flex-wrap: wrap; gap: 4px; }
+.operaciones-dialog-title { white-space: normal; line-height: 1.4; }
+.operaciones-dialog-icon { flex-shrink: 0; }
+.purchase-line-fields { display: grid; grid-template-columns: minmax(0, 1fr) 140px 180px auto; gap: 12px; align-items: start; }
+@container store-content (max-width: 900px) {
+  .operaciones-desktop { display: none; }
+  .operaciones-mobile { display: block; }
+}
+@media (max-width: 600px) {
+  .operaciones-header > .v-card-text { padding: 16px !important; }
+  .operaciones-toolbar .v-input { min-width: 0; }
+  .operaciones-dialog-icon { width: 32px; height: 32px; }
+  .purchase-line-fields { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto; gap: 8px; }
+  .purchase-line-product { grid-column: 1 / -1; }
+  .linea-card { padding: 12px; }
+}
+
 @media (max-width: 900px) {
   .operaciones-desktop {
     display: none;

@@ -58,6 +58,15 @@ export class CajasController {
     return this.operaciones.obtenerCaja(id, actor);
   }
 
+  @Get(':id/resumen')
+  @RequierePermiso(PermisoSistema.CAJA_VER)
+  resumen(
+    @Param('id', ParseIntPipe) id: number,
+    @UsuarioActual() actor: UsuarioAutenticado,
+  ) {
+    return this.operaciones.obtenerResumenCaja(id, actor);
+  }
+
   @Post()
   @RequierePermiso(PermisoSistema.CAJA_GESTIONAR)
   abrir(

@@ -51,6 +51,7 @@ lerna-debug.log*
 .tmp
 
 # Runtime data
+/storage/reconocimiento
 pids
 *.pid
 *.seed

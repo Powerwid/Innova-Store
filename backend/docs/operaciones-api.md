@@ -56,6 +56,7 @@ sucursal de una misma operación deben coincidir.
 | GET    | `/api/cajas`                      | `CAJA_VER`       | Lista cajas con paginación y filtros.    |
 | GET    | `/api/cajas/abierta?idSucursal=1` | `CAJA_VER`       | Obtiene la caja abierta de una sucursal. |
 | GET    | `/api/cajas/:id`                  | `CAJA_VER`       | Obtiene una caja y sus saldos por medio. |
+| GET    | `/api/cajas/:id/resumen`          | `CAJA_VER`       | Resumen histórico completo, cobros, pagos y conciliación. |
 | POST   | `/api/cajas`                      | `CAJA_GESTIONAR` | Abre una caja.                           |
 | PATCH  | `/api/cajas/:id/cerrar`           | `CAJA_GESTIONAR` | Cierra una caja y calcula la diferencia. |
 
@@ -120,8 +121,8 @@ y el límite máximo es 100. La respuesta paginada tiene la forma:
 | Tipos de comprobante | `buscar`                                                              |
 | Ingresos             | `idSucursal`, `idCaja`, `idMotivoIngreso`, `desde`, `hasta`, `buscar` |
 | Egresos              | filtros de ingresos, `idMotivoEgreso`, `idCompra`                     |
-| Ventas               | `idSucursal`, `desde`, `hasta`, `buscar`                              |
-| Compras              | `idSucursal`, `idProveedor`, `idAlmacen`, `desde`, `hasta`, `buscar`  |
+| Ventas               | `idSucursal`, `idCaja`, `desde`, `hasta`, `buscar`                    |
+| Compras              | `idSucursal`, `idCaja`, `idProveedor`, `idAlmacen`, `desde`, `hasta`, `buscar` |
 | Deudas               | `idSucursal`, `idCliente`, `estado`, `desde`, `hasta`, `buscar`       |
 
 `desde` y `hasta` son fecha-hora ISO 8601 con zona, por ejemplo
@@ -473,3 +474,27 @@ Las migraciones relevantes son
 `20260928064529_compras_cajas_ingresos_egresos` y
 `20260928090000_catalogos_permisos_operaciones`. La segunda fija los IDs de los
 motivos y tipos de movimiento que usa la lógica automática.
+
+## Detalle de caja y cobro del POS
+
+`GET /api/cajas/:id/resumen` devuelve `{ caja, resumen }`. Calcula todos los movimientos de la caja en una lectura transaccional, sin el límite de 100 filas de los listados. Usa importes decimales y separa:
+
+- `totalVentas`: importe comercial vendido, incluido el crédito.
+- `cobrosVentas`: pagos recibidos al registrar esas ventas.
+- `ingresos`: otros cobros, incluidos abonos de deudas anteriores.
+- `egresos`: gastos sin compra asociada. El egreso compensatorio de crédito no entrega dinero.
+- `compras`: pagos y percepciones de compras realizados en esta caja, aunque la compra se haya creado antes o se pague en varias cajas.
+
+`saldoCalculado = apertura + cobrosVentas + ingresos - egresos - compras`. `saldoRegistrado` suma `caja_detalle`; `diferencia` compara ambos. Cada medio devuelve apertura, ventas, ingresos, egresos, compras, neto y saldo. El efectivo esperado se obtiene del saldo del medio Efectivo.
+
+Las pestañas se cargan por separado y respetan permisos: un error en Ventas no bloquea Resumen. Los botones del detalle abren los formularios existentes de Ingresos, Egresos y Compras, conservando y verificando la caja elegida. Una caja cerrada permite consulta y no permite nuevos registros.
+
+El POS confirma la venta con `POST /api/ventas`. Enviar `claveOperacion` como UUID permite reintentar el mismo carrito: el backend devuelve la venta existente y no repite pagos ni salidas de stock. Reutilizar la clave con otro usuario o datos distintos devuelve 409. La clave y la huella se almacenan en la transacción; una restricción única protege solicitudes concurrentes. Este cambio requiere la migración `20261003000000_ventas_idempotentes`.
+
+Prueba del flujo real en una base MySQL temporal (no modifica operaciones de la base principal):
+
+```powershell
+npm --prefix backend run test:operaciones
+```
+
+Verifica caja, venta concurrente, crédito y abono, ingreso y egreso, compra y pago posterior, percepción, stock, rollback por stock insuficiente, alcance de sucursales, más de 100 movimientos y reintento después del cierre.

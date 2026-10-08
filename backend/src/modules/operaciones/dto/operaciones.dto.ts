@@ -142,6 +142,7 @@ const validarRango = (value: { desde?: string; hasta?: string }) =>
 
 export const ListarOperacionesSchema = PaginacionSchema.extend({
   ...filtrosSucursalFecha,
+  idCaja: queryId,
 }).superRefine((value, ctx) => {
   if (!validarRango(value)) {
     ctx.addIssue({
@@ -386,6 +387,7 @@ export const CreditoVentaSchema = z
 
 export const CrearVentaSchema = z
   .object({
+    claveOperacion: z.uuid().optional(),
     idCaja: IdSchema,
     idSucursal: IdSchema,
     monto: dineroPositivo,

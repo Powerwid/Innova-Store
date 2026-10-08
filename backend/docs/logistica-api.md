@@ -242,6 +242,11 @@ Los datos de prueba usan el prefijo `DEMO LOG -` y no se cargan mediante
 `LOGISTICA_VER` y `LOGISTICA_GESTIONAR` desde SUPERADMIN; este último también
 puede acceder directamente a la sucursal.
 
+El catálogo ampliado incluye 68 productos, 15 categorías y 6 tipos. Las
+inserciones están separadas por tabla en `prisma/seeds/test/`; el archivo
+`prisma/seeds/test.ts` coordina la ejecución. La estructura y los casos de
+prueba se describen en [Datos de prueba](datos-prueba.md).
+
 Desde backend:
 ```powershell
 npx prisma generate

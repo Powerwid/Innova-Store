@@ -33,6 +33,7 @@ export interface Ingreso {
   deudaOriginada?: DeudaCliente | null; abonoDeuda?: unknown | null
 }
 export interface Egreso {
+  idCompra: number | null
   idEgreso: number; idCaja: number; idSucursal: number; idMotivoEgreso: number; idUsuario: number
   monto: string; detalle: string | null; fechaEgreso: string; caja: Caja; sucursal: SucursalResumen
   motivoEgreso: MotivoEgreso; usuario: UsuarioResumen; pagos: Pago[]; compra?: Compra | null
@@ -57,6 +58,13 @@ export interface DeudaCliente {
   abonos: Array<{ idAbonoDeudaCliente: number; ingresoAbono: Ingreso }>
 }
 export type Movimiento = Ingreso | Egreso
+export interface ResumenCaja {
+  apertura: string; totalVentas: string; cobrosVentas: string; creditoOriginado: string
+  ingresos: string; egresos: string; compras: string; salidas: string
+  saldoCalculado: string; saldoRegistrado: string; diferencia: string; efectivoEsperado: string
+  cantidades: { ventas: number; ingresos: number; egresos: number; compras: number }
+  mediosPago: Array<{ idMedioPago: number; nombre: string; apertura: string; ventas: string; ingresos: string; egresos: string; compras: string; neto: string; saldo: string }>
+}
 export interface LineaProductoPayload { idProductoSucursal: number; idAlmacen?: number; cantidad: string; precioUnitario: string }
 export interface AbrirCajaPayload { idSucursal: number; montoApertura: string }
 export interface MovimientoPayload {

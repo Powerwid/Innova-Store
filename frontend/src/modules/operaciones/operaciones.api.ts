@@ -1,7 +1,7 @@
 import { http } from '@/core/api/http'
 import type {
   AbrirCajaPayload, Caja, Compra, ConsultaOperacion, DeudaCliente, Egreso, Ingreso,
-  MotivoEgreso, MotivoIngreso, MovimientoPayload, Pagina, TipoComprobante,
+  MotivoEgreso, MotivoIngreso, MovimientoPayload, Pagina, TipoComprobante, ResumenCaja,
 } from './operaciones.types'
 
 const query = (params?: ConsultaOperacion) => ({ params: params ? Object.fromEntries(
@@ -12,6 +12,7 @@ export const cajasApi = {
   listar: (params?: ConsultaOperacion) => http.get<Pagina<Caja>>('/cajas', query(params)),
   abierta: (idSucursal: number) => http.get<Caja>('/cajas/abierta', { params: { idSucursal } }),
   obtener: (id: number) => http.get<Caja>(`/cajas/${id}`),
+  resumen: (id: number) => http.get<{ caja: Caja; resumen: ResumenCaja }>(`/cajas/${id}/resumen`),
   abrir: (payload: AbrirCajaPayload) => http.post<Caja>('/cajas', payload),
   cerrar: (id: number, montoCierre: string) => http.patch<Caja & { montoEsperado: string; diferencia: string }>(`/cajas/${id}/cerrar`, { montoCierre }),
 }
@@ -58,7 +59,14 @@ export const deudasApi = {
 }
 
 export async function cargarTodo<T>(listar: (q: ConsultaOperacion) => Promise<{ data: Pagina<T> }>, extra: ConsultaOperacion = {}) {
-  const response = await listar({ ...extra, pagina: 1, limite: 100 })
-  return response.data.data
+  const items: T[] = []
+  let pagina = 1
+  let total = 0
+  do {
+    const response = await listar({ ...extra, pagina: pagina++, limite: 100 })
+    items.push(...response.data.data)
+    total = response.data.total
+    if (!response.data.data.length) break
+  } while (items.length < total)
+  return items
 }
-

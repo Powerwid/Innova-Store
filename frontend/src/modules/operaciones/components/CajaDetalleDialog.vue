@@ -7,12 +7,12 @@
     @update:model-value="emit('update:modelValue', $event)"
   >
     <v-card class="rounded-xl overflow-hidden">
-      <v-card-title class="d-flex align-center ga-3 pa-5 border-b">
+      <v-card-title class="cash-detail-heading d-flex align-center ga-3 pa-5 border-b">
         <v-avatar color="primary" variant="tonal" rounded="lg">
           <v-icon>mdi-file-document-outline</v-icon>
         </v-avatar>
 
-        <div>
+        <div class="cash-detail-title">
           <div>Detalle de caja #{{ displayedCash?.idCaja }}</div>
           <div class="text-caption text-medium-emphasis font-weight-regular">
             {{ displayedCash?.sucursal.nombre || 'Sucursal' }} ·
@@ -22,11 +22,11 @@
 
         <v-spacer />
 
-        <v-chip :color="isOpen ? 'primary' : 'success'" variant="tonal">
+        <v-chip class="cash-detail-state" :color="isOpen ? 'primary' : 'success'" variant="tonal">
           {{ isOpen ? 'Abierta' : 'Cerrada' }}
         </v-chip>
 
-        <v-btn icon="mdi-close" variant="text" @click="close" />
+        <v-btn icon="mdi-close" variant="text" aria-label="Cerrar detalle de caja" @click="close" />
       </v-card-title>
 
       <v-tabs
@@ -39,7 +39,7 @@
           <v-icon start>mdi-chart-box-outline</v-icon>
           Resumen
         </v-tab>
-        <v-tab value="sales">
+        <v-tab v-if="canSales" value="sales">
           <v-icon start>mdi-receipt-text-outline</v-icon>
           Ventas
         </v-tab>
@@ -51,7 +51,7 @@
           <v-icon start>mdi-cash-minus</v-icon>
           Egresos
         </v-tab>
-        <v-tab value="purchases">
+        <v-tab v-if="canPurchases" value="purchases">
           <v-icon start>mdi-cart-arrow-down</v-icon>
           Compras
         </v-tab>
@@ -67,6 +67,7 @@
 
         <v-alert v-else-if="error" color="error" variant="tonal">
           {{ error }}
+          <v-btn variant="text" @click="loadDetail">Reintentar</v-btn>
         </v-alert>
 
         <v-window v-else v-model="tab">
@@ -113,7 +114,7 @@
                     S/ {{ formatMoney(totalCalculated) }}
                   </div>
                   <div class="text-body-2 text-medium-emphasis mt-2">
-                    Apertura + ventas + ingresos − egresos − compras
+                    Apertura + cobros + otros ingresos − gastos − pagos de compras
                   </div>
                 </div>
               </v-col>
@@ -137,6 +138,9 @@
               Movimientos por medio de pago
             </div>
 
+            <v-alert v-if="summary && Number(summary.diferencia) !== 0" type="warning" variant="tonal" class="mb-4">El saldo registrado difiere del historial en S/ {{ formatMoney(summary.diferencia) }}. Revisa los movimientos de esta caja.</v-alert>
+            <div class="text-body-2 text-medium-emphasis mb-4">Ventas registradas: S/ {{ formatMoney(summary?.totalVentas) }} · Crédito generado: S/ {{ formatMoney(summary?.creditoOriginado) }}. Los abonos posteriores se muestran en Otros ingresos.</div>
+
             <v-table class="rounded-lg border" density="comfortable">
               <thead>
                 <tr class="bg-primary">
@@ -146,6 +150,7 @@
                   <th class="text-white text-end">Egresos</th>
                   <th class="text-white text-end">Compras</th>
                   <th class="text-white text-end">Neto</th>
+                  <th class="text-white text-end">Saldo</th>
                 </tr>
               </thead>
               <tbody>
@@ -164,10 +169,11 @@
                   <td class="text-end font-weight-bold">
                     S/ {{ formatMoney(method.neto) }}
                   </td>
+                  <td class="text-end font-weight-bold">S/ {{ formatMoney(method.saldo) }}</td>
                 </tr>
 
                 <tr v-if="!paymentSummaries.length">
-                  <td colspan="6" class="text-center text-medium-emphasis py-8">
+                  <td colspan="7" class="text-center text-medium-emphasis py-8">
                     No hay movimientos por medio de pago.
                   </td>
                 </tr>
@@ -185,6 +191,7 @@
               </div>
             </div>
 
+            <v-alert v-if="collectionErrors.sales" type="error" variant="tonal" class="mb-4">{{ collectionErrors.sales }}<v-btn variant="text" @click="loadCollection('sales')">Reintentar</v-btn></v-alert>
             <div v-if="loading.sales" class="loading-state">
               <v-progress-circular indeterminate color="primary" />
             </div>
@@ -289,7 +296,7 @@
           <v-window-item value="incomes">
             <div class="d-flex flex-wrap align-center ga-3 mb-5">
               <div>
-                <div class="text-h6 font-weight-bold">Ingresos manuales</div>
+                <div class="text-h6 font-weight-bold">Otros ingresos</div>
                 <div class="text-body-2 text-medium-emphasis">
                   Entradas de dinero distintas a las ventas.
                 </div>
@@ -298,15 +305,16 @@
               <v-spacer />
 
               <v-btn
-                v-if="isOpen"
+                v-if="isOpen && canMovements"
                 color="primary"
                 prepend-icon="mdi-plus"
-                @click="showPending('El registro de ingresos desde este modal')"
+                @click="openRegistration('ingresos')"
               >
                 Registrar ingreso
               </v-btn>
             </div>
 
+            <v-alert v-if="collectionErrors.incomes" type="error" variant="tonal" class="mb-4">{{ collectionErrors.incomes }}<v-btn variant="text" @click="loadCollection('incomes')">Reintentar</v-btn></v-alert>
             <div v-if="loading.incomes" class="loading-state">
               <v-progress-circular indeterminate color="primary" />
             </div>
@@ -360,16 +368,17 @@
               <v-spacer />
 
               <v-btn
-                v-if="isOpen"
+                v-if="isOpen && canMovements"
                 color="error"
                 variant="tonal"
                 prepend-icon="mdi-plus"
-                @click="showPending('El registro de egresos desde este modal')"
+                @click="openRegistration('egresos')"
               >
                 Registrar egreso
               </v-btn>
             </div>
 
+            <v-alert v-if="collectionErrors.expenses" type="error" variant="tonal" class="mb-4">{{ collectionErrors.expenses }}<v-btn variant="text" @click="loadCollection('expenses')">Reintentar</v-btn></v-alert>
             <div v-if="loading.expenses" class="loading-state">
               <v-progress-circular indeterminate color="primary" />
             </div>
@@ -423,15 +432,16 @@
               <v-spacer />
 
               <v-btn
-                v-if="isOpen"
+                v-if="isOpen && auth.puede(Permiso.COMPRAS_GESTIONAR)"
                 color="primary"
                 prepend-icon="mdi-plus"
-                @click="showPending('El registro de compras desde este modal')"
+                @click="openRegistration('compras')"
               >
                 Registrar compra
               </v-btn>
             </div>
 
+            <v-alert v-if="collectionErrors.purchases" type="error" variant="tonal" class="mb-4">{{ collectionErrors.purchases }}<v-btn variant="text" @click="loadCollection('purchases')">Reintentar</v-btn></v-alert>
             <div v-if="loading.purchases" class="loading-state">
               <v-progress-circular indeterminate color="primary" />
             </div>
@@ -516,434 +526,123 @@
     </v-card>
   </v-dialog>
 
-  <v-snackbar v-model="snackbar.show" :color="snackbar.color" timeout="3500">
-    {{ snackbar.message }}
-  </v-snackbar>
 </template>
 
 <script setup lang="ts">
-import { computed, reactive, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, reactive, ref, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import { useDisplay } from 'vuetify'
 import { getApiErrorMessage } from '@/core/api/api-error'
-import {
-  cajasApi,
-  comprasApi,
-  egresosApi,
-  ingresosApi,
-  ventasApi,
-} from '../operaciones.api'
-import type {
-  Caja,
-  Compra,
-  Egreso,
-  Ingreso,
-  Pago,
-  UsuarioResumen,
-} from '../operaciones.types'
+import { Permiso } from '@/core/constants/permisos'
+import { useAuthStore } from '@/modules/auth/auth.store'
+import { useSucursalStore } from '@/shared/stores/sucursal.store'
+import { cajasApi, cargarTodo, comprasApi, egresosApi, ingresosApi, ventasApi } from '../operaciones.api'
+import type { Caja, Compra, Egreso, Ingreso, Pago, ResumenCaja, UsuarioResumen } from '../operaciones.types'
 
 type DetailTab = 'summary' | 'sales' | 'incomes' | 'expenses' | 'purchases'
 type CollectionName = Exclude<DetailTab, 'summary'>
-
-interface PaginationState {
-  currentPage: number
-  lastPage: number
-  perPage: number
-}
-
-interface PaymentSummary {
-  idMedioPago: number
-  nombre: string
-  ventas: number
-  ingresos: number
-  egresos: number
-  compras: number
-  neto: number
-}
-
-const props = withDefaults(
-  defineProps<{
-    modelValue: boolean
-    caja: Caja | null
-    branchId?: number | null
-    initialTab?: DetailTab
-  }>(),
-  {
-    branchId: null,
-    initialTab: 'summary',
-  },
-)
-
-const emit = defineEmits<{
-  'update:modelValue': [value: boolean]
-}>()
-
+interface PaginationState { currentPage: number; lastPage: number; perPage: number }
+const props = withDefaults(defineProps<{ modelValue: boolean; caja: Caja | null; branchId?: number | null; initialTab?: DetailTab }>(), { branchId: null, initialTab: 'summary' })
+const emit = defineEmits<{ 'update:modelValue': [value: boolean] }>()
 const { mobile } = useDisplay()
-
-const tab = ref<DetailTab>('summary')
-const cashDetail = ref<Caja | null>(null)
-
-const sales = ref<Ingreso[]>([])
-const incomes = ref<Ingreso[]>([])
-const expenses = ref<Egreso[]>([])
-const purchases = ref<Compra[]>([])
-
-const initialLoading = ref(false)
-const error = ref('')
-
-const loading = reactive<Record<CollectionName, boolean>>({
-  sales: false,
-  incomes: false,
-  expenses: false,
-  purchases: false,
-})
-
-const pagination = reactive<Record<CollectionName, PaginationState>>({
-  sales: pageState(),
-  incomes: pageState(),
-  expenses: pageState(),
-  purchases: pageState(),
-})
-
-const snackbar = reactive({
-  show: false,
-  message: '',
-  color: 'info',
-})
-
+const auth = useAuthStore(), branch = useSucursalStore(), router = useRouter()
+const tab = ref<DetailTab>('summary'), cashDetail = ref<Caja | null>(null), summary = ref<ResumenCaja | null>(null)
+const sales = ref<Ingreso[]>([]), incomes = ref<Ingreso[]>([]), expenses = ref<Egreso[]>([]), purchases = ref<Compra[]>([])
+const initialLoading = ref(false), error = ref('')
+const loading = reactive<Record<CollectionName, boolean>>({ sales: false, incomes: false, expenses: false, purchases: false })
+const collectionErrors = reactive<Record<CollectionName, string>>({ sales: '', incomes: '', expenses: '', purchases: '' })
+const loaded = new Set<CollectionName>()
+const pagination = reactive<Record<CollectionName, PaginationState>>({ sales: pageState(), incomes: pageState(), expenses: pageState(), purchases: pageState() })
+let request = 0
 const displayedCash = computed(() => cashDetail.value ?? props.caja)
 const isOpen = computed(() => Boolean(displayedCash.value && !displayedCash.value.fechaCierre))
-
-const salesTotal = computed(() => sumAmounts(sales.value))
-const incomesTotal = computed(() => sumAmounts(incomes.value))
-const expensesTotal = computed(() => sumAmounts(expenses.value))
-const purchasesTotal = computed(() => {
-  return purchases.value.reduce(
-    (total, purchase) => total + purchaseCashAmount(purchase),
-    0,
-  )
-})
-
-const totalCalculated = computed(() => {
-  const opening = Number(displayedCash.value?.montoApertura ?? 0)
-
-  return opening
-    + salesTotal.value
-    + incomesTotal.value
-    - expensesTotal.value
-    - purchasesTotal.value
-})
-
-const expectedCash = computed(() => {
-  const cashBalance = displayedCash.value?.detalles.find((detail) => {
-    return detail.medioPago.nombre.toLowerCase().includes('efectivo')
-  })
-
-  return Number(cashBalance?.monto ?? 0)
-})
-
+const canSales = computed(() => auth.puede(Permiso.VENTAS_VER))
+const canPurchases = computed(() => auth.puede(Permiso.COMPRAS_VER))
+const canMovements = computed(() => auth.puede(Permiso.CAJA_GESTIONAR))
+const totalCalculated = computed(() => summary.value?.saldoCalculado ?? '0.00')
+const expectedCash = computed(() => summary.value?.efectivoEsperado ?? '0.00')
+const paymentSummaries = computed(() => summary.value?.mediosPago ?? [])
 const summaryMetrics = computed(() => [
-  {
-    label: 'Apertura',
-    value: displayedCash.value?.montoApertura ?? 0,
-    icon: 'mdi-lock-open-outline',
-    color: 'primary',
-  },
-  {
-    label: 'Ventas',
-    value: salesTotal.value,
-    count: sales.value.length,
-    icon: 'mdi-receipt-text-outline',
-    color: 'success',
-  },
-  {
-    label: 'Ingresos',
-    value: incomesTotal.value,
-    count: incomes.value.length,
-    icon: 'mdi-cash-plus',
-    color: 'success',
-  },
-  {
-    label: 'Egresos',
-    value: expensesTotal.value,
-    count: expenses.value.length,
-    icon: 'mdi-cash-minus',
-    color: 'error',
-  },
-  {
-    label: 'Compras',
-    value: purchasesTotal.value,
-    count: purchases.value.length,
-    icon: 'mdi-cart-arrow-down',
-    color: 'error',
-  },
-  {
-    label: 'Salidas totales',
-    value: expensesTotal.value + purchasesTotal.value,
-    icon: 'mdi-arrow-down-bold-circle-outline',
-    color: 'error',
-  },
+  { label: 'Apertura', value: summary.value?.apertura ?? 0, icon: 'mdi-lock-open-outline', color: 'primary' },
+  { label: 'Ventas cobradas', value: summary.value?.cobrosVentas ?? 0, count: summary.value?.cantidades.ventas, icon: 'mdi-receipt-text-outline', color: 'success' },
+  { label: 'Otros ingresos', value: summary.value?.ingresos ?? 0, count: summary.value?.cantidades.ingresos, icon: 'mdi-cash-plus', color: 'success' },
+  { label: 'Gastos', value: summary.value?.egresos ?? 0, count: summary.value?.cantidades.egresos, icon: 'mdi-cash-minus', color: 'error' },
+  { label: 'Pagos de compras', value: summary.value?.compras ?? 0, count: summary.value?.cantidades.compras, icon: 'mdi-cart-arrow-down', color: 'error' },
+  { label: 'Salidas totales', value: summary.value?.salidas ?? 0, icon: 'mdi-arrow-down-bold-circle-outline', color: 'error' },
 ])
-
-const paymentSummaries = computed<PaymentSummary[]>(() => {
-  const summaries = new Map<number, PaymentSummary>()
-
-  for (const detail of displayedCash.value?.detalles ?? []) {
-    ensurePaymentSummary(
-      summaries,
-      detail.idMedioPago,
-      detail.medioPago.nombre,
-    )
-  }
-
-  addPaymentsToSummary(summaries, sales.value, 'ventas')
-  addPaymentsToSummary(summaries, incomes.value, 'ingresos')
-  addPaymentsToSummary(summaries, expenses.value, 'egresos')
-
-  for (const purchase of purchases.value) {
-    for (const expense of purchase.egresos) {
-      if (expense.idCaja !== displayedCash.value?.idCaja) continue
-      addPaymentList(summaries, expense.pagos, 'compras')
-    }
-  }
-
-  return [...summaries.values()]
-    .map((summary) => ({
-      ...summary,
-      neto:
-        summary.ventas
-        + summary.ingresos
-        - summary.egresos
-        - summary.compras,
-    }))
-    .sort((a, b) => a.nombre.localeCompare(b.nombre))
-})
-
 const paginatedSales = computed(() => paginate(sales.value, pagination.sales))
 const paginatedIncomes = computed(() => paginate(incomes.value, pagination.incomes))
 const paginatedExpenses = computed(() => paginate(expenses.value, pagination.expenses))
 const paginatedPurchases = computed(() => paginate(purchases.value, pagination.purchases))
-
-function pageState(): PaginationState {
-  return {
-    currentPage: 1,
-    lastPage: 1,
-    perPage: 10,
-  }
-}
-
+function pageState(): PaginationState { return { currentPage: 1, lastPage: 1, perPage: 10 } }
+function paginate<T>(items: T[], state: PaginationState) { return items.slice((state.currentPage - 1) * state.perPage, state.currentPage * state.perPage) }
 async function loadDetail() {
-  if (!props.caja?.idCaja) return
-
-  initialLoading.value = true
-  error.value = ''
-
-  const cajaId = props.caja.idCaja
-  const branchId = props.branchId ?? props.caja.idSucursal
-
-  Object.keys(loading).forEach((key) => {
-    loading[key as CollectionName] = true
-  })
-
+  if (!props.caja) return
+  const current = ++request, cajaId = props.caja.idCaja
+  initialLoading.value = true; error.value = ''
   try {
-    const [cashResponse, salesResponse, incomesResponse, expensesResponse, purchasesResponse] =
-      await Promise.all([
-        cajasApi.obtener(cajaId),
-        ventasApi.listar({ idCaja: cajaId, pagina: 1, limite: 100 }),
-        ingresosApi.listar({ idCaja: cajaId, pagina: 1, limite: 100 }),
-        egresosApi.listar({ idCaja: cajaId, pagina: 1, limite: 100 }),
-        comprasApi.listar({ idSucursal: branchId, pagina: 1, limite: 100 }),
-      ])
-
-    cashDetail.value = cashResponse.data
-    sales.value = salesResponse.data.data
-    incomes.value = incomesResponse.data.data.filter((item) => {
-      return !item.motivoIngreso.reservado
-    })
-    expenses.value = expensesResponse.data.data.filter((item) => {
-      return !item.motivoEgreso.reservado
-    })
-    purchases.value = purchasesResponse.data.data.filter((purchase) => {
-      return purchase.egresos.some((expense) => expense.idCaja === cajaId)
-    })
-
-    updatePagination()
-  } catch (cause) {
-    error.value = getApiErrorMessage(
-      cause,
-      'No se pudo cargar el detalle de caja.',
-    )
-  } finally {
-    initialLoading.value = false
-
-    Object.keys(loading).forEach((key) => {
-      loading[key as CollectionName] = false
-    })
-  }
+    const { data } = await cajasApi.resumen(cajaId)
+    if (current !== request) return
+    cashDetail.value = data.caja; summary.value = data.resumen
+    if (tab.value !== 'summary') void loadCollection(tab.value)
+  } catch (cause) { if (current === request) error.value = getApiErrorMessage(cause, 'No se pudo cargar el resumen de caja.') }
+  finally { if (current === request) initialLoading.value = false }
 }
-
-function resetState() {
-  tab.value = props.initialTab
-  cashDetail.value = null
-  sales.value = []
-  incomes.value = []
-  expenses.value = []
-  purchases.value = []
-  error.value = ''
-
-  for (const state of Object.values(pagination)) {
-    Object.assign(state, pageState())
-  }
+async function loadCollection(name: CollectionName) {
+  if (!displayedCash.value || loaded.has(name) || loading[name]) return
+  if ((name === 'sales' && !canSales.value) || (name === 'purchases' && !canPurchases.value)) return
+  const current = request, caja = displayedCash.value
+  loading[name] = true; collectionErrors[name] = ''
+  const consulta = { idCaja: caja.idCaja, idSucursal: caja.idSucursal }
+  try {
+    if (name === 'sales') { const rows = await cargarTodo(ventasApi.listar, consulta); if (current !== request) return; sales.value = rows }
+    else if (name === 'incomes') { const rows = await cargarTodo(ingresosApi.listar, consulta); if (current !== request) return; incomes.value = rows.filter(item => item.idMotivoIngreso !== 1) }
+    else if (name === 'expenses') { const rows = await cargarTodo(egresosApi.listar, consulta); if (current !== request) return; expenses.value = rows.filter(item => item.idCompra === null && item.idMotivoEgreso !== 3) }
+    else { const rows = await cargarTodo(comprasApi.listar, consulta); if (current !== request) return; purchases.value = rows }
+    loaded.add(name)
+    const total = { sales: sales.value.length, incomes: incomes.value.length, expenses: expenses.value.length, purchases: purchases.value.length }[name]
+    pagination[name].lastPage = Math.max(1, Math.ceil(total / pagination[name].perPage))
+  } catch (cause) { if (current === request) collectionErrors[name] = getApiErrorMessage(cause, 'No se pudo cargar esta pestaña.') }
+  finally { if (current === request) loading[name] = false }
 }
-
-function updatePagination() {
-  updatePageState(pagination.sales, sales.value.length)
-  updatePageState(pagination.incomes, incomes.value.length)
-  updatePageState(pagination.expenses, expenses.value.length)
-  updatePageState(pagination.purchases, purchases.value.length)
+async function openRegistration(name: 'ingresos' | 'egresos' | 'compras') {
+  const caja = displayedCash.value
+  if (!caja || !isOpen.value || (name === 'compras' ? !auth.puede(Permiso.COMPRAS_GESTIONAR) : !canMovements.value)) return
+  branch.seleccionar(caja.idSucursal)
+  await router.push({ name: `operaciones-${name}`, query: { registrar: '1', idCaja: caja.idCaja } })
+  close()
 }
-
-function updatePageState(state: PaginationState, total: number) {
-  state.currentPage = 1
-  state.lastPage = Math.max(1, Math.ceil(total / state.perPage))
-}
-
-function paginate<T>(items: T[], state: PaginationState) {
-  const start = (state.currentPage - 1) * state.perPage
-  return items.slice(start, start + state.perPage)
-}
-
-function ensurePaymentSummary(
-  summaries: Map<number, PaymentSummary>,
-  idMedioPago: number,
-  nombre: string,
-) {
-  const existing = summaries.get(idMedioPago)
-  if (existing) return existing
-
-  const summary: PaymentSummary = {
-    idMedioPago,
-    nombre,
-    ventas: 0,
-    ingresos: 0,
-    egresos: 0,
-    compras: 0,
-    neto: 0,
-  }
-
-  summaries.set(idMedioPago, summary)
-  return summary
-}
-
-function addPaymentsToSummary(
-  summaries: Map<number, PaymentSummary>,
-  movements: Array<Ingreso | Egreso>,
-  column: 'ventas' | 'ingresos' | 'egresos',
-) {
-  for (const movement of movements) {
-    addPaymentList(summaries, movement.pagos, column)
-  }
-}
-
-function addPaymentList(
-  summaries: Map<number, PaymentSummary>,
-  payments: Pago[],
-  column: 'ventas' | 'ingresos' | 'egresos' | 'compras',
-) {
-  for (const payment of payments) {
-    const summary = ensurePaymentSummary(
-      summaries,
-      payment.idMedioPago,
-      payment.medioPago.nombre,
-    )
-
-    summary[column] += Number(payment.monto)
-  }
-}
-
-function purchaseExpenses(purchase: Compra) {
-  return purchase.egresos.filter((expense) => {
-    return expense.idCaja === displayedCash.value?.idCaja
-  })
-}
-
-function purchaseCashAmount(purchase: Compra) {
-  return purchaseExpenses(purchase).reduce(
-    (total, expense) => total + Number(expense.monto),
-    0,
-  )
-}
-
-function purchasePaymentNames(purchase: Compra) {
-  const payments = purchaseExpenses(purchase).flatMap((expense) => expense.pagos)
-  return paymentNames(payments)
-}
-
-function paymentNames(payments: Pago[]) {
-  if (!payments.length) return 'Sin medio de pago'
-
-  return [...new Set(payments.map((payment) => payment.medioPago.nombre))].join(', ')
-}
-
-function sumAmounts(items: Array<Ingreso | Egreso>) {
-  return items.reduce((total, item) => total + Number(item.monto), 0)
-}
-
-function lineTotal(quantity: string, unitPrice: string) {
-  return Number(quantity) * Number(unitPrice)
-}
-
-function userName(user: UsuarioResumen) {
-  if (user.perfil) {
-    return `${user.perfil.nombres} ${user.perfil.apellidos}`
-  }
-
-  return user.correo
-}
-
-function showPending(feature: string) {
-  snackbar.message = `${feature} aún falta completar.`
-  snackbar.color = 'info'
-  snackbar.show = true
-}
-
-function close() {
-  emit('update:modelValue', false)
-}
-
-function formatMoney(value: string | number | null | undefined) {
-  return Number(value || 0).toLocaleString('es-PE', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  })
-}
-
-function formatQuantity(value: string | number | null | undefined) {
-  return Number(value || 0).toLocaleString('es-PE', {
-    maximumFractionDigits: 3,
-  })
-}
-
-function formatDate(value: string | null | undefined) {
-  if (!value) return '—'
-
-  return new Intl.DateTimeFormat('es-PE', {
-    dateStyle: 'short',
-    timeStyle: 'short',
-  }).format(new Date(value))
-}
-
-watch(
-  () => [props.modelValue, props.caja?.idCaja] as const,
-  ([visible]) => {
-    if (!visible) return
-
-    resetState()
-    void loadDetail()
-  },
-)
+function purchaseExpenses(purchase: Compra) { return purchase.egresos.filter(expense => expense.idCaja === displayedCash.value?.idCaja) }
+function purchaseCashAmount(purchase: Compra) { return purchaseExpenses(purchase).reduce((sum, expense) => sum + expense.pagos.reduce((amount, pago) => amount + Number(pago.monto), 0), 0) }
+function purchasePaymentNames(purchase: Compra) { return paymentNames(purchaseExpenses(purchase).flatMap(expense => expense.pagos)) }
+function paymentNames(payments: Pago[]) { return [...new Set(payments.map(payment => payment.medioPago.nombre))].join(', ') || 'Sin medio de pago' }
+function lineTotal(quantity: string, price: string) { return Number(quantity) * Number(price) }
+function userName(user: UsuarioResumen) { return user.perfil ? `${user.perfil.nombres} ${user.perfil.apellidos}` : user.correo }
+function close() { emit('update:modelValue', false) }
+function formatMoney(value: string | number | null | undefined) { return Number(value || 0).toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }
+function formatQuantity(value: string | number | null | undefined) { return Number(value || 0).toLocaleString('es-PE', { maximumFractionDigits: 3 }) }
+function formatDate(value: string | null | undefined) { return value ? new Intl.DateTimeFormat('es-PE', { dateStyle: 'short', timeStyle: 'short' }).format(new Date(value)) : '—' }
+watch(tab, value => { if (value !== 'summary' && summary.value) void loadCollection(value) })
+watch(() => [props.modelValue, props.caja?.idCaja] as const, ([visible]) => {
+  request++; loaded.clear()
+  if (!visible) return
+  tab.value = props.initialTab === 'sales' && !canSales.value || props.initialTab === 'purchases' && !canPurchases.value ? 'summary' : props.initialTab
+  cashDetail.value = null; summary.value = null; sales.value = []; incomes.value = []; expenses.value = []; purchases.value = []; error.value = ''
+  for (const name of Object.keys(loading) as CollectionName[]) { loading[name] = false; collectionErrors[name] = ''; Object.assign(pagination[name], pageState()) }
+  void loadDetail()
+}, { immediate: true })
+onBeforeUnmount(() => { request++ })
 </script>
 
 <style scoped>
+.cash-detail-title { min-width: 0; white-space: normal; }
+@media (max-width: 600px) {
+  .cash-detail-heading { display: grid !important; grid-template-columns: 40px minmax(0, 1fr) 44px; gap: 8px !important; padding: 16px !important; }
+  .cash-detail-heading > .v-spacer { display: none; }
+  .cash-detail-heading > .v-avatar { grid-column: 1; grid-row: 1 / span 2; }
+  .cash-detail-state { grid-column: 2; grid-row: 2; justify-self: start; }
+  .cash-detail-heading > .v-btn { grid-column: 3; grid-row: 1 / span 2; }
+}
 .detail-content {
   min-height: 560px;
 }

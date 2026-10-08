@@ -34,6 +34,12 @@ const pago = (idMedioPago: number, monto: string) => ({
 });
 
 describe('DTO de operaciones', () => {
+  it('acepta el filtro por caja de ventas y rechaza identificadores inválidos', () => {
+    expect(ListarOperacionesSchema.parse({ idCaja: '2' }).idCaja).toBe(2);
+    expect(ListarOperacionesSchema.safeParse({ idCaja: '-1' }).success).toBe(
+      false,
+    );
+  });
   it('respeta exactamente la precisión de cada decimal', () => {
     expect(DineroSchema.parse('999999999999.99')).toBe('999999999999.99');
     expect(PrecioUnitarioSchema.parse('9999999999.9999')).toBe(

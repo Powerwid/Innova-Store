@@ -10,6 +10,7 @@
     "dev": "node scripts/dev.mjs",
     "dev:back": "npm --prefix backend run start:dev",
     "dev:front": "npm --prefix frontend run dev",
+    "dev:model": "node scripts/recognition.mjs",
     "build": "npm --prefix frontend run build && npm --prefix backend run build",
     "start": "node scripts/start.mjs"
   },

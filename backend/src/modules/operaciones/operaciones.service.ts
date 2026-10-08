@@ -8,6 +8,8 @@ import {
 import type { UsuarioAutenticado } from '../../common/types/usuario-autenticado.js';
 import { PrismaService } from '../../database/prisma/prisma.service.js';
 import { Prisma } from '../../generated/prisma/client.js';
+import { calcularResumenCaja } from './caja-resumen.js';
+import { createHash } from 'node:crypto';
 import {
   CONFIG_STOCK_NEGATIVO,
   MOVIMIENTO_COMPRA,
@@ -90,6 +92,7 @@ interface EgresoInput extends MovimientoCajaInput {
 }
 
 interface VentaInput extends MovimientoCajaInput {
+  claveOperacion?: string;
   productos: Array<{
     idProductoSucursal: number;
     idAlmacen: number;
@@ -609,6 +612,31 @@ export class OperacionesService {
     return caja;
   }
 
+  obtenerResumenCaja(idCaja: number, actor: UsuarioAutenticado) {
+    return this.prisma.$transaction(async (db) => {
+      const caja = await this.obtenerCaja(idCaja, actor, db);
+      const [ingresos, egresos] = await Promise.all([
+        db.ingreso.findMany({
+          where: { idCaja },
+          select: {
+            idMotivoIngreso: true,
+            monto: true,
+            pagos: { include: { medioPago: true } },
+          },
+        }),
+        db.egreso.findMany({
+          where: { idCaja },
+          select: {
+            idMotivoEgreso: true,
+            idCompra: true,
+            pagos: { include: { medioPago: true } },
+          },
+        }),
+      ]);
+      return { caja, resumen: calcularResumenCaja(caja, ingresos, egresos) };
+    });
+  }
+
   async obtenerCajaAbiertaSucursal(
     idSucursal: number,
     actor: UsuarioAutenticado,
@@ -1122,125 +1150,192 @@ export class OperacionesService {
     return venta;
   }
 
-  crearVenta(dto: VentaInput, actor: UsuarioAutenticado) {
-    return this.prisma.$transaction(async (tx) => {
-      const totalProductos = this.dinero(
-        dto.productos.reduce(
-          (total, producto) =>
-            total.plus(
-              this.decimal(producto.cantidad).times(producto.precioUnitario),
-            ),
-          new Prisma.Decimal(0),
-        ),
-      );
-      const totalVenta = this.decimal(dto.monto);
-      if (!totalProductos.eq(totalVenta)) {
-        throw new BadRequestException(
-          'El total de la venta debe coincidir con sus productos',
+  async crearVenta(dto: VentaInput, actor: UsuarioAutenticado) {
+    const huella = createHash('sha256')
+      .update(
+        JSON.stringify({
+          idCaja: dto.idCaja,
+          idSucursal: dto.idSucursal,
+          monto: this.decimal(dto.monto).toFixed(2),
+          detalle: dto.detalle || null,
+          fechaIngreso: dto.fechaIngreso || null,
+          credito: dto.credito || null,
+          productos: [...dto.productos]
+            .sort(
+              (a, b) =>
+                a.idProductoSucursal - b.idProductoSucursal ||
+                a.idAlmacen - b.idAlmacen,
+            )
+            .map((p) => ({
+              ...p,
+              cantidad: this.decimal(p.cantidad).toFixed(3),
+              precioUnitario: this.decimal(p.precioUnitario).toFixed(4),
+            })),
+          pagos: [...dto.pagos]
+            .sort((a, b) => a.idMedioPago - b.idMedioPago)
+            .map((p) => ({ ...p, monto: this.decimal(p.monto).toFixed(2) })),
+        }),
+      )
+      .digest('hex');
+    const recuperar = async (db: Db) => {
+      if (!dto.claveOperacion) return null;
+      const existente = await db.ingreso.findUnique({
+        where: { claveOperacion: dto.claveOperacion },
+      });
+      if (!existente) return null;
+      if (
+        existente.idUsuario !== actor.idUsuario ||
+        existente.huellaOperacion !== huella
+      )
+        throw new ConflictException(
+          'Esta operación ya fue registrada con otros datos. Revisa el historial de ventas.',
         );
-      }
-
-      const montoPagado = this.dinero(this.sumarPagos(dto.pagos));
-      const saldoCredito = this.dinero(totalVenta.minus(montoPagado));
-      if (saldoCredito.lt(0)) {
-        throw new BadRequestException(
-          'La suma de los pagos no puede superar el total de la venta',
-        );
-      }
-      if (saldoCredito.gt(0) && !dto.credito) {
-        throw new BadRequestException(
-          'Debe indicar el cliente cuando la venta deja saldo a crédito',
-        );
-      }
-      if (saldoCredito.eq(0) && dto.credito) {
-        throw new BadRequestException(
-          'No debe indicar crédito cuando la venta está totalmente pagada',
-        );
-      }
-
-      const ingreso = await this.crearIngresoTx(
-        tx,
-        {
-          ...dto,
-          idMotivoIngreso: MOTIVO_INGRESO_VENTA,
-        },
-        actor,
-        false,
-      );
-
-      const productos = [...dto.productos].sort(
-        (a, b) =>
-          a.idProductoSucursal - b.idProductoSucursal ||
-          a.idAlmacen - b.idAlmacen,
-      );
-      for (const producto of productos) {
-        await this.validarLineaInventario(
-          tx,
-          producto.idProductoSucursal,
-          producto.idAlmacen,
-          dto.idSucursal,
-        );
-        const ingresoProducto = await tx.ingresoProducto.create({
-          data: {
-            idIngreso: ingreso.idIngreso,
-            idProductoSucursal: producto.idProductoSucursal,
-            idAlmacen: producto.idAlmacen,
-            cantidad: producto.cantidad,
-            precioUnitario: producto.precioUnitario,
-          },
-        });
-        await this.aplicarMovimientoInventario(
-          tx,
-          {
-            ...producto,
-            idSucursal: dto.idSucursal,
-            naturaleza: 'SALIDA',
-            idIngresoProducto: ingresoProducto.idIngresoProducto,
-            observacion: `Venta #${ingreso.idIngreso}`,
-          },
-          actor,
-        );
-      }
-
-      if (saldoCredito.gt(0) && dto.credito) {
-        const cliente = await tx.cliente.findUnique({
-          where: { idCliente: dto.credito.idCliente },
-        });
-        if (!cliente) throw new BadRequestException('Cliente no encontrado');
-        if (!cliente.activo) {
-          throw new BadRequestException('El cliente está inactivo');
-        }
-        const egreso = await this.crearEgresoTx(
-          tx,
-          {
-            idCaja: dto.idCaja,
-            idSucursal: dto.idSucursal,
-            idMotivoEgreso: MOTIVO_EGRESO_CREDITO_CLIENTE,
-            monto: saldoCredito.toFixed(2),
-            detalle: `Crédito generado por la venta #${ingreso.idIngreso}`,
-            fechaEgreso: dto.fechaIngreso,
-            pagos: [],
-          },
-          actor,
-          { exigirPagoCompleto: false },
-        );
-        await tx.deudaCliente.create({
-          data: {
-            idCliente: dto.credito.idCliente,
-            idIngresoOrigen: ingreso.idIngreso,
-            idEgreso: egreso.idEgreso,
-            fechaVencimiento: dto.credito.fechaVencimiento
-              ? new Date(dto.credito.fechaVencimiento)
-              : null,
-          },
-        });
-      }
-
       return {
         message: 'Venta registrada correctamente',
-        venta: await this.obtenerVenta(ingreso.idIngreso, actor, tx),
+        venta: await this.obtenerVenta(existente.idIngreso, actor, db),
       };
-    });
+    };
+    try {
+      return await this.prisma.$transaction(async (tx) => {
+        const anterior = await recuperar(tx);
+        if (anterior) return anterior;
+        const totalProductos = this.dinero(
+          dto.productos.reduce(
+            (total, producto) =>
+              total.plus(
+                this.decimal(producto.cantidad).times(producto.precioUnitario),
+              ),
+            new Prisma.Decimal(0),
+          ),
+        );
+        const totalVenta = this.decimal(dto.monto);
+        if (!totalProductos.eq(totalVenta)) {
+          throw new BadRequestException(
+            'El total de la venta debe coincidir con sus productos',
+          );
+        }
+
+        const montoPagado = this.dinero(this.sumarPagos(dto.pagos));
+        const saldoCredito = this.dinero(totalVenta.minus(montoPagado));
+        if (saldoCredito.lt(0)) {
+          throw new BadRequestException(
+            'La suma de los pagos no puede superar el total de la venta',
+          );
+        }
+        if (saldoCredito.gt(0) && !dto.credito) {
+          throw new BadRequestException(
+            'Debe indicar el cliente cuando la venta deja saldo a crédito',
+          );
+        }
+        if (saldoCredito.eq(0) && dto.credito) {
+          throw new BadRequestException(
+            'No debe indicar crédito cuando la venta está totalmente pagada',
+          );
+        }
+
+        const ingreso = await this.crearIngresoTx(
+          tx,
+          {
+            ...dto,
+            idMotivoIngreso: MOTIVO_INGRESO_VENTA,
+          },
+          actor,
+          false,
+        );
+
+        const productos = [...dto.productos].sort(
+          (a, b) =>
+            a.idProductoSucursal - b.idProductoSucursal ||
+            a.idAlmacen - b.idAlmacen,
+        );
+        if (dto.claveOperacion)
+          await tx.ingreso.update({
+            where: { idIngreso: ingreso.idIngreso },
+            data: {
+              claveOperacion: dto.claveOperacion,
+              huellaOperacion: huella,
+            },
+          });
+        for (const producto of productos) {
+          await this.validarLineaInventario(
+            tx,
+            producto.idProductoSucursal,
+            producto.idAlmacen,
+            dto.idSucursal,
+          );
+          const ingresoProducto = await tx.ingresoProducto.create({
+            data: {
+              idIngreso: ingreso.idIngreso,
+              idProductoSucursal: producto.idProductoSucursal,
+              idAlmacen: producto.idAlmacen,
+              cantidad: producto.cantidad,
+              precioUnitario: producto.precioUnitario,
+            },
+          });
+          await this.aplicarMovimientoInventario(
+            tx,
+            {
+              ...producto,
+              idSucursal: dto.idSucursal,
+              naturaleza: 'SALIDA',
+              idIngresoProducto: ingresoProducto.idIngresoProducto,
+              observacion: `Venta #${ingreso.idIngreso}`,
+            },
+            actor,
+          );
+        }
+
+        if (saldoCredito.gt(0) && dto.credito) {
+          const cliente = await tx.cliente.findUnique({
+            where: { idCliente: dto.credito.idCliente },
+          });
+          if (!cliente) throw new BadRequestException('Cliente no encontrado');
+          if (!cliente.activo) {
+            throw new BadRequestException('El cliente está inactivo');
+          }
+          const egreso = await this.crearEgresoTx(
+            tx,
+            {
+              idCaja: dto.idCaja,
+              idSucursal: dto.idSucursal,
+              idMotivoEgreso: MOTIVO_EGRESO_CREDITO_CLIENTE,
+              monto: saldoCredito.toFixed(2),
+              detalle: `Crédito generado por la venta #${ingreso.idIngreso}`,
+              fechaEgreso: dto.fechaIngreso,
+              pagos: [],
+            },
+            actor,
+            { exigirPagoCompleto: false },
+          );
+          await tx.deudaCliente.create({
+            data: {
+              idCliente: dto.credito.idCliente,
+              idIngresoOrigen: ingreso.idIngreso,
+              idEgreso: egreso.idEgreso,
+              fechaVencimiento: dto.credito.fechaVencimiento
+                ? new Date(dto.credito.fechaVencimiento)
+                : null,
+            },
+          });
+        }
+
+        return {
+          message: 'Venta registrada correctamente',
+          venta: await this.obtenerVenta(ingreso.idIngreso, actor, tx),
+        };
+      });
+    } catch (cause) {
+      // Dos solicitudes simultáneas compiten por la misma clave; solo una confirma.
+      if (
+        dto.claveOperacion &&
+        cause instanceof Prisma.PrismaClientKnownRequestError &&
+        cause.code === 'P2002'
+      ) {
+        const anterior = await recuperar(this.prisma);
+        if (anterior) return anterior;
+      }
+      throw cause;
+    }
   }
 
   private compraConSaldo<
@@ -1269,6 +1364,7 @@ export class OperacionesService {
 
   listarCompras(q: ConsultaPaginada, actor: UsuarioAutenticado) {
     const where: Prisma.CompraWhereInput = {
+      egresos: q.idCaja ? { some: { idCaja: q.idCaja } } : undefined,
       idSucursal: this.sucursales(q, actor),
       idProveedor: q.idProveedor,
       idAlmacen: q.idAlmacen,

@@ -9,7 +9,7 @@
   </div>
 </template>
 <script setup lang="ts">
-import { computed, reactive, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, reactive, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { mediosPagoApi } from '@/core/api/administracion.api'
 import { getApiErrorMessage } from '@/core/api/api-error'
@@ -21,15 +21,35 @@ import PagosEditor from '../components/PagosEditor.vue'
 import { cajasApi, cargarTodo, egresosApi, ingresosApi, motivosEgresoApi, motivosIngresoApi } from '../operaciones.api'
 import type { Caja, MotivoEgreso, MotivoIngreso, Movimiento, PagoPayload } from '../operaciones.types'
 import '../operaciones.css'
+import { useRegistroDesdeCaja } from '../useRegistroDesdeCaja'
 const route=useRoute(),auth=useAuthStore(),branch=useSucursalStore(),isIncome=computed(()=>route.name==='operaciones-ingresos'),title=computed(()=>isIncome.value?'Ingresos':'Egresos'),canManage=computed(()=>auth.puede(Permiso.CAJA_GESTIONAR))
 const items=ref<Movimiento[]>([]),reasons=ref<Array<MotivoIngreso|MotivoEgreso>>([]),paymentMethods=ref<MedioPago[]>([]),openBox=ref<Caja|null>(null),selected=ref<Movimiento|null>(null),search=ref(''),selectedReason=ref<number|null>(null),page=ref(1),limit=30,total=ref(0),loading=ref(false),saving=ref(false),dialog=ref(false),error=ref(''),formError=ref(''),noticeVisible=ref(false),payments=ref<PagoPayload[]>([]),form=reactive({reasonId:null as number|null,amount:'',date:'',detail:''})
 const reasonOptions=computed(()=>[{title:'Todos los motivos',value:null},...reasons.value.map(x=>({title:reasonLabel(x),value:reasonId(x)}))])
-async function load(){if(!branch.idSucursalActual){items.value=[];return}loading.value=true;error.value='';try{const api=isIncome.value?ingresosApi:egresosApi;const catalogData=isIncome.value?await cargarTodo(motivosIngresoApi.listar,{activo:true}):await cargarTodo(motivosEgresoApi.listar,{activo:true});const [list,methods]=await Promise.all([api.listar({idSucursal:branch.idSucursalActual,pagina:page.value,limite:limit,buscar:search.value.trim()||undefined,...(isIncome.value?{idMotivoIngreso:selectedReason.value??undefined}:{idMotivoEgreso:selectedReason.value??undefined})}),mediosPagoApi.listar()]);items.value=list.data.data;total.value=list.data.total;reasons.value=catalogData;paymentMethods.value=methods.data;try{openBox.value=(await cajasApi.abierta(branch.idSucursalActual)).data}catch{openBox.value=null}}catch(cause){error.value=getApiErrorMessage(cause,'No se pudieron cargar los movimientos')}finally{loading.value=false}}
+let loadRequest = 0
+async function load(){
+  const idSucursal=branch.idSucursalActual,current=++loadRequest,income=isIncome.value
+  if(!idSucursal){items.value=[];total.value=0;openBox.value=null;loading.value=false;return}
+  loading.value=true;error.value='';openBox.value=null
+  try{
+    const api=income?ingresosApi:egresosApi
+    const [catalogData,list,methods,box]=await Promise.all([
+      income?cargarTodo(motivosIngresoApi.listar,{activo:true}):cargarTodo(motivosEgresoApi.listar,{activo:true}),
+      api.listar({idSucursal,pagina:page.value,limite:limit,buscar:search.value.trim()||undefined,...(income?{idMotivoIngreso:selectedReason.value??undefined}:{idMotivoEgreso:selectedReason.value??undefined})}),
+      mediosPagoApi.listar(),cajasApi.abierta(idSucursal).catch(()=>null),
+    ])
+    if(current!==loadRequest)return
+    items.value=list.data.data;total.value=list.data.total;reasons.value=catalogData.filter(item=>!isSystemReason(item));paymentMethods.value=methods.data;openBox.value=box?.data??null
+  }catch(cause){if(current===loadRequest)error.value=getApiErrorMessage(cause,'No se pudieron cargar los movimientos')}
+  finally{if(current===loadRequest)loading.value=false}
+}
 function searchNow(){if(page.value!==1)page.value=1;else void load()}
 function openCreate(){Object.assign(form,{reasonId:null,amount:'',date:'',detail:''});payments.value=[];formError.value='';dialog.value=true}
-async function save(){if(!openBox.value||!branch.idSucursalActual||!form.reasonId){formError.value='Selecciona un motivo';return}const amount=Number(form.amount);const paid=payments.value.reduce((s,x)=>s+Number(x.monto||0),0);if(!(amount>0)){formError.value='Ingresa un monto válido';return}if(Math.abs(amount-paid)>.001){formError.value='La suma de los pagos debe coincidir con el monto';return}saving.value=true;try{const common={idCaja:openBox.value.idCaja,idSucursal:branch.idSucursalActual,monto:amount.toFixed(2),detalle:form.detail.trim()||undefined,pagos:payments.value};if(isIncome.value)await ingresosApi.crear({...common,idMotivoIngreso:form.reasonId,fechaIngreso:toIso(form.date)});else await egresosApi.crear({...common,idMotivoEgreso:form.reasonId,fechaEgreso:toIso(form.date)});dialog.value=false;noticeVisible.value=true;await load()}catch(cause){formError.value=getApiErrorMessage(cause,'No se pudo registrar el movimiento')}finally{saving.value=false}}
+async function save(){if(saving.value)return;if(!openBox.value||!branch.idSucursalActual||!form.reasonId){formError.value='Selecciona un motivo';return}const amount=Number(form.amount);const paid=payments.value.reduce((s,x)=>s+Number(x.monto||0),0);if(!(amount>0)){formError.value='Ingresa un monto válido';return}if(Math.abs(amount-paid)>.001){formError.value='La suma de los pagos debe coincidir con el monto';return}saving.value=true;try{const common={idCaja:openBox.value.idCaja,idSucursal:branch.idSucursalActual,monto:amount.toFixed(2),detalle:form.detail.trim()||undefined,pagos:payments.value};if(isIncome.value)await ingresosApi.crear({...common,idMotivoIngreso:form.reasonId,fechaIngreso:toIso(form.date)});else await egresosApi.crear({...common,idMotivoEgreso:form.reasonId,fechaEgreso:toIso(form.date)});dialog.value=false;noticeVisible.value=true;await load()}catch(cause){formError.value=getApiErrorMessage(cause,'No se pudo registrar el movimiento')}finally{saving.value=false}}
 function reasonId(item:MotivoIngreso|MotivoEgreso){return 'idMotivoIngreso'in item?item.idMotivoIngreso:item.idMotivoEgreso}function reasonLabel(item:MotivoIngreso|MotivoEgreso){return item.motivo}function idOf(item:Movimiento){return 'idIngreso'in item?item.idIngreso:item.idEgreso}function dateOf(item:Movimiento){return 'fechaIngreso'in item?item.fechaIngreso:item.fechaEgreso}function reasonOf(item:Movimiento){return 'motivoIngreso'in item?item.motivoIngreso.motivo:item.motivoEgreso.motivo}
 function isSystemReason(item:MotivoIngreso|MotivoEgreso){return 'idMotivoIngreso'in item?item.idMotivoIngreso<=2:item.idMotivoEgreso<=3}
 function toIso(value:string){return value?new Date(value).toISOString():undefined}function money(v:string|number){return new Intl.NumberFormat('es-PE',{style:'currency',currency:'PEN'}).format(Number(v)||0)}function dateTime(v:string){return new Intl.DateTimeFormat('es-PE',{dateStyle:'short',timeStyle:'short'}).format(new Date(v))}
 watch([()=>branch.idSucursalActual,page,()=>route.name],()=>void load(),{immediate:true})
+watch([()=>branch.idSucursalActual,()=>route.name],()=>{dialog.value=false;selected.value=null;selectedReason.value=null;page.value=1})
+onBeforeUnmount(()=>{loadRequest++})
+useRegistroDesdeCaja(openBox,loading,canManage,error,openCreate)
 </script>

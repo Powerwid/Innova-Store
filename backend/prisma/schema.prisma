@@ -173,6 +173,8 @@ model MotivoEgreso {
 }
 
 model Ingreso {
+  claveOperacion  String?  @unique @db.VarChar(36) @map("clave_operacion")
+  huellaOperacion String?  @db.VarChar(64) @map("huella_operacion")
   idIngreso       Int      @id @default(autoincrement()) @map("id_ingreso")
   idCaja          Int      @map("id_caja")
   idSucursal      Int      @map("id_sucursal")
@@ -429,9 +431,45 @@ model Producto {
   categoria      Categoria          @relation(fields: [idCategoria], references: [idCategoria], onDelete: Restrict)
   unidadMedida   UnidadMedida       @relation(fields: [idUnidadMedida], references: [idUnidadMedida], onDelete: Restrict)
   sucursales     ProductoSucursal[]
+  referenciasVisuales ReferenciaVisual[]
 
   @@index([nombre])
   @@map("productos")
+}
+
+enum EstadoReferenciaVisual {
+  PENDIENTE
+  PROCESANDO
+  DISPONIBLE
+  ERROR
+  RETIRADA
+}
+
+// MySQL conserva la relación con el catálogo y la cola durable de indexación.
+// Los vectores y FAISS pertenecen al servicio Python y se pueden reconstruir.
+model ReferenciaVisual {
+  idReferencia   Int                    @id @default(autoincrement()) @map("id_referencia")
+  idProducto     Int                    @map("id_producto")
+  archivo        String                 @db.VarChar(100)
+  sha256         String                 @db.Char(64)
+  mimeType       String                 @map("mime_type") @db.VarChar(30)
+  activo         Boolean                @default(true)
+  estado         EstadoReferenciaVisual @default(PENDIENTE)
+  modeloVersion  String?                @map("modelo_version") @db.VarChar(255)
+  dimension      Int?
+  intentos       Int                    @default(0)
+  ultimoError    String?                @map("ultimo_error") @db.VarChar(500)
+  proximoIntento DateTime?              @map("proximo_intento")
+  leaseToken     String?                @map("lease_token") @db.VarChar(36)
+  bloqueadoHasta DateTime?              @map("bloqueado_hasta")
+  indexadoAt     DateTime?              @map("indexado_at")
+  createdAt      DateTime               @default(now()) @map("created_at")
+  updatedAt      DateTime               @updatedAt @map("updated_at")
+  producto       Producto               @relation(fields: [idProducto], references: [idProducto], onDelete: Restrict)
+
+  @@unique([idProducto, sha256])
+  @@index([estado, proximoIntento])
+  @@map("referencias_visuales")
 }
 
 model ProductoSucursal {

@@ -210,7 +210,7 @@
   </v-app-bar>
 
   <v-main>
-    <v-container fluid class="pa-4 pa-md-6">
+    <v-container fluid class="app-content pa-3 pa-sm-4 pa-md-6">
       <router-view v-slot="{ Component }">
         <v-fade-transition mode="out-in">
           <component :is="Component" />
@@ -281,6 +281,10 @@ const userName = computed(() => authStore.usuario?.correo.split('@')[0] || 'Usua
 const currentBranchName = computed(() => sucursalStore.sucursalActual?.nombre || 'Sin sucursal')
 
 const menuConfig: MenuItem[] = [
+  {
+    key: 'pos', title: 'Punto de venta / POS', icon: 'mdi-point-of-sale',
+    to: { name: 'pos' }, permission: Permiso.VENTAS_VER,
+  },
   {
     key: 'caja', title: 'Caja', icon: 'mdi-cash-register',
     children: [
