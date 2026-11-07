@@ -1,0 +1,49 @@
+name: innova-store
+
+services:
+  db:
+    image: mysql:8.4
+    environment:
+      MYSQL_DATABASE: innova_store
+      MYSQL_USER: innova
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:?Define MYSQL_PASSWORD en .env}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?Define MYSQL_ROOT_PASSWORD en .env}
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysql -h 127.0.0.1 -uinnova -p\"$$MYSQL_PASSWORD\" innova_store -e \"SELECT 1\" > /dev/null 2>&1"]
+      interval: 5s
+      timeout: 5s
+      retries: 25
+
+  app:
+    build: .
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      DATABASE_URL: "mysql://innova:${MYSQL_PASSWORD:?Define MYSQL_PASSWORD en .env}@db:3306/innova_store"
+      JWT_SECRET: ${JWT_SECRET:?Define JWT_SECRET en .env}
+      SUPERADMIN_CORREO: ${SUPERADMIN_CORREO:?Define SUPERADMIN_CORREO en .env}
+      SUPERADMIN_CONTRASENA: ${SUPERADMIN_CONTRASENA:?Define SUPERADMIN_CONTRASENA en .env}
+      ADMIN_CORREO: ${ADMIN_CORREO:?Define ADMIN_CORREO en .env}
+      ADMIN_CONTRASENA: ${ADMIN_CONTRASENA:?Define ADMIN_CONTRASENA en .env}
+      RECOGNITION_SERVICE_URL: ${RECOGNITION_SERVICE_URL:-}
+    ports:
+      - "127.0.0.1:3080:3000"
+    volumes:
+      - app_storage:/app/backend/storage
+
+  recognition:
+    profiles: ["vision"]
+    build: ./recognition-service
+    volumes:
+      - recognition_data:/data
+      - model_cache:/root/.cache/huggingface
+
+volumes:
+  mysql_data:
+  app_storage:
+  recognition_data:
+  model_cache:

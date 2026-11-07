@@ -1,0 +1,12 @@
+.git
+**/node_modules
+**/.env
+**/.env.*
+backend/dist
+backend/public
+backend/src/generated
+backend/storage
+recognition-service
+output
+tmp
+tesis-local
