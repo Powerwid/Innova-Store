@@ -40,7 +40,7 @@
             <div class="document-grid">
               <v-select
                 v-model="form.idTipoDocumento"
-                :items="documentTypes"
+                :items="allowedDocumentTypes"
                 item-title="nombre"
                 item-value="idTipoDocumento"
                 label="Tipo de documento"
@@ -183,6 +183,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   'update:modelValue': [value: boolean]
   saved: [message: string]
+  created: [person: PersonaRegistro]
 }>()
 
 const emptyForm = () => ({
@@ -205,6 +206,7 @@ const errorMessage = ref('')
 const form = reactive(emptyForm())
 
 const editing = computed(() => Boolean(props.person?.id))
+const allowedDocumentTypes = computed(() => props.documentTypes.filter(type => ['DNI', 'RUC', 'CE'].includes(type.nombre)))
 const roleLabel = computed(() => props.role === 'CLIENTE' ? 'cliente' : 'proveedor')
 const selectedDocumentType = computed(() => props.documentTypes.find((item) => item.idTipoDocumento === form.idTipoDocumento) ?? null)
 const documentMaxLength = computed(() => selectedDocumentType.value?.nombre === 'DNI' ? 8 : selectedDocumentType.value?.nombre === 'RUC' ? 11 : 20)
@@ -317,6 +319,7 @@ async function save() {
       ? await personasApi.actualizar(props.role, props.person!.id!, payload)
       : await personasApi.crear({ ...payload, tipo: props.role })
     emit('saved', data.message)
+    if (!editing.value) emit('created', data.persona)
     emit('update:modelValue', false)
   } catch (error) {
     errorMessage.value = getApiErrorMessage(error, 'No se pudo guardar el registro')

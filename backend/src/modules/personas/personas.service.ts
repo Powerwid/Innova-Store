@@ -97,6 +97,7 @@ export class PersonasService {
     actor: UsuarioAutenticado,
   ) {
     const actual = await this.obtener(tipo, id, actor);
+    if (tipo === 'CLIENTE' && actual.esGenerico) throw new BadRequestException('Clientes varios es un cliente del sistema y no se puede modificar');
     const idTipoDocumento = dto.idTipoDocumento ?? actual.idTipoDocumento;
     const numeroDocumento = String(dto.numeroDocumento ?? actual.numeroDocumento).trim().toUpperCase();
     await this.validarDocumento(idTipoDocumento, numeroDocumento);
@@ -127,7 +128,8 @@ export class PersonasService {
   }
 
   async eliminar(tipo: TipoPersona, id: number, actor: UsuarioAutenticado) {
-    await this.obtener(tipo, id, actor);
+    const actual = await this.obtener(tipo, id, actor);
+    if (tipo === 'CLIENTE' && actual.esGenerico) throw new BadRequestException('Clientes varios es un cliente del sistema y no se puede eliminar');
     if (tipo === 'CLIENTE') {
       await this.prisma.cliente.delete({ where: { idCliente: id } });
       return { message: 'Cliente eliminado correctamente' };
@@ -240,6 +242,7 @@ export class PersonasService {
       correo: row.correo,
       telefono: row.telefono,
       activo: row.activo,
+      esGenerico: tipo === 'CLIENTE' && row.esGenerico === true,
       aplicaPercepcionPorDefecto:
         tipo === 'PROVEEDOR' ? row.aplicaPercepcionPorDefecto : false,
       tipoDocumento: row.tipoDocumento,

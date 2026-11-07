@@ -523,12 +523,15 @@
           </v-window-item>
         </v-window>
       </v-card-text>
+      <v-divider />
+      <v-card-actions class="pa-4"><CajaReporteMenu v-if="displayedCash" :id-caja="displayedCash.idCaja" /><v-spacer /><v-btn variant="text" @click="close">Cerrar</v-btn></v-card-actions>
     </v-card>
   </v-dialog>
 
 </template>
 
 <script setup lang="ts">
+import { useRealtimeRefresh } from "@/core/realtime/useRealtimeRefresh"
 import { computed, onBeforeUnmount, reactive, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useDisplay } from 'vuetify'
@@ -537,6 +540,7 @@ import { Permiso } from '@/core/constants/permisos'
 import { useAuthStore } from '@/modules/auth/auth.store'
 import { useSucursalStore } from '@/shared/stores/sucursal.store'
 import { cajasApi, cargarTodo, comprasApi, egresosApi, ingresosApi, ventasApi } from '../operaciones.api'
+import CajaReporteMenu from './CajaReporteMenu.vue'
 import type { Caja, Compra, Egreso, Ingreso, Pago, ResumenCaja, UsuarioResumen } from '../operaciones.types'
 
 type DetailTab = 'summary' | 'sales' | 'incomes' | 'expenses' | 'purchases'
@@ -632,6 +636,12 @@ watch(() => [props.modelValue, props.caja?.idCaja] as const, ([visible]) => {
   void loadDetail()
 }, { immediate: true })
 onBeforeUnmount(() => { request++ })
+useRealtimeRefresh(['caja', 'ventas', 'ingresos', 'egresos', 'compras'], async () => {
+  if (!props.modelValue) return
+  loaded.clear()
+  for (const name of Object.keys(loading) as CollectionName[]) loading[name] = false
+  await loadDetail()
+}, change => props.modelValue && change.idSucursal === props.caja?.idSucursal)
 </script>
 
 <style scoped>

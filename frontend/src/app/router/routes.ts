@@ -1,5 +1,6 @@
 import type { RouteRecordRaw } from 'vue-router'
 import { Permiso } from '@/core/constants/permisos'
+import { reportesConfig } from '@/modules/reportes/reportes.config'
 
 export const routes: RouteRecordRaw[] = [
   {
@@ -137,6 +138,18 @@ export const routes: RouteRecordRaw[] = [
         component: () => import('@/shared/components/feedback/AccessDeniedPage.vue'),
         meta: { title: 'Acceso restringido', requiresAuth: true },
       },
+      {
+        path: 'reportes', name: 'reportes',
+        component: () => import('@/modules/reportes/pages/ReportesInicioPage.vue'),
+        meta: { title: 'Reportes', requiresAuth: true, permissionsAny: [Permiso.VENTAS_VER, Permiso.COMPRAS_VER, Permiso.LOGISTICA_VER, Permiso.DEUDAS_VER] },
+      },
+      ...reportesConfig.map(report => ({
+        path: report.type === 'caja' ? 'operaciones/flujo-caja' : `reportes/${report.type}`,
+        ...(report.type === 'caja' ? { alias: '/reportes/caja' } : {}),
+        name: report.routeName,
+        component: () => import('@/modules/reportes/pages/ReportesPage.vue'),
+        meta: { title: report.type === 'caja' ? 'Caja · Flujo de caja' : 'Reportes', requiresAuth: true, permission: report.permission, reportType: report.type },
+      })),
     ],
   },
   { path: '/:pathMatch(.*)*', redirect: '/' },

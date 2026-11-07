@@ -55,7 +55,7 @@ export async function seedInventariosTest(
         asignacion,
         idRequerido(almacenes, 'Depósito'),
         '5.000',
-        '10.000',
+        '120.000',
       );
   }
   return ids;

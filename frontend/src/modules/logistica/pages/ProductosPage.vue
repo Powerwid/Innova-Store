@@ -1,78 +1,1008 @@
 <template>
   <div class="logistica-page">
-    <v-card class="mb-5 rounded-xl" elevation="0" border><v-card-text class="pa-4">
-      <div class="d-flex align-center flex-wrap ga-3 mb-4"><v-icon icon="mdi-package-variant" color="primary" size="28"/><div class="text-h6 font-weight-bold">Productos</div><v-spacer/><v-btn v-if="canManage" color="primary" prepend-icon="mdi-plus" rounded="lg" @click="openCreate">Nuevo producto</v-btn></div>
-      <div class="logistica-toolbar">
-        <v-text-field v-model="search" class="logistica-search" placeholder="Buscar producto..." prepend-inner-icon="mdi-magnify" variant="outlined" density="comfortable" rounded="lg" clearable hide-details @update:model-value="scheduleSearch" @keyup.enter="searchNow"/>
-        <v-select v-model="categoryId" class="logistica-filter" :items="categoryFilters" item-title="nombre" item-value="idCategoria" label="Categoría" variant="outlined" density="comfortable" rounded="lg" hide-details/>
-        <v-select v-model="typeId" class="logistica-filter" :items="typeFilters" item-title="nombre" item-value="idTipoProducto" label="Tipo de producto" variant="outlined" density="comfortable" rounded="lg" hide-details/>
-        <v-select v-model="status" class="logistica-filter" :items="['Todos','Activos','Inactivos']" label="Estado" variant="outlined" density="comfortable" rounded="lg" hide-details/>
-        <v-btn icon="mdi-refresh" color="primary" variant="tonal" rounded="lg" :loading="loading" aria-label="Actualizar productos" @click="load"/>
-        <span class="logistica-count"><v-icon size="19">mdi-package-variant</v-icon>{{ total }} productos</span>
+    <v-card
+      class="mb-5 rounded-xl"
+      elevation="0"
+      border
+    >
+      <v-card-text class="pa-4">
+        <div class="d-flex align-center flex-wrap ga-3 mb-4">
+          <v-icon
+            icon="mdi-package-variant"
+            color="primary"
+            size="28"
+          />
+          <div class="text-h6 font-weight-bold">Productos</div>
+          <v-spacer />
+          <v-btn
+            v-if="canManage"
+            color="primary"
+            prepend-icon="mdi-plus"
+            rounded="lg"
+            @click="openCreate"
+          >
+            Nuevo producto
+          </v-btn>
+        </div>
+        <div class="logistica-toolbar">
+          <v-text-field
+            v-model="search"
+            class="logistica-search"
+            placeholder="Buscar producto..."
+            prepend-inner-icon="mdi-magnify"
+            variant="outlined"
+            density="comfortable"
+            rounded="lg"
+            clearable
+            hide-details
+            @update:model-value="scheduleSearch"
+            @keyup.enter="searchNow"
+          />
+          <v-select
+            v-model="categoryId"
+            class="logistica-filter"
+            :items="categoryFilters"
+            item-title="nombre"
+            item-value="idCategoria"
+            label="Categoría"
+            variant="outlined"
+            density="comfortable"
+            rounded="lg"
+            hide-details
+          />
+          <v-select
+            v-model="typeId"
+            class="logistica-filter"
+            :items="typeFilters"
+            item-title="nombre"
+            item-value="idTipoProducto"
+            label="Tipo de producto"
+            variant="outlined"
+            density="comfortable"
+            rounded="lg"
+            hide-details
+          />
+          <v-select
+            v-model="status"
+            class="logistica-filter"
+            :items="['Todos', 'Activos', 'Inactivos']"
+            label="Estado"
+            variant="outlined"
+            density="comfortable"
+            rounded="lg"
+            hide-details
+          />
+          <v-btn
+            icon="mdi-refresh"
+            color="primary"
+            variant="tonal"
+            rounded="lg"
+            :loading="loading"
+            aria-label="Actualizar productos"
+            @click="load"
+          />
+          <span class="logistica-count">
+            <v-icon size="19">mdi-package-variant</v-icon>
+            {{ total }} productos
+          </span>
+        </div>
+      </v-card-text>
+    </v-card>
+    <v-alert
+      v-if="error"
+      type="error"
+      variant="tonal"
+      closable
+      class="mb-4"
+      @click:close="error = ''"
+    >
+      {{ error }}
+    </v-alert>
+    <v-card
+      rounded="xl"
+      elevation="0"
+      border
+      class="overflow-hidden"
+    >
+      <div
+        v-if="loading"
+        class="text-center py-14"
+      >
+        <v-progress-circular
+          indeterminate
+          color="primary"
+        />
       </div>
-    </v-card-text></v-card>
-    <v-alert v-if="error" type="error" variant="tonal" closable class="mb-4" @click:close="error = ''">{{ error }}</v-alert>
-    <v-card rounded="xl" elevation="0" border class="overflow-hidden">
-      <div v-if="loading" class="text-center py-14"><v-progress-circular indeterminate color="primary"/></div>
       <template v-else-if="items.length">
-        <v-table hover class="logistica-table logistica-desktop"><thead><tr><th>Producto</th><th>Tipo</th><th>Categoría</th><th>Unidad</th><th>Estado</th><th class="text-end">Acciones</th></tr></thead><tbody>
-          <tr v-for="item in items" :key="item.idProducto"><td><div class="d-flex align-center ga-3"><v-avatar color="primary" variant="tonal" size="36"><v-icon icon="mdi-package-variant"/></v-avatar><div><div class="font-weight-bold">{{ item.nombre }}</div><div class="text-caption text-medium-emphasis">#{{ item.idProducto }}<span v-if="item.detalle"> · {{ item.detalle }}</span></div></div></div></td><td>{{ item.tipoProducto?.nombre }}</td><td><v-chip size="small" variant="tonal" :color="item.categoria?.color || 'primary'">{{ item.categoria?.nombre }}</v-chip></td><td>{{ item.unidadMedida?.simbolo }}</td><td><v-chip size="small" :color="item.estado ? 'success' : 'error'" variant="tonal">{{ item.estado ? 'Activo' : 'Inactivo' }}</v-chip></td><td class="text-end text-no-wrap"><v-btn icon="mdi-camera-plus-outline" size="small" variant="text" color="primary" :aria-label="`Fotos de referencia de ${item.nombre}`" @click="openReferences(item)"/><v-btn icon="mdi-store-outline" size="small" variant="text" color="primary" :aria-label="`Precio en sucursal de ${item.nombre}`" @click="openPrice(item)"/><v-btn v-if="canManage" icon="mdi-pencil-outline" size="small" variant="text" color="primary" :aria-label="`Editar ${item.nombre}`" @click="openEdit(item)"/><v-btn v-if="canManage" icon="mdi-delete-outline" size="small" variant="text" color="error" :aria-label="`Eliminar ${item.nombre}`" @click="confirmDelete(item)"/></td></tr>
-        </tbody></v-table>
-        <div class="logistica-mobile product-mobile-grid pa-3"><ProductoMobileCard v-for="item in items" :key="item.idProducto" :producto="item" :can-manage="canManage" @fotos="openReferences" @sucursal="openPrice" @editar="openEdit" @eliminar="confirmDelete" /></div>
+        <v-table
+          hover
+          class="logistica-table logistica-desktop"
+        >
+          <thead>
+            <tr>
+              <th>Producto</th>
+              <th>Tipo</th>
+              <th>Categoría</th>
+              <th>Unidad</th>
+              <th>Estado</th>
+              <th class="text-end">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr
+              v-for="item in items"
+              :key="item.idProducto"
+            >
+              <td>
+                <div class="d-flex align-center ga-3">
+                  <v-avatar
+                    color="primary"
+                    variant="tonal"
+                    size="36"
+                  >
+                    <v-img v-if="item.imagen" :src="item.imagen" :alt="item.nombre" cover>
+                      <template #error><v-icon icon="mdi-package-variant" /></template>
+                    </v-img>
+                    <v-icon v-else icon="mdi-package-variant" />
+                  </v-avatar>
+                  <div>
+                    <div class="font-weight-bold">{{ item.nombre }}</div>
+                    <div class="text-caption text-medium-emphasis">
+                      #{{ item.idProducto }}
+                      <span v-if="item.detalle">· {{ item.detalle }}</span>
+                    </div>
+                  </div>
+                </div>
+              </td>
+              <td>{{ item.tipoProducto?.nombre }}</td>
+              <td>
+                <v-chip
+                  size="small"
+                  variant="tonal"
+                  :color="item.categoria?.color || 'primary'"
+                >
+                  {{ item.categoria?.nombre }}
+                </v-chip>
+              </td>
+              <td>{{ item.unidadMedida?.simbolo }}</td>
+              <td>
+                <v-chip
+                  size="small"
+                  :color="item.estado ? 'success' : 'error'"
+                  variant="tonal"
+                >
+                  {{ item.estado ? 'Activo' : 'Inactivo' }}
+                </v-chip>
+              </td>
+              <td class="text-end text-no-wrap">
+                <v-btn
+                  v-if="canManage"
+                  icon="mdi-image-outline"
+                  size="small"
+                  variant="text"
+                  color="primary"
+                  :aria-label="`Foto del producto ${item.nombre}`"
+                  title="Foto del producto"
+                  @click="openProductPhoto(item)"
+                />
+                <v-btn
+                  icon="mdi-camera-plus-outline"
+                  size="small"
+                  variant="text"
+                  color="primary"
+                  :aria-label="`Fotos de referencia de ${item.nombre}`"
+                  title="Fotos para reconocimiento"
+                  @click="openReferences(item)"
+                />
+                <v-btn
+                  icon="mdi-store-outline"
+                  size="small"
+                  variant="text"
+                  color="primary"
+                  :aria-label="`Precio en sucursal de ${item.nombre}`"
+                  @click="openPrice(item)"
+                />
+                <v-btn
+                  v-if="canManage"
+                  icon="mdi-pencil-outline"
+                  size="small"
+                  variant="text"
+                  color="primary"
+                  :aria-label="`Editar ${item.nombre}`"
+                  @click="openEdit(item)"
+                />
+                <v-btn
+                  v-if="canManage"
+                  icon="mdi-delete-outline"
+                  size="small"
+                  variant="text"
+                  color="error"
+                  :aria-label="`Eliminar ${item.nombre}`"
+                  @click="confirmDelete(item)"
+                />
+              </td>
+            </tr>
+          </tbody>
+        </v-table>
+        <div class="logistica-mobile product-mobile-grid pa-3">
+          <ProductoMobileCard
+            v-for="item in items"
+            :key="item.idProducto"
+            :producto="item"
+            :can-manage="canManage"
+            @fotos="openReferences"
+            @foto-producto="openProductPhoto"
+            @sucursal="openPrice"
+            @editar="openEdit"
+            @eliminar="confirmDelete"
+          />
+        </div>
       </template>
-      <div v-else class="logistica-empty"><v-icon icon="mdi-package-variant" size="48" class="mb-3"/><div>No se encontraron productos</div></div>
-      <v-divider/><div class="logistica-pagination"><span class="text-caption text-medium-emphasis">Mostrando {{ items.length }} de {{ total }}</span><v-pagination v-if="total > limit" v-model="page" :length="Math.ceil(total / limit)" :total-visible="3" size="small" color="primary"/></div>
+      <div
+        v-else
+        class="logistica-empty"
+      >
+        <v-icon
+          icon="mdi-package-variant"
+          size="48"
+          class="mb-3"
+        />
+        <div>No se encontraron productos</div>
+      </div>
+      <v-divider />
+      <div class="logistica-pagination">
+        <span class="text-caption text-medium-emphasis">
+          Mostrando {{ items.length }} de {{ total }}
+        </span>
+        <v-pagination
+          v-if="total > limit"
+          v-model="page"
+          :length="Math.ceil(total / limit)"
+          :total-visible="3"
+          size="small"
+          color="primary"
+        />
+      </div>
     </v-card>
 
-    <v-dialog v-model="dialog" max-width="760" persistent><v-card rounded="xl" class="overflow-hidden"><v-card-title class="logistica-dialog-title"><span class="logistica-dialog-icon"><v-icon :icon="editing ? 'mdi-pencil-outline' : 'mdi-plus'"/></span>{{ editing ? 'Editar producto' : 'Nuevo producto' }}<v-spacer/><v-btn icon="mdi-close" variant="text" color="on-primary" aria-label="Cerrar" @click="dialog = false"/></v-card-title><v-card-text class="pa-5"><v-alert v-if="formError" type="error" variant="tonal" class="mb-4">{{ formError }}</v-alert><div class="text-subtitle-1 font-weight-bold text-primary mb-3"><v-icon icon="mdi-package-variant" class="mr-2"/>Datos del producto</div><v-row dense><v-col cols="12"><label class="logistica-field-label">Nombre *</label><v-text-field v-model="form.nombre" placeholder="Ej.: Arroz extra" variant="outlined" density="comfortable" maxlength="250" hide-details/></v-col><v-col cols="12" sm="4"><label class="logistica-field-label">Tipo de producto *</label><v-select v-model="form.idTipoProducto" :items="types" item-title="nombre" item-value="idTipoProducto" placeholder="Seleccionar tipo" variant="outlined" density="comfortable" hide-details/></v-col><v-col cols="12" sm="4"><label class="logistica-field-label">Categoría *</label><v-select v-model="form.idCategoria" :items="categories" item-title="nombre" item-value="idCategoria" placeholder="Seleccionar categoría" variant="outlined" density="comfortable" hide-details/></v-col><v-col cols="12" sm="4"><label class="logistica-field-label">Unidad de medida *</label><v-select v-model="form.idUnidadMedida" :items="units" item-title="display" item-value="idUnidadMedida" placeholder="Seleccionar unidad" variant="outlined" density="comfortable" hide-details/></v-col><v-col cols="12"><label class="logistica-field-label">Detalle (opcional)</label><v-textarea v-model="form.detalle" placeholder="Presentación u otras características" variant="outlined" rows="2" auto-grow density="comfortable" hide-details/></v-col><v-col cols="12" sm="6"><label class="logistica-field-label">Código de barras (opcional)</label><v-text-field v-model="form.codigoBarras" placeholder="Se puede dejar vacío" variant="outlined" density="comfortable" hide-details/></v-col><v-col cols="12" sm="6"><label class="logistica-field-label">Imagen URL (opcional)</label><v-text-field v-model="form.imagen" placeholder="https://..." variant="outlined" density="comfortable" hide-details/></v-col></v-row><v-divider class="my-4"/><div class="d-flex justify-space-between align-center"><div><div class="font-weight-bold">Estado</div><div class="text-body-2 text-medium-emphasis">Disponible para asignar a sucursales.</div></div><v-switch v-model="form.estado" color="primary" hide-details/></div></v-card-text><v-divider/><v-card-actions class="pa-4"><v-spacer/><v-btn variant="text" @click="dialog = false">Cancelar</v-btn><v-btn color="primary" :loading="saving" @click="save">{{ editing ? 'Actualizar' : 'Guardar' }}</v-btn></v-card-actions></v-card></v-dialog>
+    <v-dialog
+      v-model="dialog"
+      max-width="760"
+      persistent
+    >
+      <v-card
+        rounded="xl"
+        class="overflow-hidden"
+      >
+        <v-card-title class="logistica-dialog-title">
+          <span class="logistica-dialog-icon">
+            <v-icon :icon="editing ? 'mdi-pencil-outline' : 'mdi-plus'" />
+          </span>
+          {{ editing ? 'Editar producto' : 'Nuevo producto' }}
+          <v-spacer />
+          <v-btn
+            icon="mdi-close"
+            variant="text"
+            color="on-primary"
+            aria-label="Cerrar"
+            :disabled="saving"
+            @click="dialog = false"
+          />
+        </v-card-title>
+        <v-card-text class="pa-5">
+          <v-alert
+            v-if="formError"
+            type="error"
+            variant="tonal"
+            class="mb-4"
+          >
+            {{ formError }}
+          </v-alert>
+          <div class="text-subtitle-1 font-weight-bold text-primary mb-3">
+            <v-icon
+              icon="mdi-package-variant"
+              class="mr-2"
+            />
+            Datos del producto
+          </div>
+          <v-row density="compact">
+            <v-col cols="12">
+              <label class="logistica-field-label">Nombre *</label>
+              <v-text-field
+                v-model="form.nombre"
+                placeholder="Ej.: Arroz extra"
+                variant="outlined"
+                density="comfortable"
+                maxlength="250"
+                hide-details
+              />
+            </v-col>
+            <v-col
+              cols="12"
+              sm="4"
+            >
+              <label class="logistica-field-label">Tipo de producto *</label>
+              <v-select
+                v-model="form.idTipoProducto"
+                :items="types"
+                item-title="nombre"
+                item-value="idTipoProducto"
+                placeholder="Seleccionar tipo"
+                variant="outlined"
+                density="comfortable"
+                hide-details
+              />
+            </v-col>
+            <v-col
+              cols="12"
+              sm="4"
+            >
+              <label class="logistica-field-label">Categoría *</label>
+              <v-select
+                v-model="form.idCategoria"
+                :items="categories"
+                item-title="nombre"
+                item-value="idCategoria"
+                placeholder="Seleccionar categoría"
+                variant="outlined"
+                density="comfortable"
+                hide-details
+              />
+            </v-col>
+            <v-col
+              cols="12"
+              sm="4"
+            >
+              <label class="logistica-field-label">Unidad de medida *</label>
+              <v-select
+                v-model="form.idUnidadMedida"
+                :items="units"
+                item-title="display"
+                item-value="idUnidadMedida"
+                placeholder="Seleccionar unidad"
+                variant="outlined"
+                density="comfortable"
+                hide-details
+              />
+            </v-col>
+            <v-col cols="12">
+              <label class="logistica-field-label">Detalle (opcional)</label>
+              <v-textarea
+                v-model="form.detalle"
+                placeholder="Presentación u otras características"
+                variant="outlined"
+                rows="2"
+                auto-grow
+                density="comfortable"
+                hide-details
+              />
+            </v-col>
+            <v-col
+              cols="12"
+              sm="6"
+            >
+              <label class="logistica-field-label">Código de barras (opcional)</label>
+              <v-text-field
+                v-model="form.codigoBarras"
+                placeholder="Se puede dejar vacío"
+                variant="outlined"
+                density="comfortable"
+                hide-details
+              />
+            </v-col>
+          </v-row>
+          <v-divider class="my-4" />
+          <div>
+            <div class="text-subtitle-1 font-weight-bold text-primary mb-1">
+              <v-icon icon="mdi-image-outline" class="mr-2" />Foto del producto
+            </div>
+            <p class="text-body-2 text-medium-emphasis mb-3">Se mostrará en el catálogo y en el punto de venta.</p>
+            <v-img v-if="!productImage && form.imagen" :src="form.imagen" :alt="form.nombre" height="160" contain class="rounded-lg mb-3">
+              <template #error><v-icon size="48">mdi-image-off-outline</v-icon></template>
+            </v-img>
+            <CapturaProducto v-if="dialog" v-model="productImage" :disabled="saving" />
+            <v-btn v-if="form.imagen || productImage" color="error" variant="text" prepend-icon="mdi-image-remove-outline" class="mt-2" :disabled="saving" @click="removeProductPhoto">Quitar foto del producto</v-btn>
+            <v-expansion-panels variant="accordion" class="mt-3">
+              <v-expansion-panel title="Usar una dirección de imagen (opcional)">
+                <v-expansion-panel-text>
+                  <v-text-field v-model="form.imagen" label="URL de imagen" placeholder="https://..." :disabled="saving || !!productImage" variant="outlined" density="comfortable" hide-details />
+                </v-expansion-panel-text>
+              </v-expansion-panel>
+            </v-expansion-panels>
+          </div>
+          <v-divider class="my-4" />
+          <div class="d-flex justify-space-between align-center">
+            <div>
+              <div class="font-weight-bold">Estado</div>
+              <div class="text-body-2 text-medium-emphasis">
+                Disponible para asignar a sucursales.
+              </div>
+            </div>
+            <v-switch
+              v-model="form.estado"
+              color="primary"
+              hide-details
+            />
+          </div>
+        </v-card-text>
+        <v-divider />
+        <v-card-actions class="pa-4">
+          <v-spacer />
+          <v-btn
+            variant="text"
+            :disabled="saving"
+            @click="dialog = false"
+          >
+            Cancelar
+          </v-btn>
+          <v-btn
+            color="primary"
+            :loading="saving"
+            @click="save"
+          >
+            {{ editing ? 'Actualizar' : 'Guardar' }}
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
 
-    <v-dialog v-model="priceDialog" max-width="580"><v-card rounded="xl" class="overflow-hidden"><v-card-title class="logistica-dialog-title"><span class="logistica-dialog-icon"><v-icon icon="mdi-store-outline"/></span>Producto en sucursal<v-spacer/><v-btn icon="mdi-close" variant="text" color="on-primary" @click="priceDialog = false"/></v-card-title><v-card-text class="pa-5"><v-alert v-if="priceError" type="error" variant="tonal" class="mb-4">{{ priceError }}</v-alert><div class="font-weight-bold mb-1">{{ pricedProduct?.nombre }}</div><div class="text-body-2 text-medium-emphasis mb-4">{{ branch.sucursalActual?.nombre || 'Selecciona una sucursal' }}</div><div v-if="priceLoading" class="text-center py-8"><v-progress-circular indeterminate color="primary"/></div><template v-else-if="!branch.idSucursalActual"><v-alert type="warning" variant="tonal">Selecciona una sucursal para asignar precios.</v-alert></template><template v-else><v-alert v-if="!assignment" type="info" variant="tonal" class="mb-4">Este producto aún no está asignado a la sucursal. Al guardar se creará la relación.</v-alert><v-row dense><v-col cols="12" sm="6"><label class="logistica-field-label">Precio de compra *</label><v-text-field v-model="priceForm.precioCompra" type="number" min="0" step="0.01" prefix="S/" variant="outlined" density="comfortable" hide-details/></v-col><v-col cols="12" sm="6"><label class="logistica-field-label">Precio de venta *</label><v-text-field v-model="priceForm.precioVenta" type="number" min="0" step="0.01" prefix="S/" variant="outlined" density="comfortable" hide-details/></v-col></v-row><div class="d-flex justify-space-between align-center mt-3"><div><div class="font-weight-bold">Estado en la sucursal</div><div class="text-body-2 text-medium-emphasis">Independiente del estado general del producto.</div></div><v-switch v-model="priceForm.estado" color="primary" hide-details/></div></template></v-card-text><v-divider/><v-card-actions class="pa-4"><v-btn v-if="assignment && canManage" color="error" variant="text" :loading="saving" @click="removePriceDialog = true">Quitar de sucursal</v-btn><v-spacer/><v-btn variant="text" @click="priceDialog = false">Cerrar</v-btn><v-btn v-if="canManage && branch.idSucursalActual" color="primary" :loading="saving" @click="savePrice">Guardar</v-btn></v-card-actions></v-card></v-dialog>
-    <v-dialog v-model="removePriceDialog" max-width="440"><v-card rounded="xl"><v-card-title>Quitar de sucursal</v-card-title><v-card-text>¿Quitar <strong>{{ pricedProduct?.nombre }}</strong> de {{ branch.sucursalActual?.nombre }}? Si tiene inventario, desactívalo en su lugar.</v-card-text><v-card-actions><v-spacer/><v-btn variant="text" @click="removePriceDialog = false">Cancelar</v-btn><v-btn color="error" :loading="saving" @click="removeAssignment">Quitar</v-btn></v-card-actions></v-card></v-dialog>
-    <v-dialog v-model="deleteDialog" max-width="440"><v-card rounded="xl"><v-card-title>Eliminar producto</v-card-title><v-card-text>¿Eliminar <strong>{{ deleting?.nombre }}</strong>? Solo se puede eliminar si no tiene relaciones de inventario.</v-card-text><v-card-actions><v-spacer/><v-btn variant="text" @click="deleteDialog = false">Cancelar</v-btn><v-btn color="error" :loading="saving" @click="remove">Eliminar</v-btn></v-card-actions></v-card></v-dialog>
-    <ReferenciasVisualesDialog v-if="referencesDialog" v-model="referencesDialog" :producto="referenceProduct" />
-    <v-snackbar v-model="noticeVisible" color="success">{{ notice }}</v-snackbar>
+    <v-dialog
+      v-model="priceDialog"
+      max-width="580"
+    >
+      <v-card
+        rounded="xl"
+        class="overflow-hidden"
+      >
+        <v-card-title class="logistica-dialog-title">
+          <span class="logistica-dialog-icon"><v-icon icon="mdi-store-outline" /></span>
+          Producto en sucursal
+          <v-spacer />
+          <v-btn
+            icon="mdi-close"
+            variant="text"
+            color="on-primary"
+            @click="priceDialog = false"
+          />
+        </v-card-title>
+        <v-card-text class="pa-5">
+          <v-alert
+            v-if="priceError"
+            type="error"
+            variant="tonal"
+            class="mb-4"
+          >
+            {{ priceError }}
+          </v-alert>
+          <div class="font-weight-bold mb-1">{{ pricedProduct?.nombre }}</div>
+          <div class="text-body-2 text-medium-emphasis mb-4">
+            {{ branch.sucursalActual?.nombre || 'Selecciona una sucursal' }}
+          </div>
+          <div
+            v-if="priceLoading"
+            class="text-center py-8"
+          >
+            <v-progress-circular
+              indeterminate
+              color="primary"
+            />
+          </div>
+          <template v-else-if="!branch.idSucursalActual">
+            <v-alert
+              type="warning"
+              variant="tonal"
+            >
+              Selecciona una sucursal para asignar precios.
+            </v-alert>
+          </template>
+          <template v-else>
+            <v-alert
+              v-if="!assignment"
+              type="info"
+              variant="tonal"
+              class="mb-4"
+            >
+              Este producto aún no está asignado a la sucursal. Al guardar se creará la relación.
+            </v-alert>
+            <v-row dense>
+              <v-col
+                cols="12"
+                sm="6"
+              >
+                <label class="logistica-field-label">Precio de compra *</label>
+                <v-text-field
+                  v-model="priceForm.precioCompra"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  prefix="S/"
+                  variant="outlined"
+                  density="comfortable"
+                  hide-details
+                />
+              </v-col>
+              <v-col
+                cols="12"
+                sm="6"
+              >
+                <label class="logistica-field-label">Precio de venta *</label>
+                <v-text-field
+                  v-model="priceForm.precioVenta"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  prefix="S/"
+                  variant="outlined"
+                  density="comfortable"
+                  hide-details
+                />
+              </v-col>
+            </v-row>
+            <div class="d-flex justify-space-between align-center mt-3">
+              <div>
+                <div class="font-weight-bold">Estado en la sucursal</div>
+                <div class="text-body-2 text-medium-emphasis">
+                  Independiente del estado general del producto.
+                </div>
+              </div>
+              <v-switch
+                v-model="priceForm.estado"
+                color="primary"
+                hide-details
+              />
+            </div>
+          </template>
+        </v-card-text>
+        <v-divider />
+        <v-card-actions class="pa-4">
+          <v-btn
+            v-if="assignment && canManage"
+            color="error"
+            variant="text"
+            :loading="saving"
+            @click="removePriceDialog = true"
+          >
+            Quitar de sucursal
+          </v-btn>
+          <v-spacer />
+          <v-btn
+            variant="text"
+            @click="priceDialog = false"
+          >
+            Cerrar
+          </v-btn>
+          <v-btn
+            v-if="canManage && branch.idSucursalActual"
+            color="primary"
+            :loading="saving"
+            @click="savePrice"
+          >
+            Guardar
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+    <v-dialog
+      v-model="removePriceDialog"
+      max-width="440"
+    >
+      <v-card rounded="xl">
+        <v-card-title>Quitar de sucursal</v-card-title>
+        <v-card-text>
+          ¿Quitar
+          <strong>{{ pricedProduct?.nombre }}</strong>
+          de {{ branch.sucursalActual?.nombre }}? Si tiene inventario, desactívalo en su lugar.
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer />
+          <v-btn
+            variant="text"
+            @click="removePriceDialog = false"
+          >
+            Cancelar
+          </v-btn>
+          <v-btn
+            color="error"
+            :loading="saving"
+            @click="removeAssignment"
+          >
+            Quitar
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+    <v-dialog
+      v-model="deleteDialog"
+      max-width="440"
+    >
+      <v-card rounded="xl">
+        <v-card-title>Eliminar producto</v-card-title>
+        <v-card-text>
+          ¿Eliminar
+          <strong>{{ deleting?.nombre }}</strong>
+          ? Solo se puede eliminar si no tiene relaciones de inventario.
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer />
+          <v-btn
+            variant="text"
+            @click="deleteDialog = false"
+          >
+            Cancelar
+          </v-btn>
+          <v-btn
+            color="error"
+            :loading="saving"
+            @click="remove"
+          >
+            Eliminar
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+    <ProductoFotoDialog
+      v-model="productPhotoDialog"
+      :producto="photoProduct"
+      @actualizado="productPhotoUpdated"
+    />
+    <ReferenciasVisualesDialog
+      v-if="referencesDialog"
+      v-model="referencesDialog"
+      :producto="referenceProduct"
+    />
+    <v-snackbar
+      v-model="noticeVisible"
+      color="success"
+    >
+      {{ notice }}
+    </v-snackbar>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
-import { getApiErrorMessage } from '@/core/api/api-error'
-import { Permiso } from '@/core/constants/permisos'
-import { useAuthStore } from '@/modules/auth/auth.store'
-import { useSucursalStore } from '@/shared/stores/sucursal.store'
-import ProductoMobileCard from '../components/ProductoMobileCard.vue'
-import ReferenciasVisualesDialog from '@/modules/reconocimiento/components/ReferenciasVisualesDialog.vue'
-import { cargarCatalogoCompleto, productosApi, productoSucursalApi } from '../logistica.api'
-import type { Categoria, Producto, ProductoPayload, ProductoSucursal, TipoProducto, UnidadMedida } from '../logistica.types'
-import '../logistica.css'
+import { useRealtimeRefresh } from '@/core/realtime/useRealtimeRefresh';
+import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue';
+import { getApiErrorMessage } from '@/core/api/api-error';
+import { Permiso } from '@/core/constants/permisos';
+import { useAuthStore } from '@/modules/auth/auth.store';
+import { useSucursalStore } from '@/shared/stores/sucursal.store';
+import ProductoMobileCard from '../components/ProductoMobileCard.vue';
+import ProductoFotoDialog from '../components/ProductoFotoDialog.vue';
+import ReferenciasVisualesDialog from '@/modules/reconocimiento/components/ReferenciasVisualesDialog.vue';
+import CapturaProducto from '@/modules/reconocimiento/components/CapturaProducto.vue';
+import { cargarCatalogoCompleto, productosApi, productoSucursalApi } from '../logistica.api';
+import type {
+  Categoria,
+  Producto,
+  ProductoPayload,
+  ProductoSucursal,
+  TipoProducto,
+  UnidadMedida,
+} from '../logistica.types';
+import '../logistica.css';
 
-const auth = useAuthStore(), branch = useSucursalStore()
-const canManage = computed(() => auth.puede(Permiso.LOGISTICA_GESTIONAR))
-const referencesDialog = ref(false), referenceProduct = ref<Producto|null>(null)
-function openReferences(item:Producto){referenceProduct.value=item;referencesDialog.value=true}
-const items = ref<Producto[]>([]), types = ref<TipoProducto[]>([]), categories = ref<Categoria[]>([]), units = ref<(UnidadMedida & {display:string})[]>([])
-const typeId = ref<number|null>(null)
-const typeFilters = computed(() => [{idTipoProducto:null,nombre:'Todos los tipos'}, ...types.value])
-const categoryFilters = computed(() => [{idCategoria: null, nombre:'Todas'}, ...categories.value])
-const search = ref(''), categoryId = ref<number|null>(null), status = ref('Todos'), page = ref(1), limit = 50, total = ref(0)
-const loading = ref(false), saving = ref(false), dialog = ref(false), priceDialog = ref(false), priceLoading = ref(false), deleteDialog = ref(false), removePriceDialog = ref(false)
-const editing = ref<Producto|null>(null), deleting = ref<Producto|null>(null), pricedProduct = ref<Producto|null>(null), assignment = ref<ProductoSucursal|null>(null)
-const error = ref(''), formError = ref(''), priceError = ref(''), notice = ref(''), noticeVisible = ref(false)
-const form = reactive({nombre:'', idTipoProducto:null as number|null, idCategoria:null as number|null, idUnidadMedida:null as number|null, detalle:'', codigoBarras:'', imagen:'', estado:true})
-const priceForm = reactive({precioCompra:'0.00', precioVenta:'0.00', estado:true})
-let timer: ReturnType<typeof setTimeout>|undefined, requestId = 0, priceRequestId = 0
-async function load(){const current=++requestId; loading.value=true; error.value=''; try {const {data}=await productosApi.listar({pagina:page.value,limite:limit,buscar:search.value.trim()||undefined,idCategoria:categoryId.value??undefined,idTipoProducto:typeId.value??undefined,estado:status.value==='Todos'?undefined:status.value==='Activos'});if(current===requestId){items.value=data.data;total.value=data.total}}catch(cause){if(current===requestId)error.value=getApiErrorMessage(cause,'No se pudieron cargar los productos')}finally{if(current===requestId)loading.value=false}}
-function searchNow(){if(timer)clearTimeout(timer);if(page.value!==1)page.value=1;else void load()}
-function scheduleSearch(){if(timer)clearTimeout(timer);timer=setTimeout(searchNow,350)}
-async function loadCatalogs(){try{const [t,c,u]=await Promise.all([cargarCatalogoCompleto<TipoProducto>('tipos-producto'),cargarCatalogoCompleto<Categoria>('categorias'),cargarCatalogoCompleto<UnidadMedida>('unidades-medida')]);types.value=t;categories.value=c;units.value=u.map(item=>({...item,display:`${item.nombre} (${item.simbolo})`}))}catch(cause){error.value=getApiErrorMessage(cause,'No se pudieron cargar los catálogos')}}
-function openCreate(){editing.value=null;Object.assign(form,{nombre:'',idTipoProducto:null,idCategoria:null,idUnidadMedida:null,detalle:'',codigoBarras:'',imagen:'',estado:true});formError.value='';dialog.value=true;void loadCatalogs()}
-function openEdit(item:Producto){editing.value=item;Object.assign(form,{nombre:item.nombre,idTipoProducto:item.idTipoProducto,idCategoria:item.idCategoria,idUnidadMedida:item.idUnidadMedida,detalle:item.detalle??'',codigoBarras:item.codigoBarras??'',imagen:item.imagen??'',estado:item.estado});formError.value='';dialog.value=true;void loadCatalogs()}
-async function save(){if(!form.nombre.trim()||!form.idTipoProducto||!form.idCategoria||!form.idUnidadMedida){formError.value='Completa nombre, tipo, categoría y unidad';return}const payload:ProductoPayload={nombre:form.nombre.trim(),idTipoProducto:form.idTipoProducto,idCategoria:form.idCategoria,idUnidadMedida:form.idUnidadMedida,detalle:form.detalle.trim()||null,codigoBarras:form.codigoBarras.trim()||null,imagen:form.imagen.trim()||null,estado:form.estado};saving.value=true;formError.value='';try{if(editing.value){const patch:Partial<ProductoPayload>={...payload};if(editing.value.idTipoProducto===payload.idTipoProducto)delete patch.idTipoProducto;if(editing.value.idCategoria===payload.idCategoria)delete patch.idCategoria;if(editing.value.idUnidadMedida===payload.idUnidadMedida)delete patch.idUnidadMedida;await productosApi.actualizar(editing.value.idProducto,patch)}else await productosApi.crear(payload);dialog.value=false;notice.value='Producto guardado';noticeVisible.value=true;await load()}catch(cause){formError.value=getApiErrorMessage(cause,'No se pudo guardar el producto')}finally{saving.value=false}}
-async function loadPrice(){const current=++priceRequestId;assignment.value=null;priceLoading.value=true;priceError.value='';if(!pricedProduct.value||!branch.idSucursalActual){priceLoading.value=false;return}try{const {data}=await productoSucursalApi.listar({idProducto:pricedProduct.value.idProducto,idSucursal:branch.idSucursalActual,limite:1});if(current===priceRequestId){assignment.value=data.data[0]??null;Object.assign(priceForm,{precioCompra:assignment.value?.precioCompra??'0.00',precioVenta:assignment.value?.precioVenta??'0.00',estado:assignment.value?.estado??true})}}catch(cause){if(current===priceRequestId)priceError.value=getApiErrorMessage(cause,'No se pudo consultar el precio')}finally{if(current===priceRequestId)priceLoading.value=false}}
-function openPrice(item:Producto){pricedProduct.value=item;priceDialog.value=true;void loadPrice()}
-async function savePrice(){if(!pricedProduct.value||!branch.idSucursalActual)return;const valid=(value:string)=>/^\d+(\.\d{1,2})?$/.test(value)&&Number.isFinite(Number(value));if(!valid(priceForm.precioCompra)||!valid(priceForm.precioVenta)){priceError.value='Ingresa precios válidos, positivos y con máximo dos decimales';return}saving.value=true;priceError.value='';try{if(assignment.value)await productoSucursalApi.actualizar(assignment.value.idProductoSucursal,{...priceForm});else await productoSucursalApi.crear({idProducto:pricedProduct.value.idProducto,idSucursal:branch.idSucursalActual,...priceForm});notice.value='Precio de sucursal guardado';noticeVisible.value=true;await loadPrice()}catch(cause){priceError.value=getApiErrorMessage(cause,'No se pudo guardar el precio')}finally{saving.value=false}}
-async function removeAssignment(){if(!assignment.value)return;saving.value=true;priceError.value='';try{await productoSucursalApi.eliminar(assignment.value.idProductoSucursal);removePriceDialog.value=false;notice.value='Producto retirado de la sucursal';noticeVisible.value=true;await loadPrice()}catch(cause){removePriceDialog.value=false;priceError.value=getApiErrorMessage(cause,'No se pudo quitar el producto')}finally{saving.value=false}}
-function confirmDelete(item:Producto){deleting.value=item;deleteDialog.value=true}
-async function remove(){if(!deleting.value)return;saving.value=true;error.value='';try{await productosApi.eliminar(deleting.value.idProducto);deleteDialog.value=false;notice.value='Producto eliminado';noticeVisible.value=true;await load()}catch(cause){deleteDialog.value=false;error.value=getApiErrorMessage(cause,'No se pudo eliminar el producto')}finally{saving.value=false}}
-watch([categoryId,typeId,status],()=>{if(page.value!==1)page.value=1;else void load()});watch(page,load,{immediate:true});watch(()=>branch.idSucursalActual,()=>{if(priceDialog.value)void loadPrice()});onMounted(loadCatalogs);onUnmounted(()=>{if(timer)clearTimeout(timer);requestId++;priceRequestId++})
+const auth = useAuthStore(),
+  branch = useSucursalStore();
+const canManage = computed(() => auth.puede(Permiso.LOGISTICA_GESTIONAR));
+const referencesDialog = ref(false),
+  referenceProduct = ref<Producto | null>(null);
+function openReferences(item: Producto) {
+  referenceProduct.value = item;
+  referencesDialog.value = true;
+}
+const items = ref<Producto[]>([]),
+  types = ref<TipoProducto[]>([]),
+  categories = ref<Categoria[]>([]),
+  units = ref<(UnidadMedida & { display: string })[]>([]);
+const typeId = ref<number | null>(null);
+const typeFilters = computed(() => [
+  { idTipoProducto: null, nombre: 'Todos los tipos' },
+  ...types.value,
+]);
+const categoryFilters = computed(() => [
+  { idCategoria: null, nombre: 'Todas' },
+  ...categories.value,
+]);
+const search = ref(''),
+  categoryId = ref<number | null>(null),
+  status = ref('Todos'),
+  page = ref(1),
+  limit = 50,
+  total = ref(0);
+const loading = ref(false),
+  saving = ref(false),
+  dialog = ref(false),
+  priceDialog = ref(false),
+  priceLoading = ref(false),
+  deleteDialog = ref(false),
+  removePriceDialog = ref(false);
+const editing = ref<Producto | null>(null),
+  deleting = ref<Producto | null>(null),
+  pricedProduct = ref<Producto | null>(null),
+  assignment = ref<ProductoSucursal | null>(null);
+const error = ref(''),
+  formError = ref(''),
+  priceError = ref(''),
+  notice = ref(''),
+  noticeVisible = ref(false);
+const form = reactive({
+  nombre: '',
+  idTipoProducto: null as number | null,
+  idCategoria: null as number | null,
+  idUnidadMedida: null as number | null,
+  detalle: '',
+  codigoBarras: '',
+  imagen: '',
+  estado: true,
+});
+const priceForm = reactive({ precioCompra: '0.00', precioVenta: '0.00', estado: true });
+const productImage = ref<File | null>(null);
+const productPhotoDialog = ref(false);
+const photoProduct = ref<Producto | null>(null);
+let timer: ReturnType<typeof setTimeout> | undefined,
+  requestId = 0,
+  priceRequestId = 0;
+async function load() {
+  const current = ++requestId;
+  loading.value = true;
+  error.value = '';
+  try {
+    const { data } = await productosApi.listar({
+      pagina: page.value,
+      limite: limit,
+      buscar: search.value.trim() || undefined,
+      idCategoria: categoryId.value ?? undefined,
+      idTipoProducto: typeId.value ?? undefined,
+      estado: status.value === 'Todos' ? undefined : status.value === 'Activos',
+    });
+    if (current === requestId) {
+      items.value = data.data;
+      total.value = data.total;
+    }
+  } catch (cause) {
+    if (current === requestId)
+      error.value = getApiErrorMessage(cause, 'No se pudieron cargar los productos');
+  } finally {
+    if (current === requestId) loading.value = false;
+  }
+}
+function searchNow() {
+  if (timer) clearTimeout(timer);
+  if (page.value !== 1) page.value = 1;
+  else void load();
+}
+function scheduleSearch() {
+  if (timer) clearTimeout(timer);
+  timer = setTimeout(searchNow, 350);
+}
+async function loadCatalogs() {
+  try {
+    const [t, c, u] = await Promise.all([
+      cargarCatalogoCompleto<TipoProducto>('tipos-producto'),
+      cargarCatalogoCompleto<Categoria>('categorias'),
+      cargarCatalogoCompleto<UnidadMedida>('unidades-medida'),
+    ]);
+    types.value = t;
+    categories.value = c;
+    units.value = u.map((item) => ({ ...item, display: `${item.nombre} (${item.simbolo})` }));
+  } catch (cause) {
+    error.value = getApiErrorMessage(cause, 'No se pudieron cargar los catálogos');
+  }
+}
+function openCreate() {
+  productImage.value = null;
+  editing.value = null;
+  Object.assign(form, {
+    nombre: '',
+    idTipoProducto: null,
+    idCategoria: null,
+    idUnidadMedida: null,
+    detalle: '',
+    codigoBarras: '',
+    imagen: '',
+    estado: true,
+  });
+  formError.value = '';
+  dialog.value = true;
+  void loadCatalogs();
+}
+function openEdit(item: Producto) {
+  productImage.value = null;
+  editing.value = item;
+  Object.assign(form, {
+    nombre: item.nombre,
+    idTipoProducto: item.idTipoProducto,
+    idCategoria: item.idCategoria,
+    idUnidadMedida: item.idUnidadMedida,
+    detalle: item.detalle ?? '',
+    codigoBarras: item.codigoBarras ?? '',
+    imagen: item.imagen ?? '',
+    estado: item.estado,
+  });
+  formError.value = '';
+  dialog.value = true;
+  void loadCatalogs();
+}
+function openProductPhoto(item: Producto) {
+  photoProduct.value = item;
+  productPhotoDialog.value = true;
+}
+function productPhotoUpdated(item: Producto) {
+  items.value = items.value.map((product) => product.idProducto === item.idProducto ? item : product);
+  photoProduct.value = item;
+  notice.value = item.imagen ? 'Foto del producto guardada' : 'Foto del producto retirada';
+  noticeVisible.value = true;
+}
+function removeProductPhoto() {
+  productImage.value = null;
+  form.imagen = '';
+}
+async function save() {
+  if (saving.value) return;
+  if (!form.nombre.trim() || !form.idTipoProducto || !form.idCategoria || !form.idUnidadMedida) {
+    formError.value = 'Completa nombre, tipo, categoría y unidad';
+    return;
+  }
+  const payload: ProductoPayload = {
+    nombre: form.nombre.trim(),
+    idTipoProducto: form.idTipoProducto,
+    idCategoria: form.idCategoria,
+    idUnidadMedida: form.idUnidadMedida,
+    detalle: form.detalle.trim() || null,
+    codigoBarras: form.codigoBarras.trim() || null,
+    imagen: form.imagen.trim() || null,
+    estado: form.estado,
+  };
+  saving.value = true;
+  formError.value = '';
+  let productSaved = false;
+  try {
+    let saved: Producto;
+    if (editing.value) {
+      const patch: Partial<ProductoPayload> = { ...payload };
+      if (editing.value.idTipoProducto === payload.idTipoProducto) delete patch.idTipoProducto;
+      if (editing.value.idCategoria === payload.idCategoria) delete patch.idCategoria;
+      if (editing.value.idUnidadMedida === payload.idUnidadMedida) delete patch.idUnidadMedida;
+      saved = (await productosApi.actualizar(editing.value.idProducto, patch)).data;
+    } else saved = (await productosApi.crear(payload)).data;
+    // Si falla la foto, el reintento actualiza este producto y no crea otro.
+    editing.value = saved;
+    form.imagen = saved.imagen ?? '';
+    productSaved = true;
+    if (productImage.value) {
+      saved = (await productosApi.subirImagen(saved.idProducto, productImage.value)).data;
+      editing.value = saved;
+      form.imagen = saved.imagen ?? '';
+      productImage.value = null;
+    }
+    dialog.value = false;
+    notice.value = 'Producto guardado';
+    noticeVisible.value = true;
+    await load();
+  } catch (cause) {
+    const message = getApiErrorMessage(cause, 'No se pudo guardar el producto');
+    formError.value = productSaved ? `El producto se guardó, pero no se pudo subir su foto. ${message} Puedes volver a guardar para reintentar.` : message;
+  } finally {
+    saving.value = false;
+  }
+}
+async function loadPrice() {
+  const current = ++priceRequestId;
+  assignment.value = null;
+  priceLoading.value = true;
+  priceError.value = '';
+  if (!pricedProduct.value || !branch.idSucursalActual) {
+    priceLoading.value = false;
+    return;
+  }
+  try {
+    const { data } = await productoSucursalApi.listar({
+      idProducto: pricedProduct.value.idProducto,
+      idSucursal: branch.idSucursalActual,
+      limite: 1,
+    });
+    if (current === priceRequestId) {
+      assignment.value = data.data[0] ?? null;
+      Object.assign(priceForm, {
+        precioCompra: assignment.value?.precioCompra ?? '0.00',
+        precioVenta: assignment.value?.precioVenta ?? '0.00',
+        estado: assignment.value?.estado ?? true,
+      });
+    }
+  } catch (cause) {
+    if (current === priceRequestId)
+      priceError.value = getApiErrorMessage(cause, 'No se pudo consultar el precio');
+  } finally {
+    if (current === priceRequestId) priceLoading.value = false;
+  }
+}
+function openPrice(item: Producto) {
+  pricedProduct.value = item;
+  priceDialog.value = true;
+  void loadPrice();
+}
+async function savePrice() {
+  if (!pricedProduct.value || !branch.idSucursalActual) return;
+  const valid = (value: string) =>
+    /^\d+(\.\d{1,2})?$/.test(value) && Number.isFinite(Number(value));
+  if (!valid(priceForm.precioCompra) || !valid(priceForm.precioVenta)) {
+    priceError.value = 'Ingresa precios válidos, positivos y con máximo dos decimales';
+    return;
+  }
+  saving.value = true;
+  priceError.value = '';
+  try {
+    if (assignment.value)
+      await productoSucursalApi.actualizar(assignment.value.idProductoSucursal, { ...priceForm });
+    else
+      await productoSucursalApi.crear({
+        idProducto: pricedProduct.value.idProducto,
+        idSucursal: branch.idSucursalActual,
+        ...priceForm,
+      });
+    notice.value = 'Precio de sucursal guardado';
+    noticeVisible.value = true;
+    await loadPrice();
+  } catch (cause) {
+    priceError.value = getApiErrorMessage(cause, 'No se pudo guardar el precio');
+  } finally {
+    saving.value = false;
+  }
+}
+async function removeAssignment() {
+  if (!assignment.value) return;
+  saving.value = true;
+  priceError.value = '';
+  try {
+    await productoSucursalApi.eliminar(assignment.value.idProductoSucursal);
+    removePriceDialog.value = false;
+    notice.value = 'Producto retirado de la sucursal';
+    noticeVisible.value = true;
+    await loadPrice();
+  } catch (cause) {
+    removePriceDialog.value = false;
+    priceError.value = getApiErrorMessage(cause, 'No se pudo quitar el producto');
+  } finally {
+    saving.value = false;
+  }
+}
+function confirmDelete(item: Producto) {
+  deleting.value = item;
+  deleteDialog.value = true;
+}
+async function remove() {
+  if (!deleting.value) return;
+  saving.value = true;
+  error.value = '';
+  try {
+    await productosApi.eliminar(deleting.value.idProducto);
+    deleteDialog.value = false;
+    notice.value = 'Producto eliminado';
+    noticeVisible.value = true;
+    await load();
+  } catch (cause) {
+    deleteDialog.value = false;
+    error.value = getApiErrorMessage(cause, 'No se pudo eliminar el producto');
+  } finally {
+    saving.value = false;
+  }
+}
+watch([categoryId, typeId, status], () => {
+  if (page.value !== 1) page.value = 1;
+  else void load();
+});
+watch(page, load, { immediate: true });
+watch(
+  () => branch.idSucursalActual,
+  () => {
+    if (priceDialog.value) void loadPrice();
+  },
+);
+onMounted(loadCatalogs);
+onUnmounted(() => {
+  if (timer) clearTimeout(timer);
+  requestId++;
+  priceRequestId++;
+});
+useRealtimeRefresh(['stock'], load, (change) => change.idSucursal === branch.idSucursalActual);
 </script>

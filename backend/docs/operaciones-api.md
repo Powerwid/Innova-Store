@@ -89,6 +89,7 @@ Los motivos reservados del sistema tampoco pueden desactivarse ni eliminarse.
 | GET    | `/api/ventas/:id`                 | `VENTAS_VER`        | Detalle de una venta.                                |
 | POST   | `/api/ventas`                     | `VENTAS_GESTIONAR`  | Registra una venta al contado o a crédito.           |
 | GET    | `/api/compras`                    | `COMPRAS_VER`       | Lista compras con su estado de pago derivado.        |
+| GET    | `/api/compras/percepciones`       | `COMPRAS_VER`       | Historial paginado de percepciones y total del filtro. |
 | GET    | `/api/compras/:id`                | `COMPRAS_VER`       | Detalle de una compra.                               |
 | POST   | `/api/compras`                    | `COMPRAS_GESTIONAR` | Registra compra, pago inicial y percepción opcional. |
 | POST   | `/api/compras/:id/pagos`          | `COMPRAS_GESTIONAR` | Agrega un pago posterior a la compra.                |
@@ -123,9 +124,20 @@ y el límite máximo es 100. La respuesta paginada tiene la forma:
 | Egresos              | filtros de ingresos, `idMotivoEgreso`, `idCompra`                     |
 | Ventas               | `idSucursal`, `idCaja`, `desde`, `hasta`, `buscar`                    |
 | Compras              | `idSucursal`, `idCaja`, `idProveedor`, `idAlmacen`, `desde`, `hasta`, `buscar` |
+| Percepciones         | `idSucursal`, `idProveedor`, `idCompra`, `desde`, `hasta`, `buscar` |
 | Deudas               | `idSucursal`, `idCliente`, `estado`, `desde`, `hasta`, `buscar`       |
 
-`desde` y `hasta` son fecha-hora ISO 8601 con zona, por ejemplo
+En el historial de percepciones, `desde` y `hasta` son fechas `YYYY-MM-DD`
+inclusivas y se aplican a `fechaPercepcion`. `buscar` consulta el nombre histórico
+del proveedor, la serie o número del comprobante de compra y el comprobante de
+percepción. No es necesario tener caja abierta para consultar este historial.
+La respuesta añade `resumen: { montoTotal, numeroPercepciones, numeroCompras }`;
+los valores se calculan sobre todos los registros del filtro, sin paginación.
+`numeroCompras` cuenta compras distintas y `montoTotal` es una cadena decimal.
+El registro interno se identifica con `idPercepcion` automático; `numeroConstancia`
+conserva el número opcional del documento emitido por el proveedor.
+
+En los demás listados, `desde` y `hasta` son fecha-hora ISO 8601 con zona, por ejemplo
 `2026-09-28T00:00:00-05:00`; ambos extremos son inclusivos y `hasta` no puede ser
 anterior a `desde`. Los estados de deuda admitidos son `PENDIENTE`, `PARCIAL`,
 `PAGADA` y `VENCIDA`.
@@ -262,6 +274,7 @@ la caja. Si uno falla, todo el egreso se revierte.
   "monto": "100.00",
   "detalle": "Venta mostrador",
   "fechaIngreso": "2026-09-28T13:00:00-05:00",
+  "idCliente": 8,
   "productos": [
     {
       "idProductoSucursal": 25,
@@ -284,7 +297,14 @@ Reglas adicionales:
   con `monto`.
 - La suma de pagos no puede superar el total.
 - Si los pagos no cubren el total, `credito` es obligatorio y el cliente debe estar
-  activo. Si cubren todo, `credito` debe omitirse.
+  activo e identificado. **Clientes varios** no puede tener pagos pendientes.
+  Si cubren todo, `credito` debe omitirse.
+- `idCliente` es opcional también en una venta totalmente pagada. Si se omite,
+  se usa el cliente genérico activo creado por `npm run seed:clientes`. En una
+  venta con pago pendiente, debe coincidir con `credito.idCliente` si se envía.
+  Las ventas anteriores conservan su cliente vacío; no se modifica su historial.
+- La respuesta incluye `cliente` para mostrar el nombre asociado a la venta.
+  Reintentar una misma `claveOperacion` con otro cliente devuelve 409.
 - No se puede repetir la pareja producto/almacén.
 - Producto, asignación y almacén deben estar activos y pertenecer a la sucursal.
 - Cada línea genera una salida de inventario tipo 6, `Venta`. Si
@@ -346,6 +366,17 @@ Reglas adicionales:
   iniciales y posteriores acumulados nunca pueden exceder `total`.
 - La percepción es opcional y se paga por separado. Su monto debe corresponder a
   `baseCalculo * porcentaje / 100`, redondeado a dos decimales.
+- Se admiten percepciones parciales. Como control de la aplicación, la suma de
+  sus bases no puede superar el total de la compra; al cubrirlo, se rechazan
+  nuevos registros (409). Cada base debe corresponder al pago informado por el
+  proveedor, sin incluir de nuevo importes ya registrados.
+- No se admite repetir el mismo `numeroConstancia` en una compra, ignorando
+  mayúsculas y espacios iniciales o finales. La compra se bloquea durante la
+  transacción para evitar duplicaciones por solicitudes concurrentes.
+- El formulario de percepción inicia con Efectivo y el monto calculado. Al
+  cambiar la base o porcentaje, un único medio de pago se actualiza con ese
+  monto. Si se distribuye entre varios medios, los importes se editan y la suma
+  debe coincidir con la percepción.
 - La respuesta de compra expone `montoPagado` y `saldoPendiente` derivados de los
   egresos con motivo `Compra`; los egresos por percepción no reducen ese saldo.
 
@@ -369,6 +400,9 @@ Pago posterior, `POST /api/compras/20/pagos`:
 debe coincidir exactamente con esa suma.
 
 Percepción posterior, `POST /api/compras/20/percepciones`:
+
+Este ejemplo corresponde a una compra sin percepción registrada. Si ya existen
+percepciones parciales, la base no puede exceder el importe restante.
 
 ```json
 {
@@ -498,3 +532,13 @@ npm --prefix backend run test:operaciones
 ```
 
 Verifica caja, venta concurrente, crédito y abono, ingreso y egreso, compra y pago posterior, percepción, stock, rollback por stock insuficiente, alcance de sucursales, más de 100 movimientos y reintento después del cierre.
+
+## Tickets de venta
+
+`GET /api/ventas/:id/ticket-pdf` devuelve un PDF de 80 mm con `Content-Disposition: inline`, usando la sesión existente, el permiso `VENTAS_VER` y el alcance de sucursales. Conserva la estructura de `ticket-80mm.blade.php` de Innova Restaurant: cabecera, número, vendedor, fecha, cliente, productos, subtotal, IGV, total, medios de pago, comentario y agradecimiento. El número `V-00000001` identifica la venta confirmada. Es un documento interno.
+
+`POST /api/ventas` admite `efectivoRecibido` opcional (decimal positivo, máximo dos decimales). Sólo corresponde a pagos en Efectivo y debe cubrir el importe aplicado a ese medio. El vuelto se imprime pero no se añade al saldo de caja. Este dato forma parte de la huella de idempotencia: reimprimir usa el GET; reintentar el POST mantiene la misma clave y los mismos datos.
+
+La migración `20261008010000_tickets_venta` agrega `ingresos.ticket_datos`. La venta guarda en la misma transacción una copia de los nombres, cantidades, precios, pagos, cliente, datos de sucursal y tasa de IGV. Los abonos o ediciones posteriores no cambian el ticket original. Las ventas anteriores sin esta copia se pueden imprimir con sus cantidades, precios y pagos guardados y los nombres y datos de sucursal actuales; no se inventa efectivo recibido ni vuelto.
+
+El POS reserva la ventana durante el clic en Procesar y carga el PDF después de la confirmación del backend. Si la venta falla, cierra esa ventana y conserva el carrito para reintentar. Si el navegador bloquea la ventana, muestra Ver ticket. También se puede abrir desde el listado o el detalle de Ventas.

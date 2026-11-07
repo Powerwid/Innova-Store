@@ -78,6 +78,7 @@ export interface MedioPago {
 }
 export type TipoPersona = "CLIENTE" | "PROVEEDOR";
 export interface PersonaRegistro {
+  esGenerico?: boolean;
   id: number;
   tipo: TipoPersona;
   nombre: string;

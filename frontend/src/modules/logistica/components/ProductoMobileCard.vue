@@ -24,8 +24,9 @@
         <v-chip size="small" variant="tonal" :color="producto.estado ? 'success' : 'error'">{{ producto.estado ? 'Activo' : 'Inactivo' }}</v-chip>
       </div>
       <div class="product-mobile-actions mt-4">
-        <v-btn variant="tonal" color="primary" prepend-icon="mdi-camera-plus-outline" @click="emit('fotos', producto)">Fotos</v-btn>
-        <v-btn variant="outlined" color="primary" prepend-icon="mdi-store-outline" @click="emit('sucursal', producto)">Sucursal</v-btn>
+        <v-btn v-if="canManage" variant="tonal" color="primary" prepend-icon="mdi-image-outline" @click="emit('foto-producto', producto)">Foto producto</v-btn>
+        <v-btn variant="tonal" color="primary" prepend-icon="mdi-camera-plus-outline" @click="emit('fotos', producto)">Reconocimiento</v-btn>
+        <v-btn variant="outlined" color="primary" prepend-icon="mdi-store-outline" :class="{ 'product-mobile-action-wide': canManage }" @click="emit('sucursal', producto)">Sucursal</v-btn>
       </div>
     </v-card-text>
   </v-card>
@@ -34,12 +35,13 @@
 <script setup lang="ts">
 import type { Producto } from '../logistica.types'
 defineProps<{ producto: Producto; canManage: boolean }>()
-const emit = defineEmits<{ fotos: [producto: Producto]; sucursal: [producto: Producto]; editar: [producto: Producto]; eliminar: [producto: Producto] }>()
+const emit = defineEmits<{ 'foto-producto': [producto: Producto]; fotos: [producto: Producto]; sucursal: [producto: Producto]; editar: [producto: Producto]; eliminar: [producto: Producto] }>()
 </script>
 
 <style scoped>
 .product-mobile-card { height: 100%; }
 .product-mobile-name { font-weight: 700; line-height: 1.4; overflow-wrap: anywhere; }
 .product-mobile-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.product-mobile-action-wide { grid-column: 1 / -1; }
 .v-chip { max-width: 100%; }
 </style>

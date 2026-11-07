@@ -12,8 +12,8 @@
         <v-alert v-if="error" type="error" variant="tonal" density="compact" class="mb-4">{{ error }}</v-alert>
         <v-alert v-if="notice" type="success" variant="tonal" density="compact" class="mb-4">{{ notice }}</v-alert>
         <template v-if="canManage && producto?.estado">
-          <CapturaProducto v-if="open" v-model="file" :disabled="busy" />
-          <v-btn class="mt-4" color="primary" variant="flat" prepend-icon="mdi-upload" :loading="busy && action === 'upload'" :disabled="!file || busy" @click="upload">Guardar foto de referencia</v-btn>
+          <CapturaProducto v-if="open" v-model="file" label="Subir foto para reconocimiento" :disabled="busy" />
+          <v-btn class="mt-4" color="primary" variant="flat" prepend-icon="mdi-upload" :loading="busy && action === 'upload'" :disabled="!file || busy" @click="upload">Guardar foto para reconocimiento</v-btn>
         </template>
         <v-alert v-else-if="!producto?.estado" type="warning" variant="tonal" density="compact">Activa el producto para registrar nuevas fotos.</v-alert>
         <div class="d-flex align-center flex-wrap ga-2 mt-5 mb-3"><strong>Fotos registradas ({{ total }})</strong><v-spacer /><v-btn variant="text" size="small" prepend-icon="mdi-refresh" :disabled="busy" :loading="loading" @click="reload">Actualizar</v-btn><v-btn v-if="canManage && references.some(item => item.activo)" variant="text" size="small" :disabled="busy || loading" @click="reindex">Reprocesar fotos</v-btn></div>

@@ -44,7 +44,7 @@ Si `RECOGNITION_SERVICE_URL` está vacío, el procesamiento automático queda de
 - **POS → Reconocer por foto**: buscar candidatos de la sucursal, elegir uno e ingresar cantidad o peso. Requiere caja abierta, almacén válido y stock suficiente, salvo que el sistema permita stock negativo.
 - **Compras → Nueva compra → Reconocer por foto**: agregar al detalle de compra el producto confirmado con su precio de compra. Permite seguir ajustando precio y cantidades antes de registrar la compra.
 
-Las búsquedas se cancelan al cerrar la ventana. Cambiar de sucursal, carrito o almacén descarta la selección anterior. La cámara funciona en HTTPS o localhost y se libera al tomar la foto o cerrar la ventana. La coincidencia visual nunca agrega productos automáticamente ni mide el peso.
+Las búsquedas se cancelan al cerrar la ventana. Cambiar de sucursal, carrito o almacén descarta la selección anterior. La cámara en vivo funciona en HTTPS o localhost y se libera al tomar la foto o cerrar la ventana. En HTTP por IP, **Usar cámara** solicita una foto mediante el selector nativo del teléfono, con preferencia por la cámara trasera; el navegador puede mostrar un selector de archivos. También se puede elegir una foto guardada desde **Subir foto del producto**. La coincidencia visual nunca agrega productos automáticamente ni mide el peso.
 
 ## Acceso
 
@@ -126,6 +126,8 @@ Conserva respaldos de MySQL, las fotos del backend y el almacenamiento Python. N
 No se requiere reentrenar para añadir referencias/productos; sí se requiere reextraer todas las referencias cuando cambia la versión del encoder. La búsqueda de esta primera versión procesa un producto por foto, sin conteo de múltiples objetos ni reconocimiento de peso.
 
 ## Verificación
+
+La carga de fotos de Internet y su registro por producto se describen en [Referencias visuales de Internet](referencias-web.md). El importador exige diez imágenes aprobadas por producto, conserva las referencias existentes y puede completar la foto visible del catálogo.
 
 Desde `backend/`:
 

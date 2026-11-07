@@ -1,4 +1,5 @@
 import 'vue-router'
+import type { TipoReporte } from '@/modules/reportes/reportes.api'
 
 export {}
 
@@ -10,5 +11,6 @@ declare module 'vue-router' {
     permission?: string
     permissionsAny?: string[]
     superadminOnly?: boolean
+    reportType?: TipoReporte
   }
 }

@@ -173,8 +173,11 @@ model MotivoEgreso {
 }
 
 model Ingreso {
+  idCliente       Int? @map("id_cliente")
+  cliente         Cliente? @relation(fields: [idCliente], references: [idCliente], onDelete: Restrict)
   claveOperacion  String?  @unique @db.VarChar(36) @map("clave_operacion")
   huellaOperacion String?  @db.VarChar(64) @map("huella_operacion")
+  ticketDatos     Json?    @map("ticket_datos")
   idIngreso       Int      @id @default(autoincrement()) @map("id_ingreso")
   idCaja          Int      @map("id_caja")
   idSucursal      Int      @map("id_sucursal")
@@ -195,6 +198,7 @@ model Ingreso {
   deudaOriginada DeudaCliente?        @relation("IngresoOrigenDeuda")
   abonoDeuda     AbonoDeudaCliente?
 
+  @@index([idCliente])
   @@index([idCaja, fechaIngreso])
   @@map("ingresos")
 }
@@ -294,11 +298,13 @@ model Cliente {
   correo          String?  @db.VarChar(255)
   telefono        String?  @db.VarChar(20)
   activo          Boolean  @default(true)
+  esGenerico      Boolean  @default(false) @map("es_generico")
   createdAt       DateTime @default(now()) @map("created_at")
   updatedAt       DateTime @updatedAt @map("updated_at")
 
   tipoDocumento TipoDocumento  @relation(fields: [idTipoDocumento], references: [idTipoDocumento], onDelete: Restrict)
   deudas        DeudaCliente[]
+  ventas        Ingreso[]
 
   @@unique([idTipoDocumento, numeroDocumento])
   @@index([nombre])

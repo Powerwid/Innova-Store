@@ -235,8 +235,14 @@ export class ReconocimientoService implements OnModuleInit, OnModuleDestroy {
     idProducto: number,
     file: Express.Multer.File | undefined,
     actor: UsuarioAutenticado,
+    options: { permitirProductoInactivo?: boolean } = {},
   ) {
-    await this.validarProducto(idProducto, actor, true);
+    // La importación local del catálogo puede conservar fotos de productos inactivos.
+    // La ruta HTTP mantiene su restricción; las búsquedas siempre filtran productos activos.
+    const permiteInactivo =
+      options.permitirProductoInactivo === true &&
+      actor.rol.nombre === RolSistema.SUPERADMIN;
+    await this.validarProducto(idProducto, actor, !permiteInactivo);
     const image = this.imagen(file);
     const saved = await this.storage.save(image);
     let row;

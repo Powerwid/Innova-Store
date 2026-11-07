@@ -26,7 +26,16 @@
             </div>
             <v-alert v-if="selected && selected.similitud < result.similitudMinima" type="warning" variant="tonal" density="compact" class="mt-3">La coincidencia visual es débil. Revisa el producto y su presentación antes de confirmar.</v-alert>
             <div v-if="selected" class="mt-4">
-              <v-text-field v-model="quantity" :label="`Cantidad o peso (${selected.unidadMedida.simbolo})`" inputmode="decimal" variant="outlined" :error-messages="quantityError" hint="Ingresa la cantidad medida. La foto no calcula el peso." persistent-hint />
+              <v-text-field
+                v-model="quantity"
+                :label="usesGrams(selected.unidadMedida.simbolo) ? 'Peso en gramos' : `Cantidad (${selected.unidadMedida.simbolo})`"
+                :suffix="quantityInputUnit(selected.unidadMedida.simbolo)"
+                :inputmode="usesGrams(selected.unidadMedida.simbolo) ? 'numeric' : 'decimal'"
+                :placeholder="usesGrams(selected.unidadMedida.simbolo) ? 'Ej. 250' : 'Ej. 1'"
+                variant="outlined" :error-messages="quantityError"
+                hint="Ingresa la cantidad medida. La foto no calcula el peso." persistent-hint
+              />
+              <p v-if="amount > 0 && !quantityError" class="text-subtitle-1 font-weight-bold text-end mb-3">Importe: {{ money(amount * Number(price(selected))) }}</p>
               <v-alert v-if="selectionIssue" type="warning" variant="tonal" density="compact">{{ selectionIssue }}</v-alert>
             </div>
           </template>
@@ -45,7 +54,7 @@
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { getApiErrorMessage } from '@/core/api/api-error'
 import { reconocimientoApi } from '../reconocimiento.api'
-import { validarCantidad } from '../imagen'
+import { parseQuantityInput, quantityInputUnit, usesGrams } from '@/shared/utils/product-quantity'
 import type { CandidatoVisual, ResultadoReconocimiento, SeleccionVisual } from '../reconocimiento.types'
 import CapturaProducto from './CapturaProducto.vue'
 
@@ -63,9 +72,10 @@ const result = ref<ResultadoReconocimiento | null>(null)
 const selectedId = ref<number | null>(null)
 const quantity = ref('')
 const selected = computed(() => result.value?.candidatos.find(item => item.idProductoSucursal === selectedId.value))
-const quantityError = computed(() => selected.value && quantity.value ? validarCantidad(quantity.value) : '')
-const amount = computed(() => Number(quantity.value.replace(',', '.')))
-const selectionIssue = computed(() => selected.value ? props.validarSeleccion?.(selected.value, quantityError.value ? 0 : amount.value) ?? '' : '')
+const parsedQuantity = computed(() => parseQuantityInput(quantity.value, selected.value?.unidadMedida.simbolo ?? 'UND'))
+const quantityError = computed(() => quantity.value && !parsedQuantity.value.ok ? parsedQuantity.value.error : '')
+const amount = computed(() => parsedQuantity.value.ok ? parsedQuantity.value.quantity : 0)
+const selectionIssue = computed(() => selected.value && parsedQuantity.value.ok ? props.validarSeleccion?.(selected.value, amount.value) ?? '' : '')
 let request = 0
 let controller: AbortController | undefined
 
@@ -75,7 +85,7 @@ function clearResults() {
 }
 function select(candidate: CandidatoVisual) { selectedId.value = candidate.idProductoSucursal; quantity.value = '' }
 function price(candidate: CandidatoVisual) { return props.precio === 'compra' ? candidate.precioCompra : candidate.precioVenta }
-function money(value: string) { return new Intl.NumberFormat('es-PE', { style: 'currency', currency: 'PEN' }).format(Number(value)) }
+function money(value: string | number) { return new Intl.NumberFormat('es-PE', { style: 'currency', currency: 'PEN' }).format(Number(value)) }
 async function search() {
   if (!file.value || !props.idSucursal || loading.value) return
   clearResults()
@@ -92,7 +102,7 @@ async function search() {
   } finally { if (current === request) loading.value = false }
 }
 function confirm() {
-  if (!selected.value || validarCantidad(quantity.value) || selectionIssue.value || loading.value || !open.value) return
+  if (!selected.value || !parsedQuantity.value.ok || selectionIssue.value || loading.value || !open.value) return
   emit('seleccionar', { candidato: selected.value, cantidad: amount.value })
 }
 watch(file, clearResults, { flush: 'sync' })

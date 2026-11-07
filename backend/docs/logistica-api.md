@@ -141,6 +141,16 @@ Tipo, categoría y unidad deben estar activos.
 La unidad del producto no puede cambiar una vez asignado a una sucursal,
 para conservar el significado de las cantidades históricas.
 
+#### Foto principal del producto
+
+El icono de imagen de cada fila abre una ventana independiente **Foto del producto**, con la imagen actual, subida de archivo, cámara y opción de quitar la foto. En celular se abre desde **Foto producto**. Esta ventana solo guarda `Producto.imagen`, sin abrir ni modificar los demás datos del producto. También se puede elegir la foto al crear o editar el producto. La cámara con el texto **Reconocimiento** administra las referencias visuales por separado.
+
+`POST /api/logistica/productos/:id/imagen` recibe un multipart con un solo campo `file`, JPEG, PNG o WebP de hasta 8 MiB. Requiere `LOGISTICA_GESTIONAR`. Valida firma, MIME y tamaño antes de escribir; guarda el original en `backend/storage/productos/` y actualiza únicamente `Producto.imagen`. No crea referencias visuales ni llama al servicio Python. No requiere migraciones ni variables de entorno nuevas.
+
+La respuesta incluye el producto actualizado. Su `imagen` contiene una ruta relativa autenticada `GET /api/logistica/productos/:id/imagen/:archivo`, con permiso `LOGISTICA_VER`. Solo se sirve el archivo actualmente asociado al producto, con tipo de imagen, `nosniff` y caché privada desactivada. Cada reemplazo obtiene una URL nueva. Las fotos anteriores quedan en el almacenamiento como respaldo, pero la ruta anterior deja de servirse al reemplazar o quitar la imagen. Conserva este directorio junto con el respaldo de MySQL.
+
+Para quitar la foto, guarda el producto con `imagen: null`. Las URLs externas existentes siguen admitidas. Al crear un producto con archivo, el frontend guarda primero sus datos y después la foto; si falla la subida, mantiene el ID creado para reintentar sin duplicar el producto.
+
 ### Asignación de producto a sucursal
 ```json
 {
@@ -237,8 +247,9 @@ npx prisma db seed --config prisma7.config.ts
 npm run seed:test
 ```
 
-Los datos de prueba usan el prefijo `DEMO LOG -` y no se cargan mediante
-`prisma db seed`. Para verlos con el ADMIN, asígnale los permisos
+Los datos de prueba usan nombres comerciales y la mayoría de los productos
+vendibles tiene stock mayor a 40 en el área de venta. Se cargan mediante
+`npm run seed:test`, por separado de `prisma db seed`. Para verlos con el ADMIN, asígnale los permisos
 `LOGISTICA_VER` y `LOGISTICA_GESTIONAR` desde SUPERADMIN; este último también
 puede acceder directamente a la sucursal.
 

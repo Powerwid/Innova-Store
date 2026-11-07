@@ -1,5 +1,4 @@
 import type { PrismaClient } from '../../../src/generated/prisma/client.js';
-import { PREFIJO_TEST } from '../contexto-test.js';
 export async function seedAlmacenesTest(
   prisma: PrismaClient,
   idSucursal: number,
@@ -9,7 +8,7 @@ export async function seedAlmacenesTest(
     { nombre: 'Mostrador', tipo: 'AREA_VENTA' },
     { nombre: 'Depósito', tipo: 'ALMACEN' },
   ] as const) {
-    const nombre = PREFIJO_TEST + item.nombre;
+    const nombre = item.nombre;
     // El seed anterior creaba Mostrador como ALMACEN; ahora representa el área de venta.
     const row = await prisma.almacen.upsert({
       where: { idSucursal_nombre: { idSucursal, nombre } },

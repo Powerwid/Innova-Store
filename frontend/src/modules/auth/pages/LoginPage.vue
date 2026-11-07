@@ -29,7 +29,10 @@
             closable
             @click:close="reasonMessage = ''"
           >
-            <v-icon start size="18">
+            <v-icon
+              start
+              size="18"
+            >
               mdi-information
             </v-icon>
 
@@ -48,13 +51,9 @@
             {{ errorMessage }}
           </v-alert>
 
-          <h1 class="text-h5 font-weight-bold mt-2 text-primary">
-            Innova Store Admin
-          </h1>
+          <h1 class="text-h5 font-weight-bold mt-2 text-primary">Innova Store Admin</h1>
 
-          <p class="text-caption text-medium-emphasis">
-            Sistema de Gestión de Tiendas
-          </p>
+          <p class="text-caption text-medium-emphasis">Sistema de Gestión de Tiendas</p>
         </v-card-item>
 
         <v-card-text class="pa-0">
@@ -117,9 +116,7 @@
             >
               Ingresar al sistema
 
-              <v-icon end>
-                mdi-arrow-right
-              </v-icon>
+              <v-icon end>mdi-arrow-right</v-icon>
             </v-btn>
           </v-form>
 
@@ -146,9 +143,7 @@
             />
           </div>
 
-          <p
-            class="text-center text-caption mt-6 text-medium-emphasis font-weight-medium mb-0"
-          >
+          <p class="text-center text-caption mt-6 text-medium-emphasis font-weight-medium mb-0">
             © {{ currentYear }} Innova Negocios • Store v1.0.0
           </p>
         </v-card-text>
@@ -158,83 +153,76 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import { getApiErrorMessage } from '@/core/api/api-error'
-import { useUiStore } from '@/shared/stores/ui.store'
-import { useAuthStore } from '../auth.store'
-import { loginSchema, type LoginForm } from '../schemas/login.schema'
+import { computed, onMounted, reactive, ref } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
+import { getApiErrorMessage } from '@/core/api/api-error';
+import { useUiStore } from '@/shared/stores/ui.store';
+import { useAuthStore } from '../auth.store';
+import { loginSchema, type LoginForm } from '../schemas/login.schema';
 
-const route = useRoute()
-const router = useRouter()
-const authStore = useAuthStore()
-const uiStore = useUiStore()
-const currentYear = new Date().getFullYear()
+const route = useRoute();
+const router = useRouter();
+const authStore = useAuthStore();
+const uiStore = useUiStore();
+const currentYear = new Date().getFullYear();
 
 const form = reactive<LoginForm>({
   correo: '',
   contrasena: '',
-})
+});
 
 const errors = reactive<Record<keyof LoginForm, string>>({
   correo: '',
   contrasena: '',
-})
+});
 
-const showPassword = ref(false)
-const errorMessage = ref('')
-const reasonMessage = ref('')
+const showPassword = ref(false);
+const errorMessage = ref('');
+const reasonMessage = ref('');
 
 const isDark = computed({
   get: () => uiStore.darkMode,
 
-  set: (value: boolean) =>
-    uiStore.setTheme(value ? 'storeDark' : 'storeEmerald'),
-})
+  set: (value: boolean) => uiStore.setTheme(value ? 'storeDark' : 'storeEmerald'),
+});
 
 onMounted(() => {
   if (route.query.reason === 'expired') {
-    reasonMessage.value = 'Tu sesión expiró. Ingresa nuevamente.'
+    reasonMessage.value = 'Tu sesión expiró. Ingresa nuevamente.';
   }
 
   if (route.query.reason === 'logout') {
-    reasonMessage.value = 'La sesión se cerró correctamente.'
+    reasonMessage.value = 'La sesión se cerró correctamente.';
   }
-})
+});
 
 async function submitLogin() {
-  errorMessage.value = ''
-  errors.correo = ''
-  errors.contrasena = ''
+  errorMessage.value = '';
+  errors.correo = '';
+  errors.contrasena = '';
 
-  const result = loginSchema.safeParse(form)
+  const result = loginSchema.safeParse(form);
 
   if (!result.success) {
     for (const issue of result.error.issues) {
-      const field = issue.path[0] as keyof LoginForm
+      const field = issue.path[0] as keyof LoginForm;
 
       if (field && !errors[field]) {
-        errors[field] = issue.message
+        errors[field] = issue.message;
       }
     }
 
-    return
+    return;
   }
 
   try {
-    await authStore.login(result.data)
+    await authStore.login(result.data);
 
-    const redirect =
-      typeof route.query.redirect === 'string'
-        ? route.query.redirect
-        : '/'
+    const redirect = typeof route.query.redirect === 'string' ? route.query.redirect : '/';
 
-    await router.replace(redirect)
+    await router.replace(redirect);
   } catch (error) {
-    errorMessage.value = getApiErrorMessage(
-      error,
-      'No fue posible iniciar sesión',
-    )
+    errorMessage.value = getApiErrorMessage(error, 'No fue posible iniciar sesión');
   }
 }
 </script>
@@ -287,8 +275,7 @@ async function submitLogin() {
   margin-right: auto;
 }
 
-.theme-selector
-  :deep(.v-selection-control:not(.v-selection-control--dirty) .v-switch__track) {
+.theme-selector :deep(.v-selection-control:not(.v-selection-control--dirty) .v-switch__track) {
   background-color: #757575 !important;
   opacity: 0.55 !important;
 }

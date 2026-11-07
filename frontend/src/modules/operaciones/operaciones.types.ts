@@ -27,6 +27,7 @@ export interface ProductoMovimiento {
   productoSucursal: ProductoSucursal; almacen: Almacen
 }
 export interface Ingreso {
+  idCliente?: number | null; cliente?: { nombre: string; numeroDocumento: string; esGenerico: boolean } | null
   idIngreso: number; idCaja: number; idSucursal: number; idMotivoIngreso: number; idUsuario: number
   monto: string; detalle: string | null; fechaIngreso: string; caja: Caja; sucursal: SucursalResumen
   motivoIngreso: MotivoIngreso; usuario: UsuarioResumen; pagos: Pago[]; productos: ProductoMovimiento[]
@@ -48,7 +49,19 @@ export interface Compra {
   montoPagado: string; saldoPendiente: string; proveedor: PersonaRegistro | null; sucursal: SucursalResumen
   almacen: Almacen; usuario: UsuarioResumen; detalles: CompraDetalle[]
   comprobante?: { idComprobante: number; serie: string; numero: string; fechaEmision: string; tipoComprobante: TipoComprobante } | null
-  egresos: Egreso[]; percepciones: Array<Record<string, unknown>>
+  egresos: Egreso[]; percepciones: PercepcionCompra[]
+}
+export interface PercepcionCompra {
+  idPercepcion: number; idCompra: number; idEgreso: number; fechaPercepcion: string
+  baseCalculo: string; porcentaje: string; monto: string; numeroConstancia: string | null
+}
+export interface PercepcionRegistro extends PercepcionCompra {
+  compra: Pick<Compra, 'idCompra' | 'idSucursal' | 'idProveedor' | 'nombreProveedor'> & {
+    comprobante: { serie: string; numero: string } | null
+  }
+}
+export interface PaginaPercepciones extends Pagina<PercepcionRegistro> {
+  resumen: { montoTotal: string; numeroPercepciones: number; numeroCompras: number }
 }
 export interface DeudaCliente {
   idDeudaCliente: number; idCliente: number; idIngresoOrigen: number; idEgreso: number; fechaVencimiento: string | null

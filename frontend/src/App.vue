@@ -11,11 +11,20 @@ import { useTheme } from 'vuetify'
 import { useAuthStore } from '@/modules/auth/auth.store'
 import { useUiStore } from '@/shared/stores/ui.store'
 import { isAppThemeName } from '@/app/theme/themes'
+import { useRealtimeStore } from '@/core/realtime/realtime.store'
+import { useSucursalStore } from '@/shared/stores/sucursal.store'
 
 const theme = useTheme()
 const router = useRouter()
 const authStore = useAuthStore()
 const uiStore = useUiStore()
+const realtime = useRealtimeStore()
+const branch = useSucursalStore()
+watch(() => [authStore.usuario?.idUsuario, branch.idSucursalActual] as const, ([user, idSucursal]) => {
+  if (user && idSucursal) realtime.connect(idSucursal)
+  else realtime.disconnect()
+}, { immediate: true })
+onBeforeUnmount(() => realtime.disconnect())
 
 watch(
   () => uiStore.themeName,

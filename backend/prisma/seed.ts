@@ -11,12 +11,14 @@ import { seedLogistica } from './seeds/base/logistica.seed.js';
 import { seedUnidadesMedida } from './seeds/base/unidades-medida.seed.js';
 import { seedMotivosOperacion } from './seeds/base/motivos-operacion.seed.js';
 import { seedTiposComprobante } from './seeds/base/tipos-comprobante.seed.js';
+import { seedClientesVarios } from './seeds/base/clientes.seed.js';
 
 async function main() {
   console.log('\nIniciando seed de Innova-Store...\n');
 
   await seedEstados();
   await seedTiposDocumento();
+  await seedClientesVarios(prisma);
   await seedMediosPago();
   await seedLogistica();
   await seedUnidadesMedida();

@@ -3,7 +3,6 @@ import os
 from pathlib import Path
 import re
 
-
 DEFAULT_MODEL = "google/siglip2-base-patch16-224"
 DEFAULT_REVISION = "75de2d55ec2d0b4efc50b3e9ad70dba96a7b2fa2"
 
@@ -25,9 +24,14 @@ class Settings:
     def from_env(cls) -> "Settings":
         revision = os.getenv("RECOGNITION_MODEL_REVISION", DEFAULT_REVISION)
         if not re.fullmatch(r"[0-9a-f]{40}", revision):
-            raise ValueError("RECOGNITION_MODEL_REVISION debe ser un commit SHA de 40 caracteres; no usar main.")
+            raise ValueError(
+                "RECOGNITION_MODEL_REVISION debe ser un commit SHA de 40"
+                " caracteres; no usar main."
+            )
         return cls(
-            storage_dir=Path(os.getenv("RECOGNITION_STORAGE_DIR", "storage")).resolve(),
+            storage_dir=Path(
+                os.getenv("RECOGNITION_STORAGE_DIR", "storage")
+            ).resolve(),
             model_id=os.getenv("RECOGNITION_MODEL_ID", DEFAULT_MODEL),
             model_revision=revision,
             device=os.getenv("RECOGNITION_DEVICE", "cpu"),

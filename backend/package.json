@@ -21,8 +21,11 @@
     "test:debug": "vitest --inspect-brk --no-file-parallelism",
     "test:e2e": "vitest run --config ./vitest.config.e2e.ts",
     "seed:test": "tsx prisma/seeds/test.ts",
+    "seed:clientes": "tsx prisma/seeds/clientes.ts",
+    "referencias:importar": "tsx scripts/importar-referencias-web.ts",
     "test:seed": "tsx scripts/test-seed-datos.ts",
     "test:operaciones": "tsx scripts/test-operaciones.ts",
+    "test:realtime": "npm run build && tsx scripts/test-realtime.ts",
     "seed:motivos": "tsx prisma/seeds/motivos.ts"
   },
   "dependencies": {
@@ -76,6 +79,7 @@
     "oxlint-tsgolint": "^7.0.2001",
     "prettier": "^3.4.2",
     "prisma": "^7.10.0",
+    "socket.io-client": "^4.8.4",
     "source-map-support": "^0.5.21",
     "supertest": "^7.0.0",
     "tsx": "^4.23.15",

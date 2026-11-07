@@ -1,7 +1,8 @@
 import { http } from '@/core/api/http'
+import type { FormatoReporte } from '@/modules/reportes/reportes.api'
 import type {
   AbrirCajaPayload, Caja, Compra, ConsultaOperacion, DeudaCliente, Egreso, Ingreso,
-  MotivoEgreso, MotivoIngreso, MovimientoPayload, Pagina, TipoComprobante, ResumenCaja,
+  MotivoEgreso, MotivoIngreso, MovimientoPayload, Pagina, PaginaPercepciones, TipoComprobante, ResumenCaja,
 } from './operaciones.types'
 
 const query = (params?: ConsultaOperacion) => ({ params: params ? Object.fromEntries(
@@ -13,6 +14,7 @@ export const cajasApi = {
   abierta: (idSucursal: number) => http.get<Caja>('/cajas/abierta', { params: { idSucursal } }),
   obtener: (id: number) => http.get<Caja>(`/cajas/${id}`),
   resumen: (id: number) => http.get<{ caja: Caja; resumen: ResumenCaja }>(`/cajas/${id}/resumen`),
+  exportarReporte: (id: number, formato: FormatoReporte) => http.get<Blob>(`/cajas/${id}/reporte/${formato}`, { responseType: 'blob' }),
   abrir: (payload: AbrirCajaPayload) => http.post<Caja>('/cajas', payload),
   cerrar: (id: number, montoCierre: string) => http.patch<Caja & { montoEsperado: string; diferencia: string }>(`/cajas/${id}/cerrar`, { montoCierre }),
 }
@@ -43,10 +45,11 @@ export const egresosApi = {
 export const ventasApi = {
   listar: (params?: ConsultaOperacion) => http.get<Pagina<Ingreso>>('/ventas', query(params)),
   obtener: (id: number) => http.get<Ingreso>(`/ventas/${id}`),
-  crear: (payload: Record<string, unknown>) => http.post<Ingreso>('/ventas', payload),
+  crear: (payload: Record<string, unknown>) => http.post<{ message: string; venta: Ingreso }>('/ventas', payload),
 }
 export const comprasApi = {
   listar: (params?: ConsultaOperacion) => http.get<Pagina<Compra>>('/compras', query(params)),
+  percepciones: (params?: ConsultaOperacion) => http.get<PaginaPercepciones>('/compras/percepciones', query(params)),
   obtener: (id: number) => http.get<Compra>(`/compras/${id}`),
   crear: (payload: Record<string, unknown>) => http.post<Compra>('/compras', payload),
   pagar: (id: number, payload: Record<string, unknown>) => http.post<Compra>(`/compras/${id}/pagos`, payload),

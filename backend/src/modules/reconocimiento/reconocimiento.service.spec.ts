@@ -282,6 +282,37 @@ describe('Reconocimiento: catálogo y sucursal', () => {
     expect(result.idReferencia).toBe(11);
   });
 
+  it('la carga habitual sigue rechazando productos inactivos', async () => {
+    const { service, prisma, storage } = setup();
+    prisma.producto.findUnique.mockResolvedValue({
+      idProducto: 2,
+      estado: false,
+    });
+    await expect(service.registrarReferencia(2, file, actor)).rejects.toThrow(
+      'inactivo',
+    );
+    await expect(
+      service.registrarReferencia(2, file, actor, {
+        permitirProductoInactivo: true,
+      }),
+    ).rejects.toThrow('inactivo');
+    expect(storage.save).not.toHaveBeenCalled();
+  });
+
+  it('la importación explícita del superadministrador conserva fotos sin activar el producto', async () => {
+    const { service, prisma } = setup();
+    prisma.producto.findUnique.mockResolvedValue({
+      idProducto: 2,
+      estado: false,
+    });
+    const superadmin = { ...actor, rol: { idRol: 1, nombre: 'SUPERADMIN' } };
+    const result = await service.registrarReferencia(2, file, superadmin, {
+      permitirProductoInactivo: true,
+    });
+    expect(result.idReferencia).toBe(11);
+    expect(prisma.referenciaVisual.upsert).toHaveBeenCalled();
+  });
+
   it('limpia foto recién guardada si falla el registro en MySQL', async () => {
     const { service, prisma, storage } = setup();
     prisma.referenciaVisual.upsert.mockRejectedValue(new Error('db down'));

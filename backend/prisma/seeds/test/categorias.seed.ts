@@ -1,5 +1,4 @@
 import type { PrismaClient } from '../../../src/generated/prisma/client.js';
-import { PREFIJO_TEST } from '../contexto-test.js';
 export const categoriasTest = [
   { nombre: 'Abarrotes', color: '#C79136' },
   { nombre: 'Frescos', color: '#D46B62' },
@@ -20,7 +19,7 @@ export const categoriasTest = [
 export async function seedCategoriasTest(prisma: PrismaClient) {
   const ids = new Map<string, number>();
   for (const item of categoriasTest) {
-    const nombre = PREFIJO_TEST + item.nombre;
+    const nombre = item.nombre;
     const row = await prisma.categoria.upsert({
       where: { nombre },
       create: { nombre, color: item.color },

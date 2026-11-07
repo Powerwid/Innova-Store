@@ -1,9 +1,18 @@
 <template>
   <div class="operaciones-page">
-    <v-card class="operaciones-header mb-5 rounded-xl" elevation="0" border>
+    <v-card
+      class="operaciones-header mb-5 rounded-xl"
+      elevation="0"
+      border
+    >
       <v-card-text class="pa-5">
         <div class="d-flex align-center flex-wrap ga-3">
-          <v-avatar color="primary" variant="tonal" size="48" rounded="lg">
+          <v-avatar
+            color="primary"
+            variant="tonal"
+            size="48"
+            rounded="lg"
+          >
             <v-icon size="27">mdi-cash-register</v-icon>
           </v-avatar>
 
@@ -16,7 +25,11 @@
 
           <v-spacer />
 
-          <v-chip color="primary" variant="tonal" prepend-icon="mdi-store-outline">
+          <v-chip
+            color="primary"
+            variant="tonal"
+            prepend-icon="mdi-store-outline"
+          >
             {{ branch.sucursalActual?.nombre || 'Sin sucursal' }}
           </v-chip>
 
@@ -66,8 +79,15 @@
 
     <template v-else>
       <v-row class="mb-3">
-        <v-col cols="12" md="4">
-          <v-card class="operaciones-metric rounded-xl" border elevation="0">
+        <v-col
+          cols="12"
+          md="4"
+        >
+          <v-card
+            class="operaciones-metric rounded-xl"
+            border
+            elevation="0"
+          >
             <v-card-text>
               <div class="text-caption text-medium-emphasis">Estado actual</div>
               <div class="d-flex align-center mt-2">
@@ -85,11 +105,23 @@
           </v-card>
         </v-col>
 
-        <v-col cols="12" md="4">
-          <v-card class="operaciones-metric rounded-xl" border elevation="0">
+        <v-col
+          cols="12"
+          md="4"
+        >
+          <v-card
+            class="operaciones-metric rounded-xl"
+            border
+            elevation="0"
+          >
             <v-card-text>
               <div class="d-flex align-center ga-2 text-caption text-medium-emphasis">
-                <v-icon size="18" color="primary">mdi-calculator-variant-outline</v-icon>
+                <v-icon
+                  size="18"
+                  color="primary"
+                >
+                  mdi-calculator-variant-outline
+                </v-icon>
                 Saldo esperado
               </div>
               <div class="text-h5 font-weight-bold money mt-2">
@@ -99,11 +131,23 @@
           </v-card>
         </v-col>
 
-        <v-col cols="12" md="4">
-          <v-card class="operaciones-metric rounded-xl" border elevation="0">
+        <v-col
+          cols="12"
+          md="4"
+        >
+          <v-card
+            class="operaciones-metric rounded-xl"
+            border
+            elevation="0"
+          >
             <v-card-text>
               <div class="d-flex align-center ga-2 text-caption text-medium-emphasis">
-                <v-icon size="18" color="primary">mdi-cash-plus</v-icon>
+                <v-icon
+                  size="18"
+                  color="primary"
+                >
+                  mdi-cash-plus
+                </v-icon>
                 Monto de apertura
               </div>
               <div class="text-h5 font-weight-bold money mt-2">
@@ -122,7 +166,12 @@
         class="mb-5"
       >
         <v-card-title class="pa-5 pb-2 d-flex align-center flex-wrap ga-2">
-          <v-avatar color="primary" variant="tonal" rounded="lg" size="40">
+          <v-avatar
+            color="primary"
+            variant="tonal"
+            rounded="lg"
+            size="40"
+          >
             <v-icon>mdi-wallet-outline</v-icon>
           </v-avatar>
           <span>Saldos por medio de pago</span>
@@ -141,7 +190,11 @@
               sm="6"
               md="4"
             >
-              <v-card variant="tonal" color="primary" rounded="lg">
+              <v-card
+                variant="tonal"
+                color="primary"
+                rounded="lg"
+              >
                 <v-card-text class="d-flex align-center">
                   <v-icon size="28">
                     {{ paymentIcon(detail.medioPago.nombre) }}
@@ -156,7 +209,10 @@
               </v-card>
             </v-col>
 
-            <v-col v-if="!openBox.detalles.length" cols="12">
+            <v-col
+              v-if="!openBox.detalles.length"
+              cols="12"
+            >
               <div class="text-center text-medium-emphasis py-4">
                 La caja no tiene saldos registrados.
               </div>
@@ -165,10 +221,20 @@
         </v-card-text>
       </v-card>
 
-      <v-card rounded="xl" elevation="0" border class="overflow-hidden">
+      <v-card
+        rounded="xl"
+        elevation="0"
+        border
+        class="overflow-hidden"
+      >
         <v-card-item class="pa-5">
           <template #prepend>
-            <v-avatar color="primary" variant="tonal" rounded="lg" class="me-3">
+            <v-avatar
+              color="primary"
+              variant="tonal"
+              rounded="lg"
+              class="me-3"
+            >
               <v-icon>mdi-history</v-icon>
             </v-avatar>
           </template>
@@ -180,11 +246,18 @@
 
           <template #append>
             <div class="d-flex align-center ga-2">
-              <v-chip color="primary" variant="tonal" class="history-total-chip">
+              <v-chip
+                color="primary"
+                variant="tonal"
+                class="history-total-chip"
+              >
                 {{ total }} registros
               </v-chip>
 
-              <v-tooltip text="Actualizar historial" location="top">
+              <v-tooltip
+                text="Actualizar historial"
+                location="top"
+              >
                 <template #activator="{ props }">
                   <v-btn
                     v-bind="props"
@@ -200,14 +273,105 @@
           </template>
         </v-card-item>
 
+        <v-card-text class="pt-0 pb-5">
+          <v-row align="center">
+            <v-col
+              cols="6"
+              md="3"
+            >
+              <v-text-field
+                v-model="historyFilters.desde"
+                type="date"
+                label="Desde"
+                variant="outlined"
+                density="comfortable"
+                hide-details
+              />
+            </v-col>
+            <v-col
+              cols="6"
+              md="3"
+            >
+              <v-text-field
+                v-model="historyFilters.hasta"
+                type="date"
+                label="Hasta"
+                variant="outlined"
+                density="comfortable"
+                hide-details
+              />
+            </v-col>
+            <v-col
+              cols="12"
+              md="3"
+            >
+              <div class="d-flex flex-wrap ga-2">
+                <v-btn
+                  variant="tonal"
+                  size="small"
+                  @click="historyPeriod('today')"
+                >
+                  Hoy
+                </v-btn>
+                <v-btn
+                  variant="tonal"
+                  size="small"
+                  @click="historyPeriod('week')"
+                >
+                  7 días
+                </v-btn>
+                <v-btn
+                  variant="tonal"
+                  size="small"
+                  @click="historyPeriod('month')"
+                >
+                  Mes
+                </v-btn>
+              </div>
+            </v-col>
+            <v-col
+              cols="12"
+              md="3"
+            >
+              <div class="d-flex ga-2">
+                <v-btn
+                  color="primary"
+                  prepend-icon="mdi-magnify"
+                  class="flex-grow-1"
+                  :loading="loading"
+                  @click="searchHistory"
+                >
+                  Buscar
+                </v-btn>
+                <v-btn
+                  icon="mdi-filter-remove-outline"
+                  variant="tonal"
+                  color="primary"
+                  aria-label="Limpiar filtros de cajas"
+                  @click="clearHistory"
+                />
+              </div>
+            </v-col>
+          </v-row>
+        </v-card-text>
+
         <v-divider />
 
-        <div v-if="loading" class="text-center py-14">
-          <v-progress-circular indeterminate color="primary" />
+        <div
+          v-if="loading"
+          class="text-center py-14"
+        >
+          <v-progress-circular
+            indeterminate
+            color="primary"
+          />
         </div>
 
         <template v-else-if="items.length">
-          <v-table hover class="operaciones-table operaciones-desktop">
+          <v-table
+            hover
+            class="operaciones-table operaciones-desktop"
+          >
             <thead>
               <tr>
                 <th>N.º</th>
@@ -216,20 +380,24 @@
                 <th>Cierre</th>
                 <th>Responsable</th>
                 <th class="text-end">Monto apertura</th>
+                <th class="text-end">Monto cierre</th>
                 <th class="text-center">Acciones</th>
               </tr>
             </thead>
             <tbody>
-              <tr v-for="item in items" :key="item.idCaja">
+              <tr
+                v-for="item in items"
+                :key="item.idCaja"
+              >
                 <td class="font-weight-medium">#{{ item.idCaja }}</td>
                 <td>
                   <v-chip
                     size="small"
                     :color="item.fechaCierre ? 'default' : 'success'"
                     variant="tonal"
-                    :prepend-icon="item.fechaCierre
-                      ? 'mdi-lock-outline'
-                      : 'mdi-lock-open-variant-outline'"
+                    :prepend-icon="
+                      item.fechaCierre ? 'mdi-lock-outline' : 'mdi-lock-open-variant-outline'
+                    "
                   >
                     {{ item.fechaCierre ? 'Cerrada' : 'Abierta' }}
                   </v-chip>
@@ -240,9 +408,15 @@
                 <td class="text-end money font-weight-medium">
                   {{ money(item.montoApertura) }}
                 </td>
+                <td class="text-end money">
+                  {{ item.montoCierre === null ? '—' : money(item.montoCierre) }}
+                </td>
                 <td class="text-center">
                   <div class="d-inline-flex align-center ga-1">
-                    <v-tooltip text="Ver detalle" location="top">
+                    <v-tooltip
+                      text="Ver detalle"
+                      location="top"
+                    >
                       <template #activator="{ props }">
                         <v-btn
                           v-bind="props"
@@ -250,10 +424,16 @@
                           variant="text"
                           color="primary"
                           size="small"
-                          :aria-label="`Ver detalle de caja ${item.idCaja}`" @click="openDetailDialog(item)"
+                          :aria-label="`Ver detalle de caja ${item.idCaja}`"
+                          @click="openDetailDialog(item)"
                         />
                       </template>
                     </v-tooltip>
+
+                    <CajaReporteMenu
+                      :id-caja="item.idCaja"
+                      compact
+                    />
 
                     <v-tooltip
                       v-if="!item.fechaCierre && canManage"
@@ -299,15 +479,33 @@
                 </div>
 
                 <div class="text-caption text-medium-emphasis mt-3">
-                  <v-icon size="15" class="me-1">mdi-calendar-start</v-icon>
+                  <v-icon
+                    size="15"
+                    class="me-1"
+                  >
+                    mdi-calendar-start
+                  </v-icon>
                   {{ dateTime(item.fechaApertura) }}
                 </div>
                 <div class="text-caption text-medium-emphasis mt-1">
-                  <v-icon size="15" class="me-1">mdi-account-outline</v-icon>
+                  <v-icon
+                    size="15"
+                    class="me-1"
+                  >
+                    mdi-account-outline
+                  </v-icon>
                   {{ user(item.usuarioApertura) }}
                 </div>
-                <div class="font-weight-bold money mt-3">
-                  {{ money(item.montoApertura) }}
+                <div class="d-flex justify-space-between ga-3 mt-3 text-body-2">
+                  <span>Apertura</span>
+                  <strong class="money">{{ money(item.montoApertura) }}</strong>
+                </div>
+                <div
+                  v-if="item.montoCierre !== null"
+                  class="d-flex justify-space-between ga-3 mt-2 text-body-2"
+                >
+                  <span>Cierre</span>
+                  <strong class="money">{{ money(item.montoCierre) }}</strong>
                 </div>
               </v-card-text>
 
@@ -318,10 +516,15 @@
                   color="primary"
                   variant="text"
                   prepend-icon="mdi-file-document-outline"
-                  :aria-label="`Ver detalle de caja ${item.idCaja}`" @click="openDetailDialog(item)"
+                  :aria-label="`Ver detalle de caja ${item.idCaja}`"
+                  @click="openDetailDialog(item)"
                 >
                   Ver detalle
                 </v-btn>
+                <CajaReporteMenu
+                  :id-caja="item.idCaja"
+                  compact
+                />
                 <v-spacer />
                 <v-btn
                   v-if="!item.fechaCierre && canManage"
@@ -337,22 +540,38 @@
           </div>
         </template>
 
-        <div v-else class="operaciones-empty">
-          <v-avatar color="primary" variant="tonal" size="62" class="mb-3">
+        <div
+          v-else
+          class="operaciones-empty"
+        >
+          <v-avatar
+            color="primary"
+            variant="tonal"
+            size="62"
+            class="mb-3"
+          >
             <v-icon size="34">mdi-cash-register</v-icon>
           </v-avatar>
-          <div class="font-weight-bold">Aún no hay cajas registradas</div>
+          <div class="font-weight-bold">
+            {{
+              appliedHistory.desde || appliedHistory.hasta
+                ? 'No hay cajas para el periodo seleccionado'
+                : 'Aún no hay cajas registradas'
+            }}
+          </div>
           <div class="text-body-2 mt-1">
-            La primera apertura aparecerá en este historial.
+            {{
+              appliedHistory.desde || appliedHistory.hasta
+                ? 'Ajusta las fechas o limpia los filtros para consultar el historial.'
+                : 'La primera apertura aparecerá en este historial.'
+            }}
           </div>
         </div>
 
         <v-divider />
 
         <div class="d-flex align-center justify-space-between pa-3 px-5">
-          <span class="text-caption">
-            Mostrando {{ items.length }} de {{ total }}
-          </span>
+          <span class="text-caption">Mostrando {{ items.length }} de {{ total }}</span>
           <v-pagination
             v-if="total > limit"
             v-model="page"
@@ -363,7 +582,11 @@
       </v-card>
     </template>
 
-    <v-dialog v-model="openDialog" max-width="560" persistent>
+    <v-dialog
+      v-model="openDialog"
+      max-width="560"
+      persistent
+    >
       <v-card rounded="xl">
         <v-card-title class="operaciones-dialog-title">
           <span class="operaciones-dialog-icon">
@@ -409,15 +632,28 @@
 
         <v-card-actions class="pa-4">
           <v-spacer />
-          <v-btn variant="text" @click="openDialog = false">Cancelar</v-btn>
-          <v-btn color="primary" :loading="saving" @click="openCash">
+          <v-btn
+            variant="text"
+            @click="openDialog = false"
+          >
+            Cancelar
+          </v-btn>
+          <v-btn
+            color="primary"
+            :loading="saving"
+            @click="openCash"
+          >
             Abrir caja
           </v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
 
-    <v-dialog v-model="closeDialog" max-width="560" persistent>
+    <v-dialog
+      v-model="closeDialog"
+      max-width="560"
+      persistent
+    >
       <v-card rounded="xl">
         <v-card-title class="operaciones-dialog-title close-dialog-title">
           <span class="operaciones-dialog-icon">
@@ -443,7 +679,12 @@
             {{ formError }}
           </v-alert>
 
-          <v-card variant="tonal" color="primary" rounded="lg" class="mb-4">
+          <v-card
+            variant="tonal"
+            color="primary"
+            rounded="lg"
+            class="mb-4"
+          >
             <v-card-text class="d-flex align-center">
               <v-icon size="28">mdi-calculator-variant-outline</v-icon>
               <div class="ms-3">
@@ -468,15 +709,28 @@
             @keyup.enter="closeCash"
           />
 
-          <v-alert type="warning" variant="tonal" density="compact">
+          <v-alert
+            type="warning"
+            variant="tonal"
+            density="compact"
+          >
             El cierre es definitivo y conservará cualquier diferencia de caja.
           </v-alert>
         </v-card-text>
 
         <v-card-actions class="pa-4">
           <v-spacer />
-          <v-btn variant="text" @click="closeDialog = false">Cancelar</v-btn>
-          <v-btn color="error" :loading="saving" @click="closeCash">
+          <v-btn
+            variant="text"
+            @click="closeDialog = false"
+          >
+            Cancelar
+          </v-btn>
+          <v-btn
+            color="error"
+            :loading="saving"
+            @click="closeCash"
+          >
             Confirmar cierre
           </v-btn>
         </v-card-actions>
@@ -489,230 +743,284 @@
       :branch-id="branch.idSucursalActual"
     />
 
-    <v-snackbar v-model="noticeVisible" color="success">
+    <v-snackbar
+      v-model="noticeVisible"
+      color="success"
+    >
       {{ notice }}
     </v-snackbar>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
-import { getApiErrorMessage } from '@/core/api/api-error'
-import { Permiso } from '@/core/constants/permisos'
-import { useAuthStore } from '@/modules/auth/auth.store'
-import { useSucursalStore } from '@/shared/stores/sucursal.store'
-import CajaDetalleDialog from '../components/CajaDetalleDialog.vue'
-import { cajasApi } from '../operaciones.api'
-import type { Caja, UsuarioResumen } from '../operaciones.types'
-import '../operaciones.css'
+import { useRealtimeRefresh } from '@/core/realtime/useRealtimeRefresh';
+import { computed, onBeforeUnmount, reactive, ref, watch } from 'vue';
+import { isAxiosError } from 'axios';
+import { getApiErrorMessage } from '@/core/api/api-error';
+import { Permiso } from '@/core/constants/permisos';
+import { useAuthStore } from '@/modules/auth/auth.store';
+import { useSucursalStore } from '@/shared/stores/sucursal.store';
+import CajaDetalleDialog from '../components/CajaDetalleDialog.vue';
+import CajaReporteMenu from '../components/CajaReporteMenu.vue';
+import { cajasApi } from '../operaciones.api';
+import type { Caja, ConsultaOperacion, UsuarioResumen } from '../operaciones.types';
+import '../operaciones.css';
 
-const auth = useAuthStore()
-const branch = useSucursalStore()
+const auth = useAuthStore();
+const branch = useSucursalStore();
 
-const canManage = computed(() => auth.puede(Permiso.CAJA_GESTIONAR))
+const canManage = computed(() => auth.puede(Permiso.CAJA_GESTIONAR));
 
-const openBox = ref<Caja | null>(null)
-const selectedBox = ref<Caja | null>(null)
-const closingBox = ref<Caja | null>(null)
-const items = ref<Caja[]>([])
+const openBox = ref<Caja | null>(null);
+const selectedBox = ref<Caja | null>(null);
+const closingBox = ref<Caja | null>(null);
+const items = ref<Caja[]>([]);
 
-const loading = ref(false)
-const saving = ref(false)
+const loading = ref(false);
+const saving = ref(false);
 
-const error = ref('')
-const formError = ref('')
+const error = ref('');
+const formError = ref('');
 
-const openDialog = ref(false)
-const closeDialog = ref(false)
-const detailDialog = ref(false)
+const openDialog = ref(false);
+const closeDialog = ref(false);
+const detailDialog = ref(false);
 
-const openingAmount = ref('0.00')
-const closingAmount = ref('')
+const openingAmount = ref('0.00');
+const closingAmount = ref('');
 
-const page = ref(1)
-const total = ref(0)
-const limit = 20
+const page = ref(1);
+const total = ref(0);
+const limit = 20;
+const historyFilters = reactive({ desde: '', hasta: '' });
+const appliedHistory = ref<ConsultaOperacion>({});
 
-const notice = ref('')
-const noticeVisible = ref(false)
+const notice = ref('');
+const noticeVisible = ref(false);
 
-const expectedTotal = computed(() => boxExpectedTotal(openBox.value))
-const closingExpectedTotal = computed(() => boxExpectedTotal(closingBox.value))
+const expectedTotal = computed(() => boxExpectedTotal(openBox.value));
+const closingExpectedTotal = computed(() => boxExpectedTotal(closingBox.value));
 
+let loadRequest = 0;
 async function load() {
-  if (!branch.idSucursalActual) {
-    openBox.value = null
-    items.value = []
-    total.value = 0
-    return
+  const current = ++loadRequest,
+    idSucursal = branch.idSucursalActual;
+  if (!idSucursal) {
+    openBox.value = null;
+    items.value = [];
+    total.value = 0;
+    loading.value = false;
+    return;
   }
-
-  loading.value = true
-  error.value = ''
-
+  loading.value = true;
+  error.value = '';
   try {
-    const history = await cajasApi.listar({
-      idSucursal: branch.idSucursalActual,
-      pagina: page.value,
-      limite: limit,
-    })
-
-    items.value = history.data.data
-    total.value = history.data.total
-
-    try {
-      const response = await cajasApi.abierta(branch.idSucursalActual)
-      openBox.value = response.data
-    } catch {
-      openBox.value = null
+    const [history, opened] = await Promise.all([
+      cajasApi.listar({ ...appliedHistory.value, idSucursal, pagina: page.value, limite: limit }),
+      cajasApi.abierta(idSucursal).catch((cause) => {
+        if (isAxiosError(cause) && cause.response?.status === 404) return null;
+        throw cause;
+      }),
+    ]);
+    if (current !== loadRequest || idSucursal !== branch.idSucursalActual) return;
+    items.value = history.data.data;
+    total.value = history.data.total;
+    openBox.value = opened?.data ?? null;
+    if (closingBox.value) {
+      closingBox.value =
+        items.value.find((item) => item.idCaja === closingBox.value?.idCaja) ?? closingBox.value;
+      if (closingBox.value.fechaCierre) closeDialog.value = false;
     }
   } catch (cause) {
-    error.value = getApiErrorMessage(cause, 'No se pudo cargar la caja')
+    if (current === loadRequest)
+      error.value = getApiErrorMessage(cause, 'No se pudo cargar la caja');
   } finally {
-    loading.value = false
+    if (current === loadRequest) loading.value = false;
   }
+}
+onBeforeUnmount(() => {
+  loadRequest++;
+});
+
+function searchHistory() {
+  if (historyFilters.desde && historyFilters.hasta && historyFilters.desde > historyFilters.hasta) {
+    error.value = 'La fecha final no puede ser anterior a la inicial.';
+    return;
+  }
+  appliedHistory.value = {
+    ...(historyFilters.desde ? { desde: `${historyFilters.desde}T00:00:00-05:00` } : {}),
+    ...(historyFilters.hasta ? { hasta: `${historyFilters.hasta}T23:59:59.999-05:00` } : {}),
+  };
+  if (page.value !== 1) page.value = 1;
+  else void load();
+}
+function clearHistory() {
+  historyFilters.desde = '';
+  historyFilters.hasta = '';
+  searchHistory();
+}
+function historyPeriod(preset: 'today' | 'week' | 'month') {
+  const parts = new Intl.DateTimeFormat('en', {
+    timeZone: 'America/Lima',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(new Date());
+  const today = ['year', 'month', 'day']
+    .map((key) => parts.find((p) => p.type === key)!.value)
+    .join('-');
+  historyFilters.hasta = today;
+  historyFilters.desde =
+    preset === 'today'
+      ? today
+      : preset === 'month'
+        ? today.slice(0, 8) + '01'
+        : new Date(Date.parse(today + 'T12:00:00Z') - 6 * 86400000).toISOString().slice(0, 10);
+  searchHistory();
 }
 
 function openOpenDialog() {
-  openingAmount.value = '0.00'
-  formError.value = ''
-  openDialog.value = true
+  openingAmount.value = '0.00';
+  formError.value = '';
+  openDialog.value = true;
 }
 
 async function openCash() {
-  if (!branch.idSucursalActual) return
+  if (!branch.idSucursalActual) return;
 
-  const amount = Number(openingAmount.value)
+  const amount = Number(openingAmount.value);
 
   if (!Number.isFinite(amount) || amount < 0) {
-    formError.value = 'Ingresa un monto inicial válido'
-    return
+    formError.value = 'Ingresa un monto inicial válido';
+    return;
   }
 
-  saving.value = true
-  formError.value = ''
+  saving.value = true;
+  formError.value = '';
 
   try {
     await cajasApi.abrir({
       idSucursal: branch.idSucursalActual,
       montoApertura: amount.toFixed(2),
-    })
+    });
 
-    openDialog.value = false
-    showNotice('Caja abierta correctamente')
-    await load()
+    openDialog.value = false;
+    showNotice('Caja abierta correctamente');
+    await load();
   } catch (cause) {
-    formError.value = getApiErrorMessage(cause, 'No se pudo abrir la caja')
+    formError.value = getApiErrorMessage(cause, 'No se pudo abrir la caja');
   } finally {
-    saving.value = false
+    saving.value = false;
   }
 }
 
 function openDetailDialog(item: Caja) {
-  selectedBox.value = item
-  detailDialog.value = true
+  selectedBox.value = item;
+  detailDialog.value = true;
 }
 
 function openCloseDialog(item: Caja | null) {
-  if (!item || item.fechaCierre) return
+  if (!item || item.fechaCierre) return;
 
-  closingBox.value = item
-  closingAmount.value = boxExpectedTotal(item).toFixed(2)
-  formError.value = ''
-  closeDialog.value = true
+  closingBox.value = item;
+  closingAmount.value = boxExpectedTotal(item).toFixed(2);
+  formError.value = '';
+  closeDialog.value = true;
 }
 
 async function closeCash() {
-  if (!closingBox.value) return
+  if (!closingBox.value) return;
 
-  const amount = Number(closingAmount.value)
+  const amount = Number(closingAmount.value);
 
   if (!Number.isFinite(amount) || amount < 0) {
-    formError.value = 'Ingresa un monto contado válido'
-    return
+    formError.value = 'Ingresa un monto contado válido';
+    return;
   }
 
-  saving.value = true
-  formError.value = ''
+  saving.value = true;
+  formError.value = '';
 
   try {
-    await cajasApi.cerrar(closingBox.value.idCaja, amount.toFixed(2))
+    await cajasApi.cerrar(closingBox.value.idCaja, amount.toFixed(2));
 
-    closeDialog.value = false
-    closingBox.value = null
-    showNotice('Caja cerrada correctamente')
-    await load()
+    closeDialog.value = false;
+    closingBox.value = null;
+    showNotice('Caja cerrada correctamente');
+    await load();
   } catch (cause) {
-    formError.value = getApiErrorMessage(cause, 'No se pudo cerrar la caja')
+    formError.value = getApiErrorMessage(cause, 'No se pudo cerrar la caja');
   } finally {
-    saving.value = false
+    saving.value = false;
   }
 }
 
 function boxExpectedTotal(caja: Caja | null) {
-  return caja?.detalles.reduce(
-    (sum, detail) => sum + Number(detail.monto),
-    0,
-  ) ?? 0
+  return caja?.detalles.reduce((sum, detail) => sum + Number(detail.monto), 0) ?? 0;
 }
 
 function showNotice(message: string) {
-  notice.value = message
-  noticeVisible.value = true
+  notice.value = message;
+  noticeVisible.value = true;
 }
 
 function money(value: string | number | null | undefined) {
   return new Intl.NumberFormat('es-PE', {
     style: 'currency',
     currency: 'PEN',
-  }).format(Number(value) || 0)
+  }).format(Number(value) || 0);
 }
 
 function dateTime(value: string | null) {
-  if (!value) return '—'
+  if (!value) return '—';
 
   return new Intl.DateTimeFormat('es-PE', {
+    timeZone: 'America/Lima',
     dateStyle: 'short',
     timeStyle: 'short',
-  }).format(new Date(value))
+  }).format(new Date(value));
 }
 
 function user(value: UsuarioResumen) {
   if (value.perfil) {
-    return `${value.perfil.nombres} ${value.perfil.apellidos}`
+    return `${value.perfil.nombres} ${value.perfil.apellidos}`;
   }
 
-  return value.correo
+  return value.correo;
 }
 
 function paymentIcon(name: string) {
-  const normalizedName = name.toLowerCase()
+  const normalizedName = name.toLowerCase();
 
-  if (normalizedName.includes('efectivo')) return 'mdi-cash-multiple'
-  if (normalizedName.includes('tarjeta')) return 'mdi-credit-card-outline'
+  if (normalizedName.includes('efectivo')) return 'mdi-cash-multiple';
+  if (normalizedName.includes('tarjeta')) return 'mdi-credit-card-outline';
   if (normalizedName.includes('yape') || normalizedName.includes('plin')) {
-    return 'mdi-cellphone-check'
+    return 'mdi-cellphone-check';
   }
 
-  return 'mdi-wallet-outline'
+  return 'mdi-wallet-outline';
 }
 
 watch(
   () => branch.idSucursalActual,
   () => {
+    openBox.value = null;
+    selectedBox.value = null;
+    openDialog.value = closeDialog.value = false;
     if (page.value !== 1) {
-      page.value = 1
-      return
+      page.value = 1;
+      return;
     }
 
-    void load()
+    void load();
   },
   { immediate: true },
-)
+);
 
 watch(page, () => {
-  void load()
-})
+  void load();
+});
+useRealtimeRefresh(['caja'], load, (change) => change.idSucursal === branch.idSucursalActual);
 </script>
 
 <style scoped>

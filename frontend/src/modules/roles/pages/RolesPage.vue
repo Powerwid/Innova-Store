@@ -1,6 +1,10 @@
 <template>
   <div class="roles-page">
-    <v-card class="mb-6 rounded-xl shadow-sm" elevation="0" border>
+    <v-card
+      class="mb-6 rounded-xl shadow-sm"
+      elevation="0"
+      border
+    >
       <v-card-text class="pa-4">
         <div class="roles-filter-bar">
           <v-text-field
@@ -15,7 +19,12 @@
             class="role-search"
           />
           <span class="roles-filter-count text-body-2 text-medium-emphasis">
-            <v-icon size="19" class="me-1">mdi-shield-account</v-icon>
+            <v-icon
+              size="19"
+              class="me-1"
+            >
+              mdi-shield-account
+            </v-icon>
             {{ roles.length }} roles
           </span>
         </div>
@@ -28,10 +37,18 @@
       class="mb-4 rounded-xl"
       closable
       @click:close="error = ''"
-      >{{ error }}</v-alert
     >
-    <div v-if="loading" class="text-center py-16">
-      <v-progress-circular indeterminate color="primary" size="58" />
+      {{ error }}
+    </v-alert>
+    <div
+      v-if="loading"
+      class="text-center py-16"
+    >
+      <v-progress-circular
+        indeterminate
+        color="primary"
+        size="58"
+      />
     </div>
     <template v-else>
       <v-alert
@@ -44,234 +61,320 @@
         @click:close="showInfoAlert = false"
       >
         <div class="d-flex align-center ga-2">
-          <v-icon color="info" size="18">mdi-information-outline</v-icon>
+          <v-icon
+            color="info"
+            size="18"
+          >
+            mdi-information-outline
+          </v-icon>
           <span class="text-body-2">
-            <strong>Importante:</strong> Marca <strong>“Ver”</strong> para mostrar el módulo en el menú. Los demás permisos solo funcionan adentro.
+            <strong>Importante:</strong>
+            Marca
+            <strong>“Ver”</strong>
+            para mostrar el módulo en el menú. Los demás permisos solo funcionan adentro.
           </span>
         </div>
       </v-alert>
 
       <v-row class="roles-layout">
-      <v-col cols="12" md="4" lg="3"
-        ><v-card class="rounded-xl shadow-sm" elevation="0" border>
-          <v-list color="primary" class="pa-2">
-            <v-list-subheader class="font-weight-bold text-primary">
-              <div class="d-flex align-center ga-2">
-                <v-icon size="18" color="primary">mdi-shield-account</v-icon>
-                ROLES DEL SISTEMA
-              </div>
-            </v-list-subheader>
-            <v-list-item
-              v-for="role in filteredRoles"
-              :key="role.idRol"
-              :active="selectedId === role.idRol"
-              rounded="lg"
-              class="my-1"
-              @click="selectRole(role)"
-            >
-              <template #prepend
-                ><v-avatar color="primary" variant="tonal" size="34"
-                  ><v-icon size="19">mdi-account-group</v-icon></v-avatar
-                ></template
-              >
-              <v-list-item-title class="font-weight-bold">{{
-                role.nombre
-              }}</v-list-item-title
-              ><v-list-item-subtitle>{{ role.cantidadPermisos }} permisos</v-list-item-subtitle>
-            </v-list-item>
-            <v-list-item
-              v-if="!filteredRoles.length"
-              title="No se encontraron roles"
-            />
-
-            <v-divider class="my-2" />
-            <v-list-item
-              rounded="lg"
-              class="my-1"
-              @click="openCreate"
-            >
-              <template #prepend>
-                <v-avatar color="primary" variant="tonal" size="34">
-                  <v-icon size="19">mdi-plus</v-icon>
-                </v-avatar>
-              </template>
-              <v-list-item-title class="font-weight-bold text-primary">Nuevo Rol</v-list-item-title>
-              <v-list-item-subtitle>Crear nuevo rol</v-list-item-subtitle>
-            </v-list-item>
-          </v-list> </v-card
-      ></v-col>
-      <v-col cols="12" md="8" lg="9"
-        ><v-card
-          v-if="selectedRole"
-          class="rounded-xl shadow-sm overflow-hidden"
-          elevation="0"
-          border
+        <v-col
+          cols="12"
+          md="4"
+          lg="3"
         >
-          <div class="role-header">
-            <div>
-              <div class="text-subtitle-1 font-weight-bold">
-                <v-icon color="primary" class="me-2">mdi-shield-check</v-icon
-                >Permisos:
-                <span class="text-primary">{{ selectedRole.nombre }}</span>
-              </div>
-              <div class="text-caption text-medium-emphasis ms-8">
-                {{ selectedRole.cantidadUsuarios }} usuarios usan este rol
-              </div>
-            </div>
-            <div class="d-flex flex-wrap ga-2">
-              <v-chip color="primary" variant="tonal" size="small"
-                >{{ selectedPermissions.length }} activos</v-chip
-              ><v-btn
-                color="error"
-                variant="tonal"
-                size="small"
-                prepend-icon="mdi-delete-outline"
-                :disabled="selectedRole.cantidadUsuarios > 0"
-                @click="confirmDelete = true"
-                >Eliminar</v-btn
-              ><v-btn
-                color="primary"
-                size="small"
-                prepend-icon="mdi-content-save"
-                :loading="saving"
-                @click="savePermissions"
-                >Guardar cambios</v-btn
-              >
-            </div>
-          </div>
-          <v-card-text class="pa-4">
-            <v-text-field
-              v-model="searchPermission"
-              placeholder="Buscar permiso..."
-              prepend-inner-icon="mdi-magnify"
-              variant="outlined"
-              density="comfortable"
-              rounded="lg"
-              hide-details
-              clearable
-              class="mb-4"
-            />
-            <v-row density="comfortable">
-              <v-col
-                v-for="permission in filteredPermissions"
-                :key="permission.idPermiso"
-                cols="12"
-                sm="6"
-                lg="4"
-              >
-                <div class="permission-cell">
-                  <v-checkbox-btn
-                    v-model="selectedPermissions"
-                    :value="permission.idPermiso"
-                    color="primary"
-                    :label="permission.etiqueta"
-                    class="flex-grow-1"
-                  />
-                </div>
-              </v-col>
-            </v-row>
-            <div
-              v-if="!filteredPermissions.length"
-              class="text-center text-medium-emphasis py-8"
-            >
-              No se encontraron permisos
-            </div>
-          </v-card-text></v-card
-        ><v-card
-          v-else
-          class="rounded-xl text-center pa-12"
-          elevation="0"
-          border
-          ><v-avatar size="72" color="primary" variant="tonal"
-            ><v-icon size="40">mdi-shield-account-outline</v-icon></v-avatar
+          <v-card
+            class="rounded-xl shadow-sm"
+            elevation="0"
+            border
           >
-          <div class="text-h6 mt-4">Gestión de accesos</div>
-          <p class="text-medium-emphasis">
-            Selecciona un rol para administrar sus permisos
-          </p></v-card
-        ></v-col
-      >
+            <v-list
+              color="primary"
+              class="pa-2"
+            >
+              <v-list-subheader class="font-weight-bold text-primary">
+                <div class="d-flex align-center ga-2">
+                  <v-icon
+                    size="18"
+                    color="primary"
+                  >
+                    mdi-shield-account
+                  </v-icon>
+                  ROLES DEL SISTEMA
+                </div>
+              </v-list-subheader>
+              <v-list-item
+                v-for="role in filteredRoles"
+                :key="role.idRol"
+                :active="selectedId === role.idRol"
+                rounded="lg"
+                class="my-1"
+                @click="selectRole(role)"
+              >
+                <template #prepend>
+                  <v-avatar
+                    color="primary"
+                    variant="tonal"
+                    size="34"
+                  >
+                    <v-icon size="19">mdi-account-group</v-icon>
+                  </v-avatar>
+                </template>
+                <v-list-item-title class="font-weight-bold">{{ role.nombre }}</v-list-item-title>
+                <v-list-item-subtitle>{{ role.cantidadPermisos }} permisos</v-list-item-subtitle>
+              </v-list-item>
+              <v-list-item
+                v-if="!filteredRoles.length"
+                title="No se encontraron roles"
+              />
+
+              <v-divider class="my-2" />
+              <v-list-item
+                rounded="lg"
+                class="my-1"
+                @click="openCreate"
+              >
+                <template #prepend>
+                  <v-avatar
+                    color="primary"
+                    variant="tonal"
+                    size="34"
+                  >
+                    <v-icon size="19">mdi-plus</v-icon>
+                  </v-avatar>
+                </template>
+                <v-list-item-title class="font-weight-bold text-primary">
+                  Nuevo Rol
+                </v-list-item-title>
+                <v-list-item-subtitle>Crear nuevo rol</v-list-item-subtitle>
+              </v-list-item>
+            </v-list>
+          </v-card>
+        </v-col>
+        <v-col
+          cols="12"
+          md="8"
+          lg="9"
+        >
+          <v-card
+            v-if="selectedRole"
+            class="rounded-xl shadow-sm overflow-hidden"
+            elevation="0"
+            border
+          >
+            <div class="role-header">
+              <div>
+                <div class="text-subtitle-1 font-weight-bold">
+                  <v-icon
+                    color="primary"
+                    class="me-2"
+                  >
+                    mdi-shield-check
+                  </v-icon>
+                  Permisos:
+                  <span class="text-primary">{{ selectedRole.nombre }}</span>
+                </div>
+                <div class="text-caption text-medium-emphasis ms-8">
+                  {{ selectedRole.cantidadUsuarios }} usuarios usan este rol
+                </div>
+              </div>
+              <div class="d-flex flex-wrap ga-2">
+                <v-chip
+                  color="primary"
+                  variant="tonal"
+                  size="small"
+                >
+                  {{ selectedPermissions.length }} activos
+                </v-chip>
+                <v-btn
+                  color="error"
+                  variant="tonal"
+                  size="small"
+                  prepend-icon="mdi-delete-outline"
+                  :disabled="selectedRole.cantidadUsuarios > 0"
+                  @click="confirmDelete = true"
+                >
+                  Eliminar
+                </v-btn>
+                <v-btn
+                  color="primary"
+                  size="small"
+                  prepend-icon="mdi-content-save"
+                  :loading="saving"
+                  @click="savePermissions"
+                >
+                  Guardar cambios
+                </v-btn>
+              </div>
+            </div>
+            <v-card-text class="pa-4">
+              <v-text-field
+                v-model="searchPermission"
+                placeholder="Buscar permiso..."
+                prepend-inner-icon="mdi-magnify"
+                variant="outlined"
+                density="comfortable"
+                rounded="lg"
+                hide-details
+                clearable
+                class="mb-4"
+              />
+              <v-row density="comfortable">
+                <v-col
+                  v-for="permission in filteredPermissions"
+                  :key="permission.idPermiso"
+                  cols="12"
+                  sm="6"
+                  lg="4"
+                >
+                  <div class="permission-cell">
+                    <v-checkbox-btn
+                      v-model="selectedPermissions"
+                      :value="permission.idPermiso"
+                      color="primary"
+                      :label="permission.etiqueta"
+                      class="flex-grow-1"
+                    />
+                  </div>
+                </v-col>
+              </v-row>
+              <div
+                v-if="!filteredPermissions.length"
+                class="text-center text-medium-emphasis py-8"
+              >
+                No se encontraron permisos
+              </div>
+            </v-card-text>
+          </v-card>
+          <v-card
+            v-else
+            class="rounded-xl text-center pa-12"
+            elevation="0"
+            border
+          >
+            <v-avatar
+              size="72"
+              color="primary"
+              variant="tonal"
+            >
+              <v-icon size="40">mdi-shield-account-outline</v-icon>
+            </v-avatar>
+            <div class="text-h6 mt-4">Gestión de accesos</div>
+            <p class="text-medium-emphasis">Selecciona un rol para administrar sus permisos</p>
+          </v-card>
+        </v-col>
       </v-row>
     </template>
-    <v-dialog v-model="roleDialog" max-width="430" persistent
-      ><v-card rounded="xl"
-        ><v-card-title class="pa-5 bg-primary text-white">Nuevo Rol</v-card-title
-        ><v-card-text class="pa-5"
-          ><v-alert
+    <v-dialog
+      v-model="roleDialog"
+      max-width="430"
+      persistent
+    >
+      <v-card rounded="xl">
+        <v-card-title class="pa-5 bg-primary text-white">Nuevo Rol</v-card-title>
+        <v-card-text class="pa-5">
+          <v-alert
             v-if="dialogError"
             type="error"
             variant="tonal"
             class="mb-3"
-            >{{ dialogError }}</v-alert
-          ><v-text-field
+          >
+            {{ dialogError }}
+          </v-alert>
+          <v-text-field
             v-model="roleName"
             label="Nombre del rol *"
             hint="Letras, números y guiones bajos"
             persistent-hint
             variant="outlined"
             :error-messages="roleNameError"
-            @update:model-value="roleNameError = ''; dialogError = ''"
-            @keyup.enter="saveRole" /></v-card-text
-        ><v-card-actions class="pa-4 justify-end"
-          ><v-btn variant="text" @click="roleDialog = false">Cancelar</v-btn
-          ><v-btn color="primary" :loading="saving" @click="saveRole"
-            >Guardar</v-btn
-          ></v-card-actions
-        ></v-card
-      ></v-dialog
+            @update:model-value="
+              roleNameError = '';
+              dialogError = '';
+            "
+            @keyup.enter="saveRole"
+          />
+        </v-card-text>
+        <v-card-actions class="pa-4 justify-end">
+          <v-btn
+            variant="text"
+            @click="roleDialog = false"
+          >
+            Cancelar
+          </v-btn>
+          <v-btn
+            color="primary"
+            :loading="saving"
+            @click="saveRole"
+          >
+            Guardar
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+    <v-dialog
+      v-model="confirmDelete"
+      max-width="430"
     >
-    <v-dialog v-model="confirmDelete" max-width="430"
-      ><v-card rounded="xl"
-        ><v-card-title class="pa-5">Eliminar rol</v-card-title
-        ><v-card-text
-          >¿Eliminar el rol {{ selectedRole?.nombre }}? Esta acción no se puede
-          deshacer.</v-card-text
-        ><v-card-actions class="pa-4 justify-end"
-          ><v-btn variant="text" @click="confirmDelete = false">Cancelar</v-btn
-          ><v-btn color="error" :loading="saving" @click="deleteRole"
-            >Eliminar</v-btn
-          ></v-card-actions
-        ></v-card
-      ></v-dialog
+      <v-card rounded="xl">
+        <v-card-title class="pa-5">Eliminar rol</v-card-title>
+        <v-card-text>
+          ¿Eliminar el rol {{ selectedRole?.nombre }}? Esta acción no se puede deshacer.
+        </v-card-text>
+        <v-card-actions class="pa-4 justify-end">
+          <v-btn
+            variant="text"
+            @click="confirmDelete = false"
+          >
+            Cancelar
+          </v-btn>
+          <v-btn
+            color="error"
+            :loading="saving"
+            @click="deleteRole"
+          >
+            Eliminar
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+    <v-snackbar
+      v-model="noticeVisible"
+      color="success"
     >
-    <v-snackbar v-model="noticeVisible" color="success">{{
-      notice
-    }}</v-snackbar>
+      {{ notice }}
+    </v-snackbar>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from "vue";
-import { rolesApi } from "@/core/api/administracion.api";
-import { getApiErrorMessage } from "@/core/api/api-error";
-import type {
-  PermisoRegistro,
-  RolRegistro,
-} from "@/core/types/administracion.types";
+import { computed, onMounted, ref } from 'vue';
+import { rolesApi } from '@/core/api/administracion.api';
+import { getApiErrorMessage } from '@/core/api/api-error';
+import type { PermisoRegistro, RolRegistro } from '@/core/types/administracion.types';
 
 const roles = ref<RolRegistro[]>([]),
   permissions = ref<PermisoRegistro[]>([]);
 const selectedId = ref<number | null>(null),
   selectedPermissions = ref<number[]>([]);
-const searchRole = ref(""),
-  searchPermission = ref(""),
-  roleName = ref("");
+const searchRole = ref(''),
+  searchPermission = ref(''),
+  roleName = ref('');
 const loading = ref(true),
   saving = ref(false),
   roleDialog = ref(false),
   confirmDelete = ref(false),
   showInfoAlert = ref(true);
-const error = ref(""),
-  dialogError = ref(""),
-  roleNameError = ref(""),
-  notice = ref(""),
+const error = ref(''),
+  dialogError = ref(''),
+  roleNameError = ref(''),
+  notice = ref(''),
   noticeVisible = ref(false);
 const selectedRole = computed(
   () => roles.value.find((role) => role.idRol === selectedId.value) ?? null,
 );
 const filteredRoles = computed(() =>
   roles.value.filter((role) =>
-    role.nombre.toLowerCase().includes((searchRole.value || "").toLowerCase()),
+    role.nombre.toLowerCase().includes((searchRole.value || '').toLowerCase()),
   ),
 );
 const filteredPermissions = computed(() =>
@@ -279,9 +382,9 @@ const filteredPermissions = computed(() =>
     .filter((p) =>
       `${p.modulo} ${p.etiqueta} ${p.nombre}`
         .toLowerCase()
-        .includes((searchPermission.value || "").toLowerCase()),
+        .includes((searchPermission.value || '').toLowerCase()),
     )
-    .sort((a, b) => a.etiqueta.localeCompare(b.etiqueta, "es")),
+    .sort((a, b) => a.etiqueta.localeCompare(b.etiqueta, 'es')),
 );
 function selectRole(role: RolRegistro) {
   selectedId.value = role.idRol;
@@ -289,15 +392,14 @@ function selectRole(role: RolRegistro) {
 }
 async function load(preferredId?: number) {
   loading.value = true;
-  error.value = "";
+  error.value = '';
   try {
     const [r, p] = await Promise.all([rolesApi.listar(), rolesApi.permisos()]);
     roles.value = r.data;
     permissions.value = p.data;
     const next =
-      roles.value.find(
-        (role) => role.idRol === (preferredId ?? selectedId.value),
-      ) ?? roles.value[0];
+      roles.value.find((role) => role.idRol === (preferredId ?? selectedId.value)) ??
+      roles.value[0];
     if (next) selectRole(next);
     else {
       selectedId.value = null;
@@ -310,23 +412,23 @@ async function load(preferredId?: number) {
   }
 }
 function openCreate() {
-  roleName.value = "";
-  dialogError.value = "";
-  roleNameError.value = "";
+  roleName.value = '';
+  dialogError.value = '';
+  roleNameError.value = '';
   roleDialog.value = true;
 }
 async function saveRole() {
-  dialogError.value = "";
-  roleNameError.value = "";
+  dialogError.value = '';
+  roleNameError.value = '';
   const name = roleName.value.trim().toUpperCase();
   if (!name) {
-    roleNameError.value = "Ingresa el nombre del rol";
-    dialogError.value = "Revisa el campo resaltado";
+    roleNameError.value = 'Ingresa el nombre del rol';
+    dialogError.value = 'Revisa el campo resaltado';
     return;
   }
   if (!/^[A-Z][A-Z0-9_]{2,49}$/.test(name)) {
-    roleNameError.value = "Usa entre 3 y 50 caracteres: letras, números y guiones bajos";
-    dialogError.value = "Revisa el campo resaltado";
+    roleNameError.value = 'Usa entre 3 y 50 caracteres: letras, números y guiones bajos';
+    dialogError.value = 'Revisa el campo resaltado';
     return;
   }
   saving.value = true;
@@ -362,7 +464,7 @@ async function deleteRole() {
 async function savePermissions() {
   if (!selectedId.value) return;
   saving.value = true;
-  error.value = "";
+  error.value = '';
   try {
     const { data } = await rolesApi.sincronizarPermisos(
       selectedId.value,

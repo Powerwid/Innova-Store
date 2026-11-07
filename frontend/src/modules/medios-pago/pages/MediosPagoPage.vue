@@ -1,100 +1,246 @@
 <template>
   <div class="payment-methods-page">
-    <v-card class="mb-3 rounded-xl" elevation="1" border>
+    <v-card
+      class="mb-3 rounded-xl"
+      elevation="1"
+      border
+    >
       <v-card-text class="d-flex flex-wrap align-center justify-space-between ga-3 pa-4">
         <div class="d-flex align-center">
-          <v-icon icon="mdi-credit-card-outline" color="primary" size="24" class="me-2" />
+          <v-icon
+            icon="mdi-credit-card-outline"
+            color="primary"
+            size="24"
+            class="me-2"
+          />
           <span class="text-h6 font-weight-bold">Medios de Pago</span>
         </div>
-        <v-btn v-if="canCreate" prepend-icon="mdi-plus" color="primary" variant="tonal" rounded="lg"
-          @click="openCreate">
+        <v-btn
+          v-if="canCreate"
+          prepend-icon="mdi-plus"
+          color="primary"
+          variant="tonal"
+          rounded="lg"
+          @click="openCreate"
+        >
           Nuevo Medio de Pago
         </v-btn>
       </v-card-text>
     </v-card>
 
-    <v-alert v-if="error" type="error" variant="tonal" class="mb-3" closable @click:close="error = ''">
+    <v-alert
+      v-if="error"
+      type="error"
+      variant="tonal"
+      class="mb-3"
+      closable
+      @click:close="error = ''"
+    >
       {{ error }}
     </v-alert>
 
-    <v-card class="rounded-xl overflow-hidden" elevation="1" border>
-      <div v-if="loading" class="text-center py-12">
-        <v-progress-circular indeterminate color="primary" size="44" />
+    <v-card
+      class="rounded-xl overflow-hidden"
+      elevation="1"
+      border
+    >
+      <div
+        v-if="loading"
+        class="text-center py-12"
+      >
+        <v-progress-circular
+          indeterminate
+          color="primary"
+          size="44"
+        />
       </div>
       <template v-else-if="mediosPago.length">
         <div class="payment-mobile-list pa-3">
-          <v-card v-for="medio in mediosPago" :key="medio.idMedioPago" class="mb-3 rounded-lg" variant="outlined">
+          <v-card
+            v-for="medio in mediosPago"
+            :key="medio.idMedioPago"
+            class="mb-3 rounded-lg"
+            variant="outlined"
+          >
             <v-card-text class="d-flex align-center ga-3 pa-3">
-              <v-avatar color="primary" variant="tonal" size="40"><v-icon icon="mdi-credit-card-outline" /></v-avatar>
+              <v-avatar
+                color="primary"
+                variant="tonal"
+                size="40"
+              >
+                <v-icon icon="mdi-credit-card-outline" />
+              </v-avatar>
               <div class="flex-grow-1 min-w-0">
                 <div class="font-weight-medium text-truncate">{{ medio.nombre }}</div>
                 <div class="text-caption text-medium-emphasis">ID: {{ medio.idMedioPago }}</div>
               </div>
               <div class="d-flex align-center">
-                <v-btn v-if="canEdit" icon="mdi-pencil" size="small" variant="text" color="warning"
-                  :aria-label="`Editar ${medio.nombre}`" @click="openEdit(medio)" />
-                <v-btn v-if="canDelete" icon="mdi-delete" size="small" variant="text" color="error"
-                  :aria-label="`Eliminar ${medio.nombre}`" @click="confirmDelete(medio)" />
+                <v-btn
+                  v-if="canEdit"
+                  icon="mdi-pencil"
+                  size="small"
+                  variant="text"
+                  color="warning"
+                  :aria-label="`Editar ${medio.nombre}`"
+                  @click="openEdit(medio)"
+                />
+                <v-btn
+                  v-if="canDelete"
+                  icon="mdi-delete"
+                  size="small"
+                  variant="text"
+                  color="error"
+                  :aria-label="`Eliminar ${medio.nombre}`"
+                  @click="confirmDelete(medio)"
+                />
               </div>
             </v-card-text>
           </v-card>
         </div>
-        <v-table class="payment-desktop-list" hover>
+        <v-table
+          class="payment-desktop-list"
+          hover
+        >
           <thead class="payment-table-head">
             <tr>
               <th style="width: 100px">ID</th>
               <th>Medio de Pago</th>
-              <th class="text-end" style="width: 140px">Acciones</th>
+              <th
+                class="text-end"
+                style="width: 140px"
+              >
+                Acciones
+              </th>
             </tr>
           </thead>
           <tbody>
-            <tr v-for="medio in mediosPago" :key="medio.idMedioPago">
+            <tr
+              v-for="medio in mediosPago"
+              :key="medio.idMedioPago"
+            >
               <td>{{ medio.idMedioPago }}</td>
               <td class="font-weight-medium">{{ medio.nombre }}</td>
               <td class="text-end">
-                <v-btn v-if="canEdit" icon="mdi-pencil" size="small" variant="text" color="primary"
-                  :aria-label="`Editar ${medio.nombre}`" @click="openEdit(medio)" />
-                <v-btn v-if="canDelete" icon="mdi-delete" size="small" variant="text" color="error"
-                  :aria-label="`Eliminar ${medio.nombre}`" @click="confirmDelete(medio)" />
+                <v-btn
+                  v-if="canEdit"
+                  icon="mdi-pencil"
+                  size="small"
+                  variant="text"
+                  color="primary"
+                  :aria-label="`Editar ${medio.nombre}`"
+                  @click="openEdit(medio)"
+                />
+                <v-btn
+                  v-if="canDelete"
+                  icon="mdi-delete"
+                  size="small"
+                  variant="text"
+                  color="error"
+                  :aria-label="`Eliminar ${medio.nombre}`"
+                  @click="confirmDelete(medio)"
+                />
               </td>
             </tr>
           </tbody>
         </v-table>
       </template>
-      <div v-else class="text-center text-medium-emphasis py-12">No se encontraron medios de pago</div>
+      <div
+        v-else
+        class="text-center text-medium-emphasis py-12"
+      >
+        No se encontraron medios de pago
+      </div>
     </v-card>
 
-    <v-dialog v-model="dialog" max-width="450" persistent>
+    <v-dialog
+      v-model="dialog"
+      max-width="450"
+      persistent
+    >
       <v-card rounded="xl">
-        <v-card-title class="payment-dialog-title pa-4">{{ editing ? 'Editar Medio de Pago' : 'Nuevo Medio de Pago'
-          }}</v-card-title>
+        <v-card-title class="payment-dialog-title pa-4">
+          {{ editing ? 'Editar Medio de Pago' : 'Nuevo Medio de Pago' }}
+        </v-card-title>
         <v-card-text class="pa-4">
-          <v-alert v-if="dialogError" type="error" variant="tonal" density="compact" class="mb-3">{{ dialogError
-            }}</v-alert>
-          <label class="payment-field-label" for="payment-name">Nombre del medio de pago *</label>
-          <v-text-field id="payment-name" v-model="nombre" placeholder="Ej.: Efectivo, Yape, Plin" variant="outlined"
-            density="comfortable" maxlength="45" :error-messages="nameError"
-            @update:model-value="nameError = ''; dialogError = ''" @keyup.enter="save" />
+          <v-alert
+            v-if="dialogError"
+            type="error"
+            variant="tonal"
+            density="compact"
+            class="mb-3"
+          >
+            {{ dialogError }}
+          </v-alert>
+          <label
+            class="payment-field-label"
+            for="payment-name"
+          >
+            Nombre del medio de pago *
+          </label>
+          <v-text-field
+            id="payment-name"
+            v-model="nombre"
+            placeholder="Ej.: Efectivo, Yape, Plin"
+            variant="outlined"
+            density="comfortable"
+            maxlength="45"
+            :error-messages="nameError"
+            @update:model-value="
+              nameError = '';
+              dialogError = '';
+            "
+            @keyup.enter="save"
+          />
         </v-card-text>
         <v-card-actions class="pa-4 pt-0 justify-end">
-          <v-btn variant="text" @click="dialog = false">Cancelar</v-btn>
-          <v-btn color="primary" :loading="saving" @click="save">Guardar</v-btn>
+          <v-btn
+            variant="text"
+            @click="dialog = false"
+          >
+            Cancelar
+          </v-btn>
+          <v-btn
+            color="primary"
+            :loading="saving"
+            @click="save"
+          >
+            Guardar
+          </v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
 
-    <v-dialog v-model="deleteDialog" max-width="430">
+    <v-dialog
+      v-model="deleteDialog"
+      max-width="430"
+    >
       <v-card rounded="xl">
         <v-card-title class="pa-4">Eliminar medio de pago</v-card-title>
         <v-card-text>¿Eliminar «{{ deleting?.nombre }}»?</v-card-text>
         <v-card-actions class="pa-4 justify-end">
-          <v-btn variant="text" @click="deleteDialog = false">Cancelar</v-btn>
-          <v-btn color="error" :loading="saving" @click="remove">Eliminar</v-btn>
+          <v-btn
+            variant="text"
+            @click="deleteDialog = false"
+          >
+            Cancelar
+          </v-btn>
+          <v-btn
+            color="error"
+            :loading="saving"
+            @click="remove"
+          >
+            Eliminar
+          </v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
 
-    <v-snackbar v-model="noticeVisible" color="success">{{ notice }}</v-snackbar>
+    <v-snackbar
+      v-model="noticeVisible"
+      color="success"
+    >
+      {{ notice }}
+    </v-snackbar>
   </div>
 </template>
 

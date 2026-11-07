@@ -10,13 +10,16 @@ def test_persistence_and_idempotent_upsert_delete(tmp_path):
     index.upsert(17, 6, np.array([0, 9]), b"replacement-photo")
     assert index.count == 1
     assert index.search(np.array([0, 1]), {17}, 5) == [
-        {"idReferencia": 17, "idProducto": 6, "score": 1.0}]
+        {"idReferencia": 17, "idProducto": 6, "score": 1.0}
+    ]
     index.close()
 
     reloaded = ReferenceIndex(tmp_path, "encoder-v1")
     assert reloaded.count == 1
     assert reloaded.search(np.array([0, 5]), {17}, 5)[0]["idProducto"] == 6
-    stored = reloaded._db.execute("SELECT image FROM references_visual WHERE id=17").fetchone()
+    stored = reloaded._db.execute(
+        "SELECT image FROM references_visual WHERE id=17"
+    ).fetchone()
     assert stored == (b"replacement-photo",)
     reloaded.delete(17)
     reloaded.delete(17)
@@ -60,7 +63,11 @@ def test_dimensions_and_bad_vectors_do_not_modify_catalog(tmp_path):
         index.upsert(1, 2, np.array([1, 0]), b"photo")
         with pytest.raises(ValueError, match="dimensión"):
             index.upsert(2, 3, np.array([1, 0, 0]), b"photo")
-        for bad in [np.array([0, 0]), np.array([np.nan, 1]), np.array([np.inf, 1])]:
+        for bad in [
+            np.array([0, 0]),
+            np.array([np.nan, 1]),
+            np.array([np.inf, 1]),
+        ]:
             with pytest.raises(ValueError):
                 index.upsert(2, 3, bad, b"photo")
         assert index.count == 1

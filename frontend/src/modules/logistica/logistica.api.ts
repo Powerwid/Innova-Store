@@ -37,6 +37,11 @@ export const productosApi = {
   obtener: (id: number) => http.get<Producto>(`${base}/productos/${id}`),
   crear: (payload: ProductoPayload) => http.post<Producto>(`${base}/productos`, payload),
   actualizar: (id: number, payload: Partial<ProductoPayload>) => http.patch<Producto>(`${base}/productos/${id}`, payload),
+  subirImagen: (id: number, file: File) => {
+    const data = new FormData()
+    data.append('file', file)
+    return http.post<Producto>(`${base}/productos/${id}/imagen`, data)
+  },
   eliminar: (id: number) => http.delete<{ message: string }>(`${base}/productos/${id}`),
 }
 export const productoSucursalApi = {

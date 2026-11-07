@@ -1,6 +1,7 @@
 <template>
   <div>
-    <v-file-input :model-value="file" label="Foto del producto" accept="image/jpeg,image/png,image/webp" prepend-icon="" prepend-inner-icon="mdi-image-outline" variant="outlined" density="comfortable" :disabled="disabled || cameraOpening" :error-messages="error" hint="JPG, PNG o WebP · máximo 8 MB" persistent-hint @update:model-value="selectFile" />
+    <v-file-input :model-value="file" :label="label" accept="image/jpeg,image/png,image/webp" prepend-icon="" prepend-inner-icon="mdi-image-outline" variant="outlined" density="comfortable" :disabled="disabled || cameraOpening" :error-messages="error" hint="Elige una foto guardada o usa la cámara · JPG, PNG o WebP · máximo 8 MB" persistent-hint @update:model-value="selectFile" />
+    <input ref="cameraFileInput" type="file" accept="image/jpeg,image/png,image/webp" capture="environment" hidden :disabled="disabled || cameraOpening" aria-label="Tomar foto del producto" @change="selectCameraFile" />
     <div class="d-flex flex-wrap ga-2 mt-2">
       <v-btn v-if="!stream" variant="tonal" color="primary" prepend-icon="mdi-camera-outline" :disabled="disabled" :loading="cameraOpening" @click="openCamera">Usar cámara</v-btn>
       <template v-else>
@@ -18,10 +19,11 @@ import { nextTick, onBeforeUnmount, ref, shallowRef, watch } from 'vue'
 import { validarImagen } from '../imagen'
 
 const file = defineModel<File | null>({ required: true })
-const props = withDefaults(defineProps<{ disabled?: boolean }>(), { disabled: false })
+const props = withDefaults(defineProps<{ disabled?: boolean; label?: string }>(), { disabled: false, label: 'Subir foto del producto' })
 const error = ref('')
 const preview = ref('')
 const video = ref<HTMLVideoElement | null>(null)
+const cameraFileInput = ref<HTMLInputElement | null>(null)
 const stream = shallowRef<MediaStream | null>(null)
 const cameraOpening = ref(false)
 const cameraReady = ref(false)
@@ -43,9 +45,28 @@ function selectFile(value: File | File[] | null | undefined) {
   file.value = error.value ? null : selected ?? null
 }
 
+function selectCameraFile(event: Event) {
+  const input = event.target as HTMLInputElement
+  const selected = input.files?.[0]
+  // Cancelar la cámara conserva la foto anterior; permite volver a tomarla.
+  input.value = ''
+  if (!selected || disposed || props.disabled) return
+  selectFile(selected)
+}
+
 async function openCamera() {
+  if (props.disabled || cameraOpening.value || disposed) return
   error.value = ''
-  if (!navigator.mediaDevices?.getUserMedia) { error.value = 'La cámara necesita HTTPS o localhost. También puedes subir una foto.'; return }
+  if (!navigator.mediaDevices?.getUserMedia) {
+    // La captura nativa de archivos funciona sin la cámara en vivo de getUserMedia.
+    // Debe abrirse dentro de este clic para conservar la activación del usuario.
+    stopCamera()
+    if (cameraFileInput.value) {
+      cameraFileInput.value.value = ''
+      cameraFileInput.value.click()
+    }
+    return
+  }
   file.value = null
   const request = ++cameraRequest
   cameraOpening.value = true

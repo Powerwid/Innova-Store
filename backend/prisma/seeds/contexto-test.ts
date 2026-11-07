@@ -1,7 +1,6 @@
 import type { PrismaClient } from '../../src/generated/prisma/client.js';
 import type { UsuarioAutenticado } from '../../src/common/types/usuario-autenticado.js';
 
-export const PREFIJO_TEST = 'DEMO LOG - ';
 export async function obtenerContextoTest(prisma: PrismaClient) {
   const correo = process.env.ADMIN_CORREO?.trim().toLowerCase();
   if (!correo)

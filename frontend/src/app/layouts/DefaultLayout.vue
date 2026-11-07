@@ -222,7 +222,7 @@
     <v-card rounded="xl"><v-card-title class="pa-5 bg-primary text-white"><v-icon
           class="me-2">mdi-lock-reset</v-icon>Cambiar contraseña</v-card-title>
       <v-card-text class="pa-5"><v-alert v-if="passwordError" type="error" variant="tonal" class="mb-4">{{ passwordError
-      }}</v-alert>
+          }}</v-alert>
         <v-text-field v-model="passwordForm.actual" label="Contraseña actual" type="password"
           autocomplete="current-password" variant="outlined" />
         <v-text-field v-model="passwordForm.nueva" label="Nueva contraseña" type="password" autocomplete="new-password"
@@ -249,6 +249,7 @@ import { Permiso } from '@/core/constants/permisos'
 import { sucursalesApi } from '@/core/api/administracion.api'
 import { authApi } from '@/modules/auth/api/auth.api'
 import { getApiErrorMessage } from '@/core/api/api-error'
+import { reportesConfig } from '@/modules/reportes/reportes.config'
 
 interface MenuItem {
   key: string
@@ -293,19 +294,26 @@ const menuConfig: MenuItem[] = [
         title: 'Caja',
         icon: 'mdi-cash-register',
         to: { name: 'operaciones-caja' },
-        permission: Permiso.CAJA_VER },
+        permission: Permiso.CAJA_VER
+      },
+      {
+        key: 'caja-flujo', title: 'Flujo de caja', icon: 'mdi-cash-multiple',
+        to: { name: 'caja-flujo' }, permission: Permiso.CAJA_VER,
+      },
       {
         key: 'operaciones-ingresos',
         title: 'Ingresos',
         icon: 'mdi-cash-plus',
         to: { name: 'operaciones-ingresos' },
-        permission: Permiso.CAJA_VER },
+        permission: Permiso.CAJA_VER
+      },
       {
         key: 'operaciones-egresos',
         title: 'Egresos',
         icon: 'mdi-cash-minus',
         to: { name: 'operaciones-egresos' },
-        permission: Permiso.CAJA_VER },
+        permission: Permiso.CAJA_VER
+      },
       {
         key: 'operaciones-catalogos',
         title: 'Motivos y comprobantes',
@@ -318,24 +326,27 @@ const menuConfig: MenuItem[] = [
   {
     key: 'comercial', title: 'Comercial', icon: 'mdi-storefront-outline',
     children: [
-      { 
-        key: 'operaciones-ventas', 
-        title: 'Ventas', 
-        icon: 'mdi-cart-outline', 
-        to: { name: 'operaciones-ventas' }, 
-        permission: Permiso.VENTAS_VER },
-      { 
-        key: 'operaciones-compras', 
-        title: 'Compras', 
-        icon: 'mdi-truck-delivery-outline', 
-        to: { name: 'operaciones-compras' }, 
-        permission: Permiso.COMPRAS_VER },
-      { 
-        key: 'operaciones-deudas', 
-        title: 'Deudas de clientes', 
-        icon: 'mdi-account-cash-outline', 
-        to: { name: 'operaciones-deudas' }, 
-        permission: Permiso.DEUDAS_VER },
+      {
+        key: 'operaciones-ventas',
+        title: 'Ventas',
+        icon: 'mdi-cart-outline',
+        to: { name: 'operaciones-ventas' },
+        permission: Permiso.VENTAS_VER
+      },
+      {
+        key: 'operaciones-compras',
+        title: 'Compras',
+        icon: 'mdi-truck-delivery-outline',
+        to: { name: 'operaciones-compras' },
+        permission: Permiso.COMPRAS_VER
+      },
+      {
+        key: 'operaciones-deudas',
+        title: 'Deudas de clientes',
+        icon: 'mdi-account-cash-outline',
+        to: { name: 'operaciones-deudas' },
+        permission: Permiso.DEUDAS_VER
+      },
     ],
   },
   {
@@ -428,6 +439,13 @@ const menuConfig: MenuItem[] = [
     ],
   },
   {
+    key: 'reportes', title: 'Reportes', icon: 'mdi-chart-box-outline',
+    children: reportesConfig.filter(report => report.type !== 'caja').map(report => ({
+      key: report.routeName, title: report.title, icon: report.icon,
+      to: { name: report.routeName }, permission: report.permission,
+    })),
+  },
+  {
     key: 'configuracion',
     title: 'Configuración',
     icon: 'mdi-cog-outline',
@@ -439,7 +457,7 @@ const menuConfig: MenuItem[] = [
         to: { name: 'logistica-configuracion' },
         superadminOnly: true
       },
-]
+    ]
   },
 ]
 
@@ -509,7 +527,7 @@ onMounted(async () => {
   if (!authStore.puede(Permiso.SUCURSALES_VER)) return
   try {
     const { data } = await sucursalesApi.listar()
-    const activas = data.filter(({ activo }) => activo).map(({ idSucursal, nombre }) => ({ idSucursal, nombre }))
+    const activas = data.filter(({ activo }) => activo).map(({ idSucursal, nombre, perfil }) => ({ idSucursal, nombre, perfil }))
     if (authStore.esSuperadmin) sucursalStore.reemplazarDisponibles(activas)
     else sucursalStore.actualizarNombres(activas)
   } catch { /* El menú conserva los identificadores si falla el catálogo. */ }

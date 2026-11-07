@@ -1,5 +1,6 @@
 import { prisma } from './cliente-prisma.js';
 import { obtenerContextoTest } from './contexto-test.js';
+import { seedClientesVarios } from './base/clientes.seed.js';
 import { seedConfiguracionesGlobalesTest } from './test/configuraciones-globales.seed.js';
 import { seedTiposMovimientoInventarioTest } from './test/tipos-movimiento-inventario.seed.js';
 import { seedTiposProductoTest } from './test/tipos-producto.seed.js';
@@ -14,6 +15,7 @@ import { seedInventarioMovimientosTest } from './test/inventario-movimientos.see
 // Ejecutar por separado del seed base: npm run seed:test.
 async function main() {
   const { actor, sucursal } = await obtenerContextoTest(prisma);
+  await seedClientesVarios(prisma);
   await seedConfiguracionesGlobalesTest(prisma);
   await seedTiposMovimientoInventarioTest(prisma);
   const tipos = await seedTiposProductoTest(prisma);
@@ -43,6 +45,9 @@ async function main() {
   );
   console.log(
     `${productosTest.length} productos, ${categoriasTest.length} categorías, ${tipos.size} tipos y ${almacenes.size} almacenes.`,
+  );
+  console.log(
+    'Nombres comerciales y stock mayor a 40 en la mayoría del catálogo de venta.',
   );
   console.log(
     'Incluye cantidades fraccionarias, presentaciones, stock bajo, agotados y productos inactivos.',

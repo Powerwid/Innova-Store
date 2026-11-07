@@ -94,16 +94,55 @@ try {
   const arroz = await prisma.inventario.findFirstOrThrow({
     where: {
       idAlmacen: almacen.idAlmacen,
-      productoSucursal: { producto: { nombre: 'DEMO LOG - Arroz a granel' } },
+      productoSucursal: { producto: { nombre: 'Arroz a granel' } },
     },
   });
-  assert.equal(arroz.stock.toString(), '30');
+  assert.equal(arroz.stock.toString(), '85');
   const tomate = await prisma.inventario.findFirstOrThrow({
     where: {
-      productoSucursal: { producto: { nombre: 'DEMO LOG - Tomate italiano' } },
+      idAlmacen: almacen.idAlmacen,
+      productoSucursal: { producto: { nombre: 'Tomate italiano' } },
     },
   });
-  assert.equal(tomate.stock.toString(), '15');
+  assert.equal(tomate.stock.toString(), '60');
+  const inventariosVenta = await prisma.inventario.findMany({
+    where: {
+      idAlmacen: almacen.idAlmacen,
+      productoSucursal: {
+        estado: true,
+        precioVenta: { gt: 0 },
+        producto: { estado: true },
+      },
+    },
+  });
+  const conStockAmplio = inventariosVenta.filter((item) => item.stock.gt(40));
+  assert.ok(inventariosVenta.length > 0);
+  assert.ok(
+    conStockAmplio.length / inventariosVenta.length >= 0.9,
+    'Al menos el 90% del catálogo vendible debe superar 40 en su unidad de venta.',
+  );
+  assert.equal(
+    inventariosVenta.filter((item) => item.stock.isZero()).length,
+    2,
+  );
+  assert.equal(
+    inventariosVenta.filter(
+      (item) => item.stock.gt(0) && item.stock.lt(item.stockMinimo),
+    ).length,
+    2,
+  );
+  const [productos, categorias, tipos, almacenes] = await Promise.all([
+    prisma.producto.findMany({ select: { nombre: true, detalle: true } }),
+    prisma.categoria.findMany({ select: { nombre: true } }),
+    prisma.tipoProducto.findMany({ select: { nombre: true } }),
+    prisma.almacen.findMany({ select: { nombre: true } }),
+  ]);
+  for (const item of [...productos, ...categorias, ...tipos, ...almacenes]) {
+    assert.doesNotMatch(item.nombre, /\b(demo|test|prueba)\b/i);
+  }
+  for (const item of productos) {
+    assert.doesNotMatch(item.detalle ?? '', /\b(demo|test|prueba)\b/i);
+  }
   // Repetir el seed conserva un precio editado, estados y todos los saldos.
   await prisma.productoSucursal.update({
     where: { idProductoSucursal: arroz.idProductoSucursal },
@@ -136,7 +175,7 @@ try {
     '9.99',
   );
   console.log(
-    `Seed verificado en MySQL: ${before.products} productos, relaciones, movimientos y repetición sin duplicados ni cambios de stock.`,
+    `Seed verificado en MySQL: ${before.products} productos con nombres comerciales, ${conStockAmplio.length}/${inventariosVenta.length} productos vendibles con stock mayor a 40, relaciones, movimientos y repetición sin duplicados ni cambios de stock.`,
   );
 } finally {
   await prisma?.$disconnect();
