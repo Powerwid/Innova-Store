@@ -1,30 +1,12 @@
-import {
-  BadRequestException,
-  ConflictException,
-  Inject,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { BadRequestException, ConflictException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { type UsuarioAutenticado } from '../../../common/types/usuario-autenticado.js';
 import { PrismaService } from '../../../database/prisma/prisma.service.js';
 import { Prisma } from '../../../generated/prisma/client.js';
 import { OperacionesAccesoService } from '../compartido/operaciones-acceso.service.js';
-import {
-  MEDIO_PAGO_EFECTIVO,
-  MEDIO_PAGO_FRACCIONADO,
-} from '../compartido/operaciones.constants.js';
+import { MEDIO_PAGO_EFECTIVO, MEDIO_PAGO_FRACCIONADO } from '../compartido/operaciones.constants.js';
 import { cajaInclude } from '../compartido/operaciones.selects.js';
-import {
-  type ConsultaPaginada,
-  type Db,
-  type PagoInput,
-} from '../compartido/operaciones.types.js';
-import {
-  decimal,
-  pagina,
-  paginar,
-  sucursales,
-} from '../compartido/operaciones.utils.js';
+import type { ConsultaPaginada, Db, PagoInput } from '../compartido/operaciones.types.js';
+import { decimal, pagina, paginar, sucursales } from '../compartido/operaciones.utils.js';
 import { calcularResumenCaja } from './caja-resumen.js';
 import { type AbrirCajaInput, type CerrarCajaInput } from './cajas.types.js';
 
@@ -34,7 +16,7 @@ export class CajasService {
     @Inject(PrismaService) private readonly prisma: PrismaService,
     @Inject(OperacionesAccesoService)
     private readonly acceso: OperacionesAccesoService,
-  ) {}
+  ) { }
 
   async validarMediosPago(db: Db, pagos: PagoInput[]) {
     const ids = pagos.map(({ idMedioPago }) => idMedioPago);

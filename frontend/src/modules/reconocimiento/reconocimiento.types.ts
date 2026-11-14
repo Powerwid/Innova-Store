@@ -21,7 +21,12 @@ export interface ReferenciaVisual {
 export interface EstadoReconocimiento {
   configurado: boolean
   disponible: boolean
-  servicio: { status: string; modelVersion: string; referenceCount: number; modelLoaded: boolean } | null
+  servicio: {
+    status: string
+    modelVersion: string
+    referenceCount: number
+    modelLoaded: boolean
+  } | null
   referencias: Partial<Record<EstadoReferencia, number>>
   similitudMinima: number
   umbralCalibrado: boolean
@@ -51,5 +56,8 @@ export interface ResultadoReconocimiento {
   candidatos: CandidatoVisual[]
 }
 
-export interface SeleccionVisual { candidato: CandidatoVisual; cantidad: number }
+export interface SeleccionVisual {
+  candidato: CandidatoVisual
+  cantidad: number
+}
 export type PaginaReferencias = Pagina<ReferenciaVisual>
